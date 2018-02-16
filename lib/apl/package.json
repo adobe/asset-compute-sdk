@@ -7,7 +7,8 @@
   "main": "apl.js",
   "dependencies": {
     "fs-extra": "^4.0.2",
-    "s3": "^4.4.0",
-    "request": "^2.79.0"
+    "mime-types": "^2.1.18",
+    "request": "^2.79.0",
+    "s3": "^4.4.0"
   }
 }
