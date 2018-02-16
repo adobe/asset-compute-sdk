@@ -5,14 +5,9 @@
   "license": "UNLICENSED",
   "private": true,
   "main": "apl.js",
-  "//": "request library is required for runtimes/photoshop-jsx, but could be excluded to save size for other apl usages, unfortunately npm pack does not respect bundledDependencies for local deps",
   "dependencies": {
     "fs-extra": "^4.0.2",
     "s3": "^4.4.0",
     "request": "^2.79.0"
-  },
-  "bundledDependencies": [
-    "fs-extra",
-    "s3"
-  ]
+  }
 }
