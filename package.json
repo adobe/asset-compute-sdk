@@ -1,0 +1,14 @@
+{
+  "name": "nui-apl",
+  "version": "0.0.1",
+  "description": "Project Nui Asset Processing Library (NodeJS)",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "apl.js",
+  "dependencies": {
+    "fs-extra": "^4.0.2",
+    "mime-types": "^2.1.18",
+    "request": "^2.79.0",
+    "s3": "^4.4.0"
+  }
+}
