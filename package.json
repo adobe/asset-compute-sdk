@@ -6,8 +6,8 @@
   "author": {
     "name": "Adobe Systems Inc."
   },
-  "publishConfig":{
-    "registry":"https://artifactory.corp.adobe.com/artifactory/api/npm/npm-nui-release-local"
+  "publishConfig": {
+    "registry": "https://artifactory.corp.adobe.com/artifactory/api/npm/npm-nui-release-local"
   },
   "repository": {
     "type": "git",
