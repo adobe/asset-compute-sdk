@@ -1,6 +1,6 @@
 {
   "name": "@adobe-internal-nui/library",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "library.js",
   "description": "Project Nui – Worker Library",
   "author": {
