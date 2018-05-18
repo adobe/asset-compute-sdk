@@ -3,7 +3,7 @@
 
 const request = require('request');
 const url = require('url');
-const s3 = require('s3');
+const s3 = require('s3-client');
 const fs = require('fs-extra');
 const path = require('path');
 const mime = require('mime-types');
