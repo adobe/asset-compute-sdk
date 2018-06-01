@@ -430,14 +430,18 @@ function shellScript(params, shellScriptName = "worker.sh") {
                 env: env
             };
 
-            // we are inside
-            //     /nodejsAction/4v8sI58e/node_modules/nui-apl
-            // and the worker.sh script will be in
-            //     /nodejsAction/4v8sI58e
-            // so two folders up
-            var cmd = __dirname + "/../../" + shellScriptName;
+            var shellScript = __dirname + "/" + shellScriptName;
 
-            child_process.exec(cmd, options, function (error, stdout, stderr) {
+            if (!fs.existsSync(shellScript)) {
+                console.log("FAILURE of worker processing for ingestionId", params.ingestionId, "rendition", rendition.name);
+                reject("shell script '" + shellScriptName + "' not found");
+                return;
+            }
+
+            // ensure script is executable
+            child_process.execSync("chmod u+x " + shellScript, {stdio: 'inherit'});
+
+            child_process.exec(shellScript, options, function (error, stdout, stderr) {
                 console.log(stdout.trim());
                 console.log(stderr.trim());
                 if (error) {
@@ -445,6 +449,8 @@ function shellScript(params, shellScriptName = "worker.sh") {
                     reject(error);
                 } else {
                     console.log("END of worker processing for ingestionId", params.ingestionId, "rendition", rendition.name);
+                    child_process.execSync("cat out/" + rendition.name, {stdio: 'inherit'});
+
                     resolve(rendition.name);
                 }
             });
