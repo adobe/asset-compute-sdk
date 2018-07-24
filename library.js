@@ -1,14 +1,40 @@
-// asset process library
+/**
+ *  ADOBE CONFIDENTIAL
+ *  __________________
+ * 
+ *  Copyright 2018 Adobe Systems Incorporated
+ *  All Rights Reserved.
+ * 
+ *  NOTICE:  All information contained herein is, and remains
+ *  the property of Adobe Systems Incorporated and its suppliers,
+ *  if any.  The intellectual and technical concepts contained
+ *  herein are proprietary to Adobe Systems Incorporated and its
+ *  suppliers and are protected by trade secret or copyright law.
+ *  Dissemination of this information or reproduction of this material
+ *  is strictly forbidden unless prior written permission is obtained
+ *  from Adobe Systems Incorporated.
+ */
+
 'use strict';
 
-const request = require('request');
+// Nui asset worker library
+// WARN: this code needs to be cleaned up and reworked. It is still based on the Nui
+//       proof of concept. Its issues are known. We might want to get rid of the AWS/S3
+//       dependency. Please excuse.
+
 const url = require('url');
-const s3 = require('s3-client');
 const fs = require('fs-extra');
 const path = require('path');
-const mime = require('mime-types');
-const child_process = require('child_process');
+const { exec, execSync } = require('child_process');
 const proc = require('process');
+const validUrl = require('valid-url');
+
+// different storage access
+const s3 = require('./src/storage/s3');
+const http = require('./src/storage/http');
+const local = require('./src/storage/local');
+
+// -----------------------< utils >-----------------------------------
 
 const DEFAULT_SOURCE_FILE = "source.file";
 
@@ -32,8 +58,26 @@ function timer_start() {
 }
 
 function timer_elapsed_seconds(time) {
-    var elapsed = proc.hrtime(time);
+    const elapsed = proc.hrtime(time);
     return (elapsed[0] + (elapsed[1] / 1e9)).toFixed(3);
+}
+
+// -----------------------< core processing logic >-----------------------------------
+
+function cleanup(err, context) {
+    try {
+        if (err) console.error(err);
+        if (context.indir) fs.removeSync(context.indir);
+        if (context.outdir) {
+            if (context.isLocalFile) {
+                // TODO: remove just file?
+            } else {
+                fs.removeSync(context.outdir);
+            }
+        }
+    } catch(e) {
+        console.error(e);
+    }
 }
 
 function process(params, options, workerFn) {
@@ -43,29 +87,59 @@ function process(params, options, workerFn) {
     }
     options.dir = options.dir || ".";
 
-    var result = {};
-    var timers = {};
-    var timings = {};
+    const context = {};
+    const timers = {};
+    const timings = {};
 
-    var indir, outdir;
-    function cleanup(err) {
-        if (err) console.error(err);
-        if (indir) fs.removeSync(indir);
-        if (outdir) fs.removeSync(outdir);
-    }
+    /*
+        TODO: phases to turn into promises
+
+        TODO: optimization: support upload of renditions once they are finished
+              and while others are still being processed (if using forEachRendition())
+
+        0. prepare()
+            - create directories
+            - select download mechanism (http, s3, local, ...)
+
+        1. download()
+            - invoke download
+
+        2. prepareOutDir()
+            - TODO: move to 0 prepare()
+
+        3. process()
+            - run worker processing
+
+        4. collect()
+            - collect renditions
+
+        5. upload()
+            - upload renditions
+
+        6. finish()
+            - end timers
+            - log results
+            - send events for renditions
+            - return result info (not important in async model)
+
+        X. catch()
+            - catch errors
+            - send error events
+     */
 
     return new Promise(function(resolve, reject) {
         try {
             
             // 0. create in dir
-            indir = path.join(options.dir, "in");
-            fs.removeSync(indir);
-            fs.mkdirsSync(indir);
+            context.indir = path.join(options.dir, "in");
+            fs.removeSync(context.indir);
+            fs.mkdirsSync(context.indir);
+            console.log("indir:", path.resolve(context.indir));
 
-            var download;
+            let download;
 
-            var source = params.source;
-            if (source == undefined) {
+            let source = params.source;
+            if (source === undefined) {
                 reject("No 'source' in params. Required for asset workers.");
                 return;
             }
@@ -73,85 +147,53 @@ function process(params, options, workerFn) {
                 source = { url: source };
             }
 
-            var infilename = filename(source);
-            var infile = path.join(indir, infilename);
+            context.infilename = filename(source);
+            context.infile = path.join(context.indir, context.infilename);
 
+            // 1. download source file
             if (source.url) {
-                console.log("START download for ingestionId", params.ingestionId, "file", infile);
+                if (validUrl.isUri(source.url)) {
+                    console.log("START download for ingestionId", params.ingestionId, "file", context.infile);
 
-                // download http/https url into file
-                download = new Promise(function(resolve, reject) {
-                    var file = fs.createWriteStream(infile);
-                    request.get(source.url, function(err, response, body) {
-                        if (err) {
-                            fs.unlink(infile); // Delete the file async. (But we don't check the result)
-                            console.error("download failed", err);
-                            reject("HTTP GET download of source " + infilename + " failed with " + err);
-                        } else if (response.statusCode >= 300) {
-                            fs.unlink(infile); // Delete the file async. (But we don't check the result)
-                            console.error("download failed with", response.statusCode);
-                            console.error(body);
-                            reject("HTTP GET download of source " + infilename + " failed with " + response.statusCode + ". Body: " + body);
-                        } else {
-                            console.log("done downloading", infilename);
-                            file.close(function() {
-                                resolve(result);
-                            });
-                        }
-                    }).pipe(file);
-                });
+                    // download http/https url into file
+                    download = http.ownload(params, context);
+
+                } else {
+                    // possibly local file mounted on the docker image - for unit testing
+                    download = local.download(params, context);
+                }
             } else if (source.s3Key) {
-                console.log("START s3 download for ingestionId", params.ingestionId, "file", infile);
+                // s3 source with explicit 
+                console.log("START s3 download for ingestionId", params.ingestionId, "file", context.infile);
 
                 if (!source.s3Region || !source.s3Bucket || !source.accessKey || !source.secretKey) {
                     return reject("S3 source reference requires fields s3Region, s3Bucket, accessKey and secretKey.");
                 }
 
-                download = new Promise(function (resolve, reject) {
-                    // 1. download file from s3
-                    result.s3Client = s3.createClient({
-                        s3Options: {
-                            region: source.s3Region,
-                            accessKeyId: source.accessKey,
-                            secretAccessKey: source.secretKey,
-                        },
-                    });
+                download = s3.download(params, context);
 
-                    var downloadParams = {
-                        localFile: infile,
-                        s3Params: {
-                            Bucket: source.s3Bucket,
-                            Key: source.s3Key
-                        }
-                    };
-
-                    result.s3Client
-                        .downloadFile(downloadParams)
-                        .on('error', function(err) {
-                            console.error("error s3 download", err);
-                            cleanup();
-
-                            reject("s3 download failed: " + err.message);
-                        })
-                        .on('end', function() {
-                            resolve(result);
-                        });
-                });
             } else {
                 return reject("either source.url or source.s3Key (with S3 params) required");
             }
 
             timers.download = timer_start();
 
-            download.then(function(result) {
+            download.then(function(context) {
                 timings.downloadInSeconds = timer_elapsed_seconds(timers.download);
 
-                console.log("END download for ingestionId", params.ingestionId, "file", infile);
+                console.log("END download for ingestionId", params.ingestionId, "file", context.infile);
 
-                // 2. create out dir
-                outdir = path.join(options.dir, "out");
-                fs.removeSync(outdir);
-                fs.mkdirsSync(outdir);
+                // 2. prepare out dir
+
+                if (context.isLocalFile) {
+                    // TODO: check that rendition names are safe and not a URL?
+                    context.outdir = "/out";
+                } else {
+                    context.outdir = path.join(options.dir, "out");
+                    fs.removeSync(context.outdir);
+                    fs.mkdirsSync(context.outdir);
+                }
+                console.log("outdir:", path.resolve(context.outdir));
             
                 // --------------------------------------------------------
 
@@ -159,59 +201,55 @@ function process(params, options, workerFn) {
                 try {
                     timers.processing = timer_start();
 
-                    var workerResult = workerFn(infile, params, outdir);
+                    const workerResult = workerFn(context.infile, params, context.outdir);
 
                     // Non-promises/undefined instantly resolve
                     return Promise.resolve(workerResult)
                         .then(function(workerResult) {
                             timings.processingInSeconds = timer_elapsed_seconds(timers.processing);
-                            result.workerResult = workerResult;
-                            return Promise.resolve(result);
+                            context.workerResult = workerResult;
+                            return Promise.resolve(context);
                         })
-                        .catch(function(err) {
-                            cleanup();
-                            return Promise.reject(err);
-                        });
+                        .catch((e) => Promise.reject(e));
 
                 } catch (e) {
-                    cleanup(["js worker failed", e]);
                     return Promise.reject(e);
                 }
 
                 // --------------------------------------------------------
 
-            }).then(function (result) {
-                console.log("workerResult", result.workerResult);
+            }).then(function (context) {
+                console.log("workerResult", context.workerResult);
 
                 // 4. collect generated files
-                result.renditions = {};
-                var count = 0;
-                var files = fs.readdirSync(outdir);
+                context.renditions = {};
+                let count = 0;
+                const files = fs.readdirSync(context.outdir);
                 files.forEach(f => {
-                    var stat = fs.statSync(path.join(outdir, f));
+                    const stat = fs.statSync(path.join(context.outdir, f));
                     if (stat.isFile()) {
                         console.log("- rendition found:", f);
-                        result.renditions[f] = {
+                        context.renditions[f] = {
                             size: stat.size
                         };
                         count += 1;
                     }
                 });
                 
-                if (count == 0) {
+                if (count === 0) {
                     reject("No generated renditions found.");
                 }
 
-                return result;
+                return context;
 
-            }).then(function(result) {
+            }).then(function(context) {
                 // 5. upload generated renditions (entire outdir)
 
-                var target = params.target || {};
+                const target = params.target || {};
 
                 timers.upload = timer_start();
 
-                var upload;
+                let upload;
 
                 // add other target storage types here
                 // if (target.ftp) {
@@ -225,97 +263,18 @@ function process(params, options, workerFn) {
 
                 // s3 target - a bit of a HACK, needs better design
                 if (target.s3Bucket || source.s3Bucket) {
-                    upload = new Promise(function (resolve, reject) {
+                    upload = s3.upload(params, context);
 
-                        target.s3Region  = target.s3Region || source.s3Region;
-                        target.s3Bucket  = target.s3Bucket || source.s3Bucket;
-                        target.accessKey = target.accessKey || source.accessKey;
-                        target.secretKey = target.secretKey || source.secretKey;
-
-                        if (!target.s3Region || !target.s3Bucket || !target.accessKey || !target.secretKey) {
-                            return reject("S3 target reference requires fields s3Region, s3Bucket, accessKey and secretKey.");
-                        }
-
-                        // check if target is a different location or different credentials
-                        if (!result.s3Client || target.s3Region != source.s3Region || target.accessKey != source.accessKey || target.secretKey != source.secretKey) {
-                            result.s3Client = s3.createClient({
-                                s3Options: {
-                                    region: target.s3Region,
-                                    accessKeyId: target.accessKey,
-                                    secretAccessKey: target.secretKey,
-                                },
-                            });
-                        }
-
-                        var uploadParams = {
-                            localDir: outdir,
-                            followSymlinks: false,
-                            s3Params: {
-                                Bucket: target.s3Bucket,
-                                Prefix: target.s3Prefix || infilename + "_renditions/",
-                            },
-                        };
-
-                        console.log("START of s3 upload for ingestionId", params.ingestionId, "(all renditions)");
-
-                        result.s3Client.uploadDir(uploadParams)
-                            .on('error', function(err) {
-                                console.log("FAILURE of s3 upload for ingestionId", params.ingestionId, "(all renditions)");
-                                cleanup(["unable to upload", err]);
-
-                                reject("s3 upload of renditions failed: " + err.message);
-                            })
-                            .on('end', function() {
-                                console.log("END of s3 upload for ingestionId", params.ingestionId, "(all renditions)");
-                                cleanup();
-
-                                resolve(result);
-                            });
-                    });
+                } else if (context.isLocalFile) {
+                    upload = local.upload(params, context);
 
                 } else {
-
                     // PUT http url in renditions
-                    upload = Promise.all(params.renditions.map(function (rendition) {
-                        // if the rendition was generated...
-                        if (result.renditions[rendition.name]) {
-                            return new Promise(function (resolve, reject) {
-                                // ...upload it via PUT to the url
-                                console.log("START of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
-                                console.log("uploading", rendition.name, "to", rendition.url);
-                                let body = "";
-                                let file = path.join(outdir, rendition.name);
-                                let filesize = fs.statSync(file).size;
-                                request({
-                                    url: rendition.url,
-                                    method: "PUT",
-                                    headers: {
-                                        "Content-Type": rendition.mimeType || mime.lookup(rendition.name) || 'application/octet-stream'
-                                    },
-                                    // not using pipe() here as that leads to chunked transfer encoding which S3 does not support
-                                    body: filesize == 0 ? "" : fs.readFileSync(file)
-                                }, function(err, response, body) {
-                                    if (err) {
-                                        console.log("FAILURE of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
-                                        console.error("upload failed", err);
-                                        reject("HTTP PUT upload of rendition " + rendition.name + " failed with " + err);
-                                    } else if (response.statusCode >= 300) {
-                                        console.log("FAILURE of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
-                                        console.error("upload failed with", response.statusCode);
-                                        console.error(body);
-                                        reject("HTTP PUT upload of rendition " + rendition.name + " failed with " + response.statusCode + ". Body: " + body);
-                                    } else {
-                                        console.log("END of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
-                                        resolve(result);
-                                    }
-                                });
-                            });
-                        }
-                    }));
+                    upload = http.upload(params, context);
                 }
                 return upload;
 
-            }).then(function(result) {
+            }).then(function(context) {
                 try {
                     timings.uploadInSeconds = timer_elapsed_seconds(timers.upload);
                 } catch(e) {
@@ -325,43 +284,48 @@ function process(params, options, workerFn) {
                 console.log("processing of all renditions took", timings.processingInSeconds, "seconds");
                 console.log("uploading of all renditions took", timings.uploadInSeconds, "seconds");
 
-                resolve({
+                cleanup(null, context);
+
+                return resolve({
                     ok: true,
-                    renditions: result.renditions,
-                    workerResult: result.workerResult,
+                    renditions: context.renditions,
+                    workerResult: context.workerResult,
                     timings: timings,
                     params: params
                 });
+
             }).catch(function (error) {
-                cleanup(error);
-                reject(error);
+                cleanup(error, context);
+                return reject(error);
             });
         } catch (e) {
-            console.error(e);
-            reject("error in apl lib: " + e);
+            cleanup(e, context);
+            return reject(`unexpected error in worker library: ${e}`);
         }
     });
-};
+}
+
+// -----------------------< helper for workers that do one rendition at a time >-----------------------------------
 
 function forEachRendition(params, options, renditionFn) {
     if (typeof options === "function") {
-        params, options, renditionFn = options;
+        renditionFn = options;
         options = {};
     }
     return process(params, options, function(infile, params, outdir) {
 
-        var promise = Promise.resolve();
+        let promise = Promise.resolve();
         
-        var renditionResults = [];
+        const renditionResults = [];
         
         if (Array.isArray(params.renditions)) {
             // for each rendition to generate, create a promise that calls the actual rendition function passed
-            var renditionPromiseFns = params.renditions.map(function (rendition) {
+            const renditionPromiseFns = params.renditions.map(function (rendition) {
                 
                 // default rendition filename if not specified
                 if (rendition.name === undefined) {
-                    var size = rendition.wid + 'x' + rendition.hei;
-                    rendition.name = path.basename(infile) + '.' + size + '.' + rendition.fmt;
+                    const size = `${rendition.wid}x${rendition.hei}`;
+                    rendition.name = `${path.basename(infile)}.${size}.${rendition.fmt}`;
                 }
 
                 // for sequential execution below it's critical to not start the promise executor yet,
@@ -369,18 +333,18 @@ function forEachRendition(params, options, renditionFn) {
                 return function() {
                     return new Promise(function (resolve, reject) {
                         try {
-                            var result = renditionFn(infile, rendition, outdir, params);
+                            const result = renditionFn(infile, rendition, outdir, params);
 
                             // Non-promises/undefined instantly resolve
-                            return Promise.resolve(result).then(function(result) {
-                                renditionResults.push(result);
-                                resolve();
-                            }).catch(function(err) {
-                                reject(err);
-                            });
+                            return Promise.resolve(result)
+                                .then(function(result) {
+                                    renditionResults.push(result);
+                                    return resolve();
+                                })
+                                .catch((e) => reject(e));
 
                         } catch (e) {
-                            reject(e.message);
+                            return reject(e.message);
                         }
                     });
                 };
@@ -393,7 +357,7 @@ function forEachRendition(params, options, renditionFn) {
                 }));
             } else {
                 // sequential execution
-                for (var i=0; i < renditionPromiseFns.length; i++) {
+                for (let i=0; i < renditionPromiseFns.length; i++) {
                     promise = promise.then(renditionPromiseFns[i]);
                 }
             }
@@ -405,53 +369,63 @@ function forEachRendition(params, options, renditionFn) {
     });
 }
 
+// -----------------------< shell script support >-----------------------------------
+
+// TODO: support shell script worker with all renditions at once
+//       passing array of $rendition, e.g.
+//
+//          `convert-app $file $rendition[0] $rendition[1] $rendition[2]`
+//
+//       question would be how one can easily loop this in a shell script, including rendition_fmt arguments
+//       Note that the whole point of the shell script worker is that it is super simple
+//       for developers and the command is easily readable (as compared to very hidden
+//       inside some strings in js code for example).
+
 function shellScript(params, shellScriptName = "worker.sh") {
     console.log("START of worker processing for ingestionId", params.ingestionId);
     return forEachRendition(params, function(infile, rendition, outdir) {
         return new Promise(function (resolve, reject) {
             console.log("executing shell script", shellScriptName, "for rendition", rendition.name);
 
-            var env = {
+            const env = {
                 "file": path.resolve(infile),
-                "rendition": path.resolve(outdir + "/" + rendition.name)
+                "rendition": path.resolve(outdir, rendition.name)
             };
-            for (var r in rendition) {
-                var value = rendition[r];
+            for (const r in rendition) {
+                const value = rendition[r];
                 if (typeof value === 'object') {
-                    for (var r2 in value) {
+                    for (const r2 in value) {
                         // TODO: unlimited object nesting support, not just 1 level
-                        env["rendition_" + r + "_" + r2] = value[r2];
+                        env[`rendition_${r}_${r2}`] = value[r2];
                     }
                 } else {
-                    env["rendition_" + r] = value;
+                    env[`rendition_${r}`] = value;
                 }
             }
-            var options = {
-                env: env
-            };
-
-            var shellScript = __dirname + "/" + shellScriptName;
+            const shellScript = path.resolve(__dirname, shellScriptName);
 
             if (!fs.existsSync(shellScript)) {
                 console.log("FAILURE of worker processing for ingestionId", params.ingestionId, "rendition", rendition.name);
-                reject("shell script '" + shellScriptName + "' not found");
-                return;
+                return reject(`shell script '${shellScriptName}' not found`);
             }
 
             // ensure script is executable
-            child_process.execSync("chmod u+x " + shellScript, {stdio: 'inherit'});
+            execSync(`chmod u+x ${shellScript}`, {stdio: [0,1,2]});
 
-            child_process.exec(shellScript, options, function (error, stdout, stderr) {
+            const options = {
+                env: env,
+                stdio: [0,1,2]
+            };
+
+            exec(shellScript, options, function (error, stdout, stderr) {
                 console.log(stdout.trim());
-                console.log(stderr.trim());
+                console.error(stderr.trim());
                 if (error) {
                     console.log("FAILURE of worker processing for ingestionId", params.ingestionId, "rendition", rendition.name);
-                    reject(error);
+                    return reject(error);
                 } else {
                     console.log("END of worker processing for ingestionId", params.ingestionId, "rendition", rendition.name);
-                    child_process.execSync("cat out/" + rendition.name, {stdio: 'inherit'});
-
-                    resolve(rendition.name);
+                    return resolve(rendition.name);
                 }
             });
         });
@@ -463,6 +437,8 @@ function shellScriptWorker(shellScriptName) {
         return shellScript(params, shellScriptName);
     }
 }
+
+// -----------------------< exports >-----------------------------------
 
 module.exports = {
     filename: filename,

@@ -17,6 +17,11 @@
     "fs-extra": "^4.0.2",
     "mime-types": "^2.1.18",
     "request": "^2.79.0",
-    "s3-client": "^4.4.1"
+    "s3-client": "^4.4.1",
+    "valid-url": "^1.0.9"
+  },
+  "devDependencies": {
+    "eslint": "^5.2.0",
+    "eslint-config-problems": "^1.1.0"
   }
 }
