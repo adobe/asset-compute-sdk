@@ -371,6 +371,10 @@ function forEachRendition(params, options, renditionFn) {
 
 // -----------------------< shell script support >-----------------------------------
 
+// TODO: #6 ensure everything passed to the shell script is shell escaped, so that an attacker
+//       cannot do tricks like `param: "; curl -X <copy proprietary libraries from image to the internet>"`
+//       which then might get executed by the shell inside the container
+
 // TODO: support shell script worker with all renditions at once
 //       passing array of $rendition, e.g.
 //
