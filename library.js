@@ -144,7 +144,7 @@ function process(params, options, workerFn) {
                 return;
             }
             if (typeof source === 'string') {
-                source = { url: source };
+                params.source = source = { url: source };
             }
 
             context.infilename = filename(source);
@@ -156,7 +156,7 @@ function process(params, options, workerFn) {
                     console.log("START download for ingestionId", params.ingestionId, "file", context.infile);
 
                     // download http/https url into file
-                    download = http.ownload(params, context);
+                    download = http.download(params, context);
 
                 } else {
                     // possibly local file mounted on the docker image - for unit testing
