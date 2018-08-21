@@ -129,7 +129,7 @@ function process(params, options, workerFn) {
 
     return new Promise(function(resolve, reject) {
         try {
-            
+
             // 0. create in dir
             context.indir = path.join(options.dir, "in");
             fs.removeSync(context.indir);
@@ -235,7 +235,7 @@ function process(params, options, workerFn) {
                         count += 1;
                     }
                 });
-                
+
                 if (count === 0) {
                     reject("No generated renditions found.");
                 }
@@ -315,13 +315,13 @@ function forEachRendition(params, options, renditionFn) {
     return process(params, options, function(infile, params, outdir) {
 
         let promise = Promise.resolve();
-        
+
         const renditionResults = [];
-        
+
         if (Array.isArray(params.renditions)) {
             // for each rendition to generate, create a promise that calls the actual rendition function passed
             const renditionPromiseFns = params.renditions.map(function (rendition) {
-                
+
                 // default rendition filename if not specified
                 if (rendition.name === undefined) {
                     const size = `${rendition.wid}x${rendition.hei}`;

@@ -33,7 +33,7 @@ function getLocalFileDownload(params, context) {
         console.log("using local file:", context.infile);
         context.isLocalFile = true;
         return Promise.resolve(context);
-    } 
+    }
 
     console.error("source is not an url: ", source.url);
     return Promise.reject(`source is not an url: ${source.url}`);

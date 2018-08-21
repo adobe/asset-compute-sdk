@@ -49,7 +49,7 @@ function getS3Download(params, context) {
             .on('end', function() {
                 resolve(context);
             });
-    });    
+    });
 }
 
 function getS3Upload(params, result) {

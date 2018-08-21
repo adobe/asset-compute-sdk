@@ -26,7 +26,7 @@ function getHttpDownload(params, context) {
     return new Promise(function(resolve, reject) {
 
         const file = fs.createWriteStream(context.infile);
-        
+
         request.get(params.source.url, function(err, response, body) {
             if (err) {
                 fs.unlink(context.infile); // Delete the file async. (But we don't check the result)
@@ -44,7 +44,7 @@ function getHttpDownload(params, context) {
                 });
             }
         }).pipe(file);
-    });    
+    });
 }
 
 function getHttpUpload(params, result) {
