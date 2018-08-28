@@ -421,7 +421,7 @@ function shellScript(params, shellScriptName = "worker.sh") {
                 stdio: [0,1,2]
             };
 
-            exec(shellScript, options, function (error, stdout, stderr) {
+            exec(`/usr/bin/env bash -x ${shellScript}`, options, function (error, stdout, stderr) {
                 console.log(stdout.trim());
                 console.error(stderr.trim());
                 if (error) {
