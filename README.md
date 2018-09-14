@@ -1,5 +1,5 @@
 <!--- when a new release happens, the VERSION and URL in the badge have to be manually updated because it's a private registry --->
-[![npm version](https://img.shields.io/badge/%40adobe--internal--nui%2Flibrary-0.0.6-blue.svg)](https://artifactory.corp.adobe.com/artifactory/npm-nui-release/@adobe-internal-nui/library/-/@adobe-internal-nui/library-0.0.6.tgz)
+[![npm version](https://img.shields.io/badge/%40adobe--internal--nui%2Flibrary-0.0.7-blue.svg)](https://artifactory.corp.adobe.com/artifactory/npm-nui-release/@adobe-internal-nui/library/-/@adobe-internal-nui/library-0.0.7.tgz)
 
 # Worker library
 
