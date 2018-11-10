@@ -1,10 +1,10 @@
 /**
  *  ADOBE CONFIDENTIAL
  *  __________________
- * 
+ *
  *  Copyright 2018 Adobe Systems Incorporated
  *  All Rights Reserved.
- * 
+ *
  *  NOTICE:  All information contained herein is, and remains
  *  the property of Adobe Systems Incorporated and its suppliers,
  *  if any.  The intellectual and technical concepts contained
@@ -163,7 +163,7 @@ function process(params, options, workerFn) {
                     download = local.download(params, context);
                 }
             } else if (source.s3Key) {
-                // s3 source with explicit 
+                // s3 source with explicit
                 console.log("START s3 download for ingestionId", params.ingestionId, "file", context.infile);
 
                 if (!source.s3Region || !source.s3Bucket || !source.accessKey || !source.secretKey) {
@@ -194,7 +194,7 @@ function process(params, options, workerFn) {
                     fs.mkdirsSync(context.outdir);
                 }
                 console.log("outdir:", path.resolve(context.outdir));
-            
+
                 // --------------------------------------------------------
 
                 // 3. run worker (or get worker promise)
