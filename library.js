@@ -28,6 +28,8 @@ const path = require('path');
 const { exec, execSync } = require('child_process');
 const proc = require('process');
 const validUrl = require('valid-url');
+const { AdobeIOEvents } = require('@adobe-internal-nui/adobe-io-events-client');
+const jsonwebtoken = require('jsonwebtoken');
 
 // different storage access
 const s3 = require('./src/storage/s3');
@@ -60,6 +62,54 @@ function timer_start() {
 function timer_elapsed_seconds(time) {
     const elapsed = proc.hrtime(time);
     return (elapsed[0] + (elapsed[1] / 1e9)).toFixed(3);
+}
+
+// -----------------------< events >--------------------------------------------------
+
+function getEventHandler(params) {
+    if (params.auth && params.auth.accessToken && params.auth.orgId) {
+        const auth = params.auth;
+
+        const jwt = jsonwebtoken.decode(auth.accessToken);
+        const providerId = `asset_compute_${auth.orgId}_${jwt.client_id}`;
+
+        const ioEvents = new AdobeIOEvents({
+            accessToken: auth.accessToken,
+            orgId: auth.orgId,
+            defaults: {
+                providerId: providerId
+            }
+        });
+
+        return {
+            sendEvent: function(type, payload) {
+                console.log("sending event", type, "as", providerId);
+                return ioEvents.sendEvent({
+                    code: "asset_compute",
+                    payload: Object.assign(payload || {}, {
+                        type: type,
+                        date: new Date().toISOString(),
+                        requestId: params.requestId || params.ingestionId || process.env.__OW_ACTIVATION_ID,
+                        source: params.source.url || params.source,
+                        userData: params.userData
+                    })
+                }).then(() => {
+                    console.log("successfully sent event");
+                }).catch(e => {
+                    console.error("error sending event:", e);
+                });
+            }
+        }
+
+    } else {
+        // TODO: do not log tokens
+        console.error("`auth` missing or incomplete in request, cannot send events: ", params.auth);
+        return {
+            sendEvent: function() {
+                return Promise.resolve();
+            }
+        }
+    }
 }
 
 // -----------------------< core processing logic >-----------------------------------
@@ -284,15 +334,43 @@ function process(params, options, workerFn) {
                 console.log("processing of all renditions took", timings.processingInSeconds, "seconds");
                 console.log("uploading of all renditions took", timings.uploadInSeconds, "seconds");
 
-                cleanup(null, context);
+                // TODO: bug from http.js returning a Promise.all() array of context
+                if (Array.isArray(context)) {
+                    context = context[0];
+                }
 
-                return resolve({
-                    ok: true,
-                    renditions: context.renditions,
-                    workerResult: context.workerResult,
-                    timings: timings,
-                    params: params
-                });
+                // send events
+                let chain = Promise.resolve();
+                if (Array.isArray(params.renditions)) {
+                    const events = getEventHandler(params);
+                    chain = Promise.all(params.renditions.map(rendition => {
+                        // check if successfully created
+                        if (context.renditions[rendition.name]) {
+                            return events.sendEvent("rendition_created", {
+                                rendition: rendition
+                            });
+                        } else {
+                            // TODO: add error details - requires some refactoring
+                            // - file too large for multipart upload, include actual rendition size
+                            // - mime type wrong
+                            return events.sendEvent("rendition_failed", {
+                                rendition: rendition
+                            })
+                        }
+                    }));
+                }
+
+                chain.then(() => {
+                    cleanup(null, context);
+
+                    return resolve({
+                        ok: true,
+                        renditions: context.renditions,
+                        workerResult: context.workerResult,
+                        timings: timings,
+                        params: params
+                    });
+                })
 
             }).catch(function (error) {
                 cleanup(error, context);
@@ -341,6 +419,7 @@ function forEachRendition(params, options, renditionFn) {
                                     renditionResults.push(result);
                                     return resolve();
                                 })
+                                // TODO: do not abort processing of remaining renditions?
                                 .catch((e) => reject(e));
 
                         } catch (e) {
@@ -445,8 +524,9 @@ function shellScriptWorker(shellScriptName) {
 // -----------------------< exports >-----------------------------------
 
 module.exports = {
-    filename: filename,
-    process: process,
-    forEachRendition: forEachRendition,
-    shellScriptWorker: shellScriptWorker
+    filename,
+    process,
+    forEachRendition,
+    shellScriptWorker,
+    getEventHandler
 }

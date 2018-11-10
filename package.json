@@ -14,7 +14,9 @@
     "url": "https://git.corp.adobe.com/nui/library.git"
   },
   "dependencies": {
+    "@adobe-internal-nui/adobe-io-events-client": "0.0.3",
     "fs-extra": "^4.0.2",
+    "jsonwebtoken": "^8.3.0",
     "mime-types": "^2.1.18",
     "request": "^2.79.0",
     "s3-client": "^4.4.1",
