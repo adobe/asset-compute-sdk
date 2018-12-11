@@ -371,6 +371,9 @@ function process(params, options, workerFn) {
                         params: params
                     });
                 })
+                .catch(error => {
+                    return reject(error);
+                });
 
             }).catch(function (error) {
                 cleanup(error, context);
