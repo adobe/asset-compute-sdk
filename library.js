@@ -28,7 +28,7 @@ const path = require('path');
 const { exec, execSync } = require('child_process');
 const proc = require('process');
 const validUrl = require('valid-url');
-const { AdobeIOEvents } = require('@adobe-internal-nui/adobe-io-events-client');
+const { AdobeIOEvents } = require('@nui/adobe-io-events-client');
 const jsonwebtoken = require('jsonwebtoken');
 
 // different storage access
