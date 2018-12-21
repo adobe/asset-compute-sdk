@@ -19,8 +19,7 @@
 
 // Nui asset worker library
 // WARN: this code needs to be cleaned up and reworked. It is still based on the Nui
-//       proof of concept. Its issues are known. We might want to get rid of the AWS/S3
-//       dependency. Please excuse.
+//       proof of concept. Its issues are known.
 
 const url = require('url');
 const fs = require('fs-extra');
@@ -32,7 +31,6 @@ const { AdobeIOEvents } = require('@nui/adobe-io-events-client');
 const jsonwebtoken = require('jsonwebtoken');
 
 // different storage access
-const s3 = require('./src/storage/s3');
 const http = require('./src/storage/http');
 const local = require('./src/storage/local');
 
@@ -47,9 +45,6 @@ function filename(source) {
 
     if (source.url) {
         return path.basename(url.parse(source.url).pathname) || DEFAULT_SOURCE_FILE;
-
-    } else if (source.s3Key) {
-        return source.s3Key;
     }
 
     return DEFAULT_SOURCE_FILE;
@@ -149,7 +144,7 @@ function process(params, options, workerFn) {
 
         0. prepare()
             - create directories
-            - select download mechanism (http, s3, local, ...)
+            - select download mechanism (http, local, ...)
 
         1. download()
             - invoke download
@@ -212,18 +207,8 @@ function process(params, options, workerFn) {
                     // possibly local file mounted on the docker image - for unit testing
                     download = local.download(params, context);
                 }
-            } else if (source.s3Key) {
-                // s3 source with explicit
-                console.log("START s3 download for ingestionId", params.ingestionId, "file", context.infile);
-
-                if (!source.s3Region || !source.s3Bucket || !source.accessKey || !source.secretKey) {
-                    return reject("S3 source reference requires fields s3Region, s3Bucket, accessKey and secretKey.");
-                }
-
-                download = s3.download(params, context);
-
             } else {
-                return reject("either source.url or source.s3Key (with S3 params) required");
+                return reject("source as string or source.url is required");
             }
 
             timers.download = timer_start();
@@ -311,11 +296,7 @@ function process(params, options, workerFn) {
                 // } else {
                 // }
 
-                // s3 target - a bit of a HACK, needs better design
-                if (target.s3Bucket || source.s3Bucket) {
-                    upload = s3.upload(params, context);
-
-                } else if (context.isLocalFile) {
+                if (context.isLocalFile) {
                     upload = local.upload(params, context);
 
                 } else {

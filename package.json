@@ -19,7 +19,6 @@
     "jsonwebtoken": "^8.3.0",
     "mime-types": "^2.1.18",
     "request": "^2.79.0",
-    "s3-client": "^4.4.1",
     "valid-url": "^1.0.9"
   },
   "devDependencies": {
