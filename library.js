@@ -66,6 +66,14 @@ function getEventHandler(params) {
         const auth = params.auth;
 
         const jwt = jsonwebtoken.decode(auth.accessToken);
+        if (!jwt) {
+            console.error("invalid accessToken: ", params.auth);
+            return {
+                sendEvent: function() {
+                    return Promise.resolve();
+                }
+            }
+        }
         const providerId = `asset_compute_${auth.orgId}_${jwt.client_id}`;
 
         const ioEvents = new AdobeIOEvents({
