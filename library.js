@@ -495,8 +495,11 @@ function shellScript(params, shellScriptName = "worker.sh") {
             };
 
             exec(`/usr/bin/env bash -x ${shellScript}`, options, function (error, stdout, stderr) {
-                console.log(stdout.trim());
-                console.error(stderr.trim());
+                // I/O Runtime's log handling (reading logs from Splunk) currently does not like longer multi-line logs
+                // so we log each line individually
+                stdout.trim().split('\n').forEach(s => console.log(s))
+                stderr.trim().split('\n').forEach(s => console.error(s))
+
                 if (error) {
                     console.log("FAILURE of worker processing for ingestionId", params.ingestionId, "rendition", rendition.name);
                     return reject(error);
