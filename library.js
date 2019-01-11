@@ -462,10 +462,12 @@ function shellScript(params, shellScriptName = "worker.sh") {
         return new Promise(function (resolve, reject) {
             console.log("executing shell script", shellScriptName, "for rendition", rendition.name);
 
-            const env = {
-                "file": path.resolve(infile),
-                "rendition": path.resolve(outdir, rendition.name)
-            };
+            // inherit environment variables
+            const env = Object.create(process.env || {});
+
+            env.file = path.resolve(infile);
+            env.rendition = path.resolve(outdir, rendition.name);
+
             for (const r in rendition) {
                 const value = rendition[r];
                 if (typeof value === 'object') {
