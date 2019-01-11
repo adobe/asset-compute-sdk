@@ -22,28 +22,61 @@ const mime = require('mime-types');
 const path = require('path');
 const fs = require('fs-extra');
 
-function getHttpDownload(params, context) {
-    return new Promise(function(resolve, reject) {
+function readErrorMessage(file, callback) {
+    const maxSize = 10000
+    fs.stat(file, (err, stats) => {
+        if (err) {
+            callback(err, "")
+        } else {
+            let msg = ""
+            fs.createReadStream(file, { start: 0, end: Math.min(stats.size, maxSize) })
+                .on("data", s => msg += s)
+                .on("close", () => {
+                    if (stats.size > maxSize) {
+                        msg += "..."
+                    }
+                    callback(null, msg)
+                })
+        }
+    })
+}
 
+function getHttpDownload(params, context) {
+    return new Promise(function (resolve, reject) {
         const file = fs.createWriteStream(context.infile);
 
-        request.get(params.source.url, function(err, response, body) {
-            if (err) {
+        request.get(params.source.url)
+            .on("response", response => {
+                response.on("close", () => 
+                    file.close(() => {
+                        if (response.statusCode >= 300) {
+                            const contentType = response.headers["content-type"]
+                            if (contentType && contentType.startsWith("text/")) {
+                                readErrorMessage(context.infile, (err, body) => {
+                                    fs.unlink(context.infile); // Delete the file async. (But we don't check the result)
+                                    if (err) {
+                                        console.error("failure to read error message", err)
+                                    }
+                                    console.error("download failed with", response.statusCode);
+                                    console.error(body);
+                                    reject(`HTTP GET download of source ${context.infilename} failed with ${response.statusCode}. Body: ${body}`);
+                                })
+                            } else {
+                                reject(`HTTP GET download of source ${context.infilename} failed with ${response.statusCode}.`);
+                            }
+                        } else {
+                            console.log("done downloading", context.infilename);
+                            resolve(context);
+                        }
+                    })
+                )
+            })
+            .on("error", err => {
                 fs.unlink(context.infile); // Delete the file async. (But we don't check the result)
                 console.error("download failed", err);
                 reject(`HTTP GET download of source ${context.infilename} failed with ${err}`);
-            } else if (response.statusCode >= 300) {
-                fs.unlink(context.infile); // Delete the file async. (But we don't check the result)
-                console.error("download failed with", response.statusCode);
-                console.error(body);
-                reject(`HTTP GET download of source ${context.infilename} failed with ${response.statusCode}. Body: ${body}`);
-            } else {
-                console.log("done downloading", context.infilename);
-                file.close(function() {
-                    resolve(context);
-                });
-            }
-        }).pipe(file);
+            })
+            .pipe(file);
     });
 }
 
