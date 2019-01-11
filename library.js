@@ -92,7 +92,7 @@ function getEventHandler(params) {
                     payload: Object.assign(payload || {}, {
                         type: type,
                         date: new Date().toISOString(),
-                        requestId: params.requestId || params.ingestionId || process.env.__OW_ACTIVATION_ID,
+                        requestId: params.requestId || params.ingestionId || proc.env.__OW_ACTIVATION_ID,
                         source: params.source.url || params.source,
                         userData: params.userData
                     })
@@ -463,7 +463,7 @@ function shellScript(params, shellScriptName = "worker.sh") {
             console.log("executing shell script", shellScriptName, "for rendition", rendition.name);
 
             // inherit environment variables
-            const env = Object.create(process.env || {});
+            const env = Object.create(proc.env || {});
 
             env.file = path.resolve(infile);
             env.rendition = path.resolve(outdir, rendition.name);
