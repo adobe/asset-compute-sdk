@@ -29,6 +29,8 @@ const proc = require('process');
 const validUrl = require('valid-url');
 const { AdobeIOEvents } = require('@nui/adobe-io-events-client');
 const jsonwebtoken = require('jsonwebtoken');
+var request = require('request');
+const zlib = require('zlib');
 
 // different storage access
 const http = require('./src/storage/http');
@@ -115,6 +117,37 @@ function getEventHandler(params) {
     }
 }
 
+// -----------------------< new relic metrics >---------------------------------------
+
+function sendNewRelicEvent(apiKey, metrics) {
+    if (apiKey) {
+        var url = 'https://insights-collector.newrelic.com/v1/accounts/2045220/events';
+        metrics.actionName = proc.env.__OW_ACTION_NAME.split('/').pop();
+        metrics.namespace = proc.env.__OW_NAMESPACE;
+        metrics.activationId = proc.env.__OW_ACTIVATION_ID;
+            return zlib.gzip(JSON.stringify(metrics), function (_, result) {
+                request.post({
+                    headers: {
+                        'content-type': 'application/json',
+                        'X-Insert-Key': apiKey,
+                        "Content-Encoding": "gzip" },
+                    url:     url,
+                    body:    result
+                }, function(err, res, body){
+                    if (err) { console.log('Error sending event to New Relic:', err); }
+                    else if (res.statusCode != 200) {console.log('statusCode:', res && res.statusCode);}
+                    else {
+                    console.log('Event sent to New Relic'); 
+                    }
+                    
+                });
+            });
+
+    } else {
+        console.error("New Relic`apiKey` missing or incomplete in request, cannot send metrics: ");
+    }
+}
+
 // -----------------------< core processing logic >-----------------------------------
 
 function cleanup(err, context) {
@@ -143,6 +176,15 @@ function process(params, options, workerFn) {
     const context = {};
     const timers = {};
     const timings = {};
+    const metrics = {"eventType":"worker"};
+    timers.duration = timer_start();
+    
+    setInterval( function() {
+        metrics.rss = proc.memoryUsage().rss;
+        metrics.heapTotal = proc.memoryUsage().heapTotal;
+        metrics.heapUsed = proc.memoryUsage().heapUsed;
+        metrics.external = proc.memoryUsage().external;
+        }, 1000); // update memory metrics every 1 second
 
     /*
         TODO: phases to turn into promises
@@ -173,6 +215,7 @@ function process(params, options, workerFn) {
             - end timers
             - log results
             - send events for renditions
+            - send new relic events for metrics
             - return result info (not important in async model)
 
         X. catch()
@@ -223,9 +266,11 @@ function process(params, options, workerFn) {
 
             download.then(function(context) {
                 timings.downloadInSeconds = timer_elapsed_seconds(timers.download);
-
+                metrics.downloadInSeconds = parseFloat(timings.downloadInSeconds);
+                
                 console.log("END download for ingestionId", params.ingestionId, "file", context.infile);
-
+                const stats = fs.statSync(context.infile);
+                metrics.sizeOfSource = stats.size;
                 // 2. prepare out dir
 
                 if (context.isLocalFile) {
@@ -250,6 +295,7 @@ function process(params, options, workerFn) {
                     return Promise.resolve(workerResult)
                         .then(function(workerResult) {
                             timings.processingInSeconds = timer_elapsed_seconds(timers.processing);
+                            metrics.processingInSeconds = parseFloat(timings.processingInSeconds);
                             context.workerResult = workerResult;
                             return Promise.resolve(context);
                         })
@@ -316,6 +362,7 @@ function process(params, options, workerFn) {
             }).then(function(context) {
                 try {
                     timings.uploadInSeconds = timer_elapsed_seconds(timers.upload);
+                    metrics.uploadInSeconds = parseFloat(timings.uploadInSeconds);
                 } catch(e) {
                     console.error(e);
                 }
@@ -351,13 +398,23 @@ function process(params, options, workerFn) {
 
                 chain.then(() => {
                     cleanup(null, context);
-
+                
+                    // gather metrics to send to new relic
+                    metrics.totalRenditonCount = Object.keys(params.renditions).length;
+                    metrics.successfulRenditionCount = Object.keys(context.renditions).length;
+                    metrics.duration = parseFloat(timer_elapsed_seconds(timers.duration));
+                    metrics.status = "finished";
+                    
+                    sendNewRelicEvent(params.nrApiKey, metrics);
+                    delete params.nrApiKey // remove new relic api key from action result
+                    
                     return resolve({
                         ok: true,
                         renditions: context.renditions,
                         workerResult: context.workerResult,
                         timings: timings,
-                        params: params
+                        params: params,
+                        metrics: metrics
                     });
                 })
                 .catch(error => {
@@ -366,10 +423,12 @@ function process(params, options, workerFn) {
 
             }).catch(function (error) {
                 cleanup(error, context);
+                sendNewRelicEvent(params.nrApiKey,{"eventType":"worker", "status": "failed", "error":error});
                 return reject(error);
             });
         } catch (e) {
             cleanup(e, context);
+            sendNewRelicEvent(params.nrApiKey,{"eventType":"worker", "status": "failed", "error":e});
             return reject(`unexpected error in worker library: ${e}`);
         }
     });
@@ -382,6 +441,7 @@ function forEachRendition(params, options, renditionFn) {
         renditionFn = options;
         options = {};
     }
+    sendNewRelicEvent(params.nrApiKey,{"eventType":"worker", "status": "invoked"});
     return process(params, options, function(infile, params, outdir) {
 
         let promise = Promise.resolve();
@@ -461,13 +521,13 @@ function shellScript(params, shellScriptName = "worker.sh") {
     return forEachRendition(params, function(infile, rendition, outdir) {
         return new Promise(function (resolve, reject) {
             console.log("executing shell script", shellScriptName, "for rendition", rendition.name);
-
+            
             // inherit environment variables
             const env = Object.create(proc.env || {});
 
             env.file = path.resolve(infile);
             env.rendition = path.resolve(outdir, rendition.name);
-
+            
             for (const r in rendition) {
                 const value = rendition[r];
                 if (typeof value === 'object') {
@@ -499,7 +559,6 @@ function shellScript(params, shellScriptName = "worker.sh") {
                 // so we log each line individually
                 stdout.trim().split('\n').forEach(s => console.log(s))
                 stderr.trim().split('\n').forEach(s => console.error(s))
-
                 if (error) {
                     console.log("FAILURE of worker processing for ingestionId", params.ingestionId, "rendition", rendition.name);
                     return reject(error);
@@ -525,5 +584,6 @@ module.exports = {
     process,
     forEachRendition,
     shellScriptWorker,
-    getEventHandler
+    getEventHandler,
+    sendNewRelicEvent
 }
