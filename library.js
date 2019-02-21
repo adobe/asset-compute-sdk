@@ -119,33 +119,43 @@ function getEventHandler(params) {
 
 // -----------------------< new relic metrics >---------------------------------------
 
-function sendNewRelicEvent(apiKey, metrics) {
-    if (apiKey) {
-        var url = 'https://insights-collector.newrelic.com/v1/accounts/2045220/events';
-        metrics.actionName = proc.env.__OW_ACTION_NAME.split('/').pop();
-        metrics.namespace = proc.env.__OW_NAMESPACE;
-        metrics.activationId = proc.env.__OW_ACTIVATION_ID;
+function sendNewRelicMetrics(params, metrics) {
+    return new Promise(function(resolve, reject) {
+        // We still want to continue the action even if there is an error in sending metrics to New Relic
+        try {
+            const url = params.newRelicEventsURL;
+            
+            metrics.actionName = proc.env.__OW_ACTION_NAME.split('/').pop();
+            metrics.namespace = proc.env.__OW_NAMESPACE;
+            metrics.activationId = proc.env.__OW_ACTIVATION_ID;
+            
             return zlib.gzip(JSON.stringify(metrics), function (_, result) {
                 request.post({
                     headers: {
                         'content-type': 'application/json',
-                        'X-Insert-Key': apiKey,
-                        "Content-Encoding": "gzip" },
+                        'X-Insert-Key': params.newRelicApiKey,
+                        'Content-Encoding': 'gzip' },
                     url:     url,
                     body:    result
                 }, function(err, res, body){
-                    if (err) { console.log('Error sending event to New Relic:', err); }
-                    else if (res.statusCode != 200) {console.log('statusCode:', res && res.statusCode);}
-                    else {
-                    console.log('Event sent to New Relic'); 
+                    if (err) { 
+                        console.log('Error sending event to New Relic:', err); 
+                    } else if (res.statusCode != 200) {
+                        console.log('statusCode:', res && res.statusCode);
+                    } else {
+                        console.log('Event sent to New Relic', body); 
                     }
-                    
+                    // promise always resolves so failure of sending metrics does not cause action to fail
+                    resolve();
                 });
             });
-
-    } else {
-        console.error("New Relic`apiKey` missing or incomplete in request, cannot send metrics: ");
-    }
+            
+        } catch (error) {
+            console.error('Error sending metrics to New Relic. CHeck New Relic Api Key and Account Id');
+            resolve();
+            
+        }
+    })
 }
 
 // -----------------------< core processing logic >-----------------------------------
@@ -175,16 +185,19 @@ function process(params, options, workerFn) {
 
     const context = {};
     const timers = {};
-    const timings = {};
     const metrics = {"eventType":"worker"};
     timers.duration = timer_start();
     
-    setInterval( function() {
-        metrics.rss = proc.memoryUsage().rss;
-        metrics.heapTotal = proc.memoryUsage().heapTotal;
-        metrics.heapUsed = proc.memoryUsage().heapUsed;
-        metrics.external = proc.memoryUsage().external;
-        }, 1000); // update memory metrics every 1 second
+    // update memory metrics every 1 second
+    setInterval(
+        () => {
+            metrics.rss = proc.memoryUsage().rss;
+            metrics.heapTotal = proc.memoryUsage().heapTotal;
+            metrics.heapUsed = proc.memoryUsage().heapUsed;
+            metrics.external = proc.memoryUsage().external;
+        }, 
+        1000
+    ); 
 
     /*
         TODO: phases to turn into promises
@@ -265,12 +278,11 @@ function process(params, options, workerFn) {
             timers.download = timer_start();
 
             download.then(function(context) {
-                timings.downloadInSeconds = timer_elapsed_seconds(timers.download);
-                metrics.downloadInSeconds = parseFloat(timings.downloadInSeconds);
+                metrics.downloadInSeconds = parseFloat(timer_elapsed_seconds(timers.download));
                 
                 console.log("END download for ingestionId", params.ingestionId, "file", context.infile);
                 const stats = fs.statSync(context.infile);
-                metrics.sizeOfSource = stats.size;
+                metrics.sourceSize = stats.size;
                 // 2. prepare out dir
 
                 if (context.isLocalFile) {
@@ -293,9 +305,8 @@ function process(params, options, workerFn) {
 
                     // Non-promises/undefined instantly resolve
                     return Promise.resolve(workerResult)
-                        .then(function(workerResult) {
-                            timings.processingInSeconds = timer_elapsed_seconds(timers.processing);
-                            metrics.processingInSeconds = parseFloat(timings.processingInSeconds);
+                        .then(function(workerResult) {;
+                            metrics.processingInSeconds = parseFloat(timer_elapsed_seconds(timers.processing));
                             context.workerResult = workerResult;
                             return Promise.resolve(context);
                         })
@@ -361,14 +372,13 @@ function process(params, options, workerFn) {
 
             }).then(function(context) {
                 try {
-                    timings.uploadInSeconds = timer_elapsed_seconds(timers.upload);
-                    metrics.uploadInSeconds = parseFloat(timings.uploadInSeconds);
+                    metrics.uploadInSeconds = parseFloat(timer_elapsed_seconds(timers.upload));
                 } catch(e) {
                     console.error(e);
                 }
-                console.log("download of source file took", timings.downloadInSeconds, "seconds");
-                console.log("processing of all renditions took", timings.processingInSeconds, "seconds");
-                console.log("uploading of all renditions took", timings.uploadInSeconds, "seconds");
+                console.log("download of source file took", metrics.downloadInSeconds, "seconds");
+                console.log("processing of all renditions took", metrics.processingInSeconds, "seconds");
+                console.log("uploading of all renditions took",metrics.uploadInSeconds, "seconds");
 
                 // TODO: bug from http.js returning a Promise.all() array of context
                 if (Array.isArray(context)) {
@@ -405,31 +415,50 @@ function process(params, options, workerFn) {
                     metrics.duration = parseFloat(timer_elapsed_seconds(timers.duration));
                     metrics.status = "finished";
                     
-                    sendNewRelicEvent(params.nrApiKey, metrics);
-                    delete params.nrApiKey // remove new relic api key from action result
-                    
-                    return resolve({
-                        ok: true,
-                        renditions: context.renditions,
-                        workerResult: context.workerResult,
-                        timings: timings,
-                        params: params,
-                        metrics: metrics
-                    });
-                })
+                    return sendNewRelicMetrics(params, metrics).then(() => {
+                        // remove `newRelicApiKey` and `newRelicAccountID` from action result
+                        delete params.newRelicApiKey; 
+                        delete params.newRelicAccountID;
+                        return resolve({
+                            ok: true,
+                            renditions: context.renditions,
+                            workerResult: context.workerResult,
+                            params: params,
+                            metrics: metrics
+                        });
+                    })
+            })
                 .catch(error => {
                     return reject(error);
                 });
 
             }).catch(function (error) {
                 cleanup(error, context);
-                sendNewRelicEvent(params.nrApiKey,{"eventType":"worker", "status": "failed", "error":error});
-                return reject(error);
+                return sendNewRelicMetrics(
+                    params, {
+                        eventType:"worker", 
+                        status: "failed", 
+                        error:error
+                    }
+                ).then(
+                    () => {
+                        reject(error);
+                    }
+                )
             });
         } catch (e) {
             cleanup(e, context);
-            sendNewRelicEvent(params.nrApiKey,{"eventType":"worker", "status": "failed", "error":e});
-            return reject(`unexpected error in worker library: ${e}`);
+            return sendNewRelicMetrics(
+                params, {
+                    eventType:"worker", 
+                    status: "failed", 
+                    error:e
+                }
+            ).then(
+                () => {
+                    reject(`unexpected error in worker library: ${e}`)
+                }
+            );
         }
     });
 }
@@ -441,63 +470,69 @@ function forEachRendition(params, options, renditionFn) {
         renditionFn = options;
         options = {};
     }
-    sendNewRelicEvent(params.nrApiKey,{"eventType":"worker", "status": "invoked"});
-    return process(params, options, function(infile, params, outdir) {
+    return sendNewRelicMetrics(
+        params, {
+            eventType:"worker", 
+            status: "invoked"
+        }
+    ).then(() => {
+        return process(params, options, function(infile, params, outdir) {
 
-        let promise = Promise.resolve();
+            let promise = Promise.resolve();
 
-        const renditionResults = [];
+            const renditionResults = [];
 
-        if (Array.isArray(params.renditions)) {
-            // for each rendition to generate, create a promise that calls the actual rendition function passed
-            const renditionPromiseFns = params.renditions.map(function (rendition) {
+            if (Array.isArray(params.renditions)) {
+                // for each rendition to generate, create a promise that calls the actual rendition function passed
+                const renditionPromiseFns = params.renditions.map(function (rendition) {
 
-                // default rendition filename if not specified
-                if (rendition.name === undefined) {
-                    const size = `${rendition.wid}x${rendition.hei}`;
-                    rendition.name = `${path.basename(infile)}.${size}.${rendition.fmt}`;
-                }
+                    // default rendition filename if not specified
+                    if (rendition.name === undefined) {
+                        const size = `${rendition.wid}x${rendition.hei}`;
+                        rendition.name = `${path.basename(infile)}.${size}.${rendition.fmt}`;
+                    }
 
-                // for sequential execution below it's critical to not start the promise executor yet,
-                // so we collect functions that return promises
-                return function() {
-                    return new Promise(function (resolve, reject) {
-                        try {
-                            const result = renditionFn(infile, rendition, outdir, params);
+                    // for sequential execution below it's critical to not start the promise executor yet,
+                    // so we collect functions that return promises
+                    return function() {
+                        return new Promise(function (resolve, reject) {
+                            try {
+                                const result = renditionFn(infile, rendition, outdir, params);
 
-                            // Non-promises/undefined instantly resolve
-                            return Promise.resolve(result)
-                                .then(function(result) {
-                                    renditionResults.push(result);
-                                    return resolve();
-                                })
-                                // TODO: do not abort processing of remaining renditions?
-                                .catch((e) => reject(e));
+                                // Non-promises/undefined instantly resolve
+                                return Promise.resolve(result)
+                                    .then(function(result) {
+                                        renditionResults.push(result);
+                                        return resolve();
+                                    })
+                                    // TODO: do not abort processing of remaining renditions?
+                                    .catch((e) => reject(e));
 
-                        } catch (e) {
-                            return reject(e.message);
-                        }
-                    });
-                };
-            });
+                            } catch (e) {
+                                return reject(e.message);
+                            }
+                        });
+                    };
+                });
 
-            if (options.parallel) {
-                // parallel execution
-                promise = Promise.all(renditionPromiseFns.map(function(promiseFn) {
-                    return promiseFn();
-                }));
-            } else {
-                // sequential execution
-                for (let i=0; i < renditionPromiseFns.length; i++) {
-                    promise = promise.then(renditionPromiseFns[i]);
+                if (options.parallel) {
+                    // parallel execution
+                    promise = Promise.all(renditionPromiseFns.map(function(promiseFn) {
+                        return promiseFn();
+                    }));
+                } else {
+                    // sequential execution
+                    for (let i=0; i < renditionPromiseFns.length; i++) {
+                        promise = promise.then(renditionPromiseFns[i]);
+                    }
                 }
             }
-        }
 
-        return promise.then(function() {
-            return { renditions: renditionResults };
+            return promise.then(function() {
+                return { renditions: renditionResults };
+            });
         });
-    });
+    }); 
 }
 
 // -----------------------< shell script support >-----------------------------------
@@ -585,5 +620,5 @@ module.exports = {
     forEachRendition,
     shellScriptWorker,
     getEventHandler,
-    sendNewRelicEvent
+    sendNewRelicMetrics
 }
