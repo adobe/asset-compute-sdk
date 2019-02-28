@@ -101,7 +101,7 @@ function getEventHandler(params) {
                 }).then(() => {
                     console.log("successfully sent event");
                 }).catch(e => {
-                    console.error("error sending event:", e);
+                    console.error("error sending event:", e.message || e);
                 });
             }
         }
@@ -172,7 +172,7 @@ function cleanup(err, context) {
             }
         }
     } catch(e) {
-        console.error(e);
+        console.error("error during cleanup:", e.message || e);
     }
 }
 
@@ -374,7 +374,7 @@ function process(params, options, workerFn) {
                 try {
                     metrics.uploadInSeconds = parseFloat(timer_elapsed_seconds(timers.upload));
                 } catch(e) {
-                    console.error(e);
+                    console.error("error getting timing metrics:", e.message || e);
                 }
                 console.log("download of source file took", metrics.downloadInSeconds, "seconds");
                 console.log("processing of all renditions took", metrics.processingInSeconds, "seconds");
