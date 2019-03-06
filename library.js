@@ -29,7 +29,7 @@ const proc = require('process');
 const validUrl = require('valid-url');
 const { AdobeIOEvents } = require('@nui/adobe-io-events-client');
 const jsonwebtoken = require('jsonwebtoken');
-var request = require('request');
+const request = require('request');
 const zlib = require('zlib');
 
 // different storage access
@@ -260,12 +260,20 @@ function process(params, options, workerFn) {
             context.infile = path.join(context.indir, context.infilename);
 
             // 1. download source file
+            let downloadedFromUrl = false;
             if (source.url) {
                 if (validUrl.isUri(source.url)) {
-                    console.log("START download for ingestionId", params.ingestionId, "file", context.infile);
+	            if (options.disableSourceDownloadSource) {
+                        context.infile = source.url;
+                        console.log(`infile is url: ${context.infile}`);
+                        download = Promise.resolve(context);
+                    } else {
+                        console.log("START download for ingestionId", params.ingestionId, "file", context.infile);
+                        // download http/https url into file
+                        download = http.download(params, context);
+                        downloadedFromUrl = true;
+                    }
 
-                    // download http/https url into file
-                    download = http.download(params, context);
 
                 } else {
                     // possibly local file mounted on the docker image - for unit testing
@@ -278,11 +286,17 @@ function process(params, options, workerFn) {
             timers.download = timer_start();
 
             download.then(function(context) {
-                metrics.downloadInSeconds = parseFloat(timer_elapsed_seconds(timers.download));
                 
-                console.log("END download for ingestionId", params.ingestionId, "file", context.infile);
-                const stats = fs.statSync(context.infile);
-                metrics.sourceSize = stats.size;
+               const downloadInSeconds = parseFloat(timer_elapsed_seconds(timers.download));
+
+               // Only set metrics if we really did a download
+               if (downloadedFromUrl) {
+                    console.log("END download for ingestionId", params.ingestionId, "file", context.infile);
+                    metrics.downloadInSeconds = downloadInSeconds;
+                    const stats = fs.statSync(context.infile);
+                    metrics.sourceSize = stats.size;
+               }
+
                 // 2. prepare out dir
 
                 if (context.isLocalFile) {
@@ -305,7 +319,7 @@ function process(params, options, workerFn) {
 
                     // Non-promises/undefined instantly resolve
                     return Promise.resolve(workerResult)
-                        .then(function(workerResult) {;
+                        .then(function(workerResult) {
                             metrics.processingInSeconds = parseFloat(timer_elapsed_seconds(timers.processing));
                             context.workerResult = workerResult;
                             return Promise.resolve(context);
@@ -489,7 +503,11 @@ function forEachRendition(params, options, renditionFn) {
                     // default rendition filename if not specified
                     if (rendition.name === undefined) {
                         const size = `${rendition.wid}x${rendition.hei}`;
-                        rendition.name = `${path.basename(infile)}.${size}.${rendition.fmt}`;
+                        if (validUrl.isUri(infile)) {
+                            rendition.name = `${path.basename(url.parse(infile).pathname)}.${size}.${rendition.fmt}`;
+                        } else {
+                            rendition.name = `${path.basename(infile)}.${size}.${rendition.fmt}`;
+                        }
                     }
 
                     // for sequential execution below it's critical to not start the promise executor yet,
