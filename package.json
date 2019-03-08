@@ -24,9 +24,8 @@
     "zlib": "^1.0.5"
   },
   "devDependencies": {
+    "@nui/eslint-config": "^1.0.2",
     "@aem-desktop/node-unittest-utils": "^1.0.1",
-    "eslint": "^5.14.1",
-    "eslint-config-problems": "^1.1.0",
     "expect.js": "^0.3.1",
     "mocha": "^5.2.0"
   },

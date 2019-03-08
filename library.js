@@ -121,7 +121,7 @@ function getEventHandler(params) {
 // -----------------------< new relic metrics >---------------------------------------
 
 function sendNewRelicMetrics(params, metrics) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(resolve => {
         // We still want to continue the action even if there is an error in sending metrics to New Relic
         try {
             const url = params.newRelicEventsURL;
@@ -141,7 +141,7 @@ function sendNewRelicMetrics(params, metrics) {
                 }, function(err, res, body){
                     if (err) { 
                         console.log('Error sending event to New Relic:', err); 
-                    } else if (res.statusCode != 200) {
+                    } else if (res.statusCode !== 200) {
                         console.log('statusCode:', res && res.statusCode);
                     } else {
                         console.log('Event sent to New Relic', body); 
@@ -359,8 +359,6 @@ function process(params, options, workerFn) {
 
             }).then(function(context) {
                 // 5. upload generated renditions (entire outdir)
-
-                const target = params.target || {};
 
                 timers.upload = timer_start();
 

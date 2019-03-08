@@ -15,14 +15,16 @@
  *  from Adobe Systems Incorporated.
  */
 
+'use strict';
+
 const expect = require('expect.js');
 const process = require('../library').process;
 
 const url = 'http://hostname/testfile.png';
 
 // Worker function varifies that it is passed the url, not a file name 
-function workerFn(infile, parameters, outdir) {
-    console.log('infile is ' + infile);
+function workerFn(infile) {
+    console.log(`infile is ${infile}`);
     expect(infile).to.equal(url);
     return Promise.reject(Error("Terminate processing after worker function called"));
 }
@@ -36,6 +38,6 @@ it('test process', function(done) {
     };
     process(params, options, workerFn)
     .then(() => { done(Error('process should fail'))})
-    .catch (e => { console.log('in catch as we should'); done(); })
+    .catch(() => { console.log('in catch as we should'); done(); })
 });
 

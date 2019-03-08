@@ -26,7 +26,7 @@ function readErrorMessage(file, callback) {
     const maxSize = 10000
     fs.stat(file, (err, stats) => {
         if (err) {
-            callback(err, "")
+            return callback(err, "")
         } else {
             let msg = ""
             fs.createReadStream(file, { start: 0, end: Math.min(stats.size, maxSize) })
