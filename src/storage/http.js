@@ -92,7 +92,7 @@ function getHttpUpload(params, result) {
                 const file = path.join(result.outdir, rendition.name);
                 const filesize = fs.statSync(file).size;
                 request({
-                    url: rendition.url,
+                    url: rendition.target || rendition.url,
                     method: "PUT",
                     headers: {
                         "Content-Type": rendition.mimeType || mime.lookup(rendition.name) || 'application/octet-stream'

@@ -34,6 +34,7 @@ const zlib = require('zlib');
 
 // different storage access
 const http = require('./src/storage/http');
+const httpMultipart = require('./src/storage/http-multipart');
 const local = require('./src/storage/local');
 
 // -----------------------< utils >-----------------------------------
@@ -379,8 +380,17 @@ function process(params, options, workerFn) {
                     upload = local.upload(params, context);
 
                 } else {
-                    // PUT http url in renditions
-                    upload = http.upload(params, context);
+                    // TODO: Enable multipart after its tested
+                    // check to see if the upload is multipart
+                    // if (params.renditions &&
+                    //     params.renditions.length &&
+                    //     params.renditions[0].target &&
+                    //     params.renditions[0].target.type === 'http-multipart') {
+                    //   upload = httpMultipart.upload(params, context);
+                    // } else {
+                      // PUT http url in renditions
+                      upload = http.upload(params, context);
+                    // }
                 }
                 return upload;
 
