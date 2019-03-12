@@ -123,8 +123,11 @@ function getEventHandler(params) {
 function sendNewRelicMetrics(params, metrics) {
     return new Promise(resolve => {
         // We still want to continue the action even if there is an error in sending metrics to New Relic
+        if (!params.newRelicEventsURL || !params.newRelicApiKey) {
+            console.error('Missing NewRelic events Api Key or URL. Metrics disabled.');
+            return(resolve());
+        }
         try {
-            const url = params.newRelicEventsURL;
             
             metrics.actionName = proc.env.__OW_ACTION_NAME.split('/').pop();
             metrics.namespace = proc.env.__OW_NAMESPACE;
@@ -136,15 +139,15 @@ function sendNewRelicMetrics(params, metrics) {
                         'content-type': 'application/json',
                         'X-Insert-Key': params.newRelicApiKey,
                         'Content-Encoding': 'gzip' },
-                    url:     url,
+                    url:     params.newRelicEventsURL,
                     body:    result
                 }, function(err, res, body){
                     if (err) { 
-                        console.log('Error sending event to New Relic:', err); 
+                        console.log('Error sending request to NewRelic', err.message || err); 
                     } else if (res.statusCode !== 200) {
-                        console.log('statusCode:', res && res.statusCode);
+                        console.log('NewRelic events submission error. Check response code:', res.statusCode);
                     } else {
-                        console.log('Event sent to New Relic', body); 
+                        console.log('Event sent to NewRelic', body); 
                     }
                     // promise always resolves so failure of sending metrics does not cause action to fail
                     resolve();
@@ -152,7 +155,8 @@ function sendNewRelicMetrics(params, metrics) {
             });
             
         } catch (error) {
-            console.error('Error sending metrics to New Relic. CHeck New Relic Api Key and Account Id');
+            // catch all error
+            console.error('Error sending metrics to NewRelic.', error.message || error);
             resolve();
             
         }
@@ -438,9 +442,9 @@ function process(params, options, workerFn) {
                     metrics.status = "finished";
                     
                     return sendNewRelicMetrics(params, metrics).then(() => {
-                        // remove `newRelicApiKey` and `newRelicAccountID` from action result
+                        // remove `newRelicApiKey` and `newRelicEventsURL` from action result
                         delete params.newRelicApiKey; 
-                        delete params.newRelicAccountID;
+                        delete params.newRelicEventsURL;
                         return resolve({
                             ok: true,
                             renditions: context.renditions,
