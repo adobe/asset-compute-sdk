@@ -31,7 +31,8 @@ function workerFn(infile) {
 
 it('test process', function(done) {
     const params = {
-      source: url
+        source: url,
+        renditions: []
     };
     const options = {
        disableSourceDownloadSource: true

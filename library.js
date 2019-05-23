@@ -111,7 +111,9 @@ function getEventHandler(params) {
         // TODO: do not log tokens
         console.error("`auth` missing or incomplete in request, cannot send events: ", params.auth);
         return {
-            sendEvent: function() {
+            sendEvent: function(type, payload) {
+                // Logging info about event is useful when running in test environments
+                console.log("Following event is not sent:", type, JSON.stringify(payload));
                 return Promise.resolve();
             }
         }
@@ -355,6 +357,7 @@ function process(params, options, workerFn) {
                     }
                 });
 
+                // Strange situation where worker didn't fail and yet there are no renditions
                 if (count === 0) {
                     reject("No generated renditions found.");
                 }
@@ -459,6 +462,8 @@ function process(params, options, workerFn) {
                 });
 
             }).catch(function (error) {
+                const events = getEventHandler(params);
+                params.renditions.forEach(rendition => events.sendEvent("rendition_failed", { rendition }));
                 cleanup(error, context);
                 return sendNewRelicMetrics(
                     params, {
@@ -473,6 +478,8 @@ function process(params, options, workerFn) {
                 )
             });
         } catch (e) {
+            const events = getEventHandler(params);
+            params.renditions.forEach(rendition => events.sendEvent("rendition_failed", { rendition }));
             cleanup(e, context);
             return sendNewRelicMetrics(
                 params, {
