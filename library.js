@@ -41,9 +41,16 @@ const local = require('./src/storage/local');
 
 const DEFAULT_SOURCE_FILE = "source.file";
 
+// There is at least one worker (graphics magick) that in some cases depends
+// upon the file extension so it is best to use source.name if that is
+// defined
 function filename(source) {
     if (typeof source === 'string') {
         source = { url: source };
+    }
+
+    if (source.name) {
+        return source.name;
     }
 
     if (source.url) {
