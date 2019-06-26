@@ -1,6 +1,6 @@
 {
   "name": "@nui/library",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "main": "library.js",
   "description": "Project Nui – Worker Library",
   "author": {
@@ -14,12 +14,12 @@
     "url": "https://git.corp.adobe.com/nui/library.git"
   },
   "dependencies": {
-    "@nui/adobe-io-events-client": "0.0.5",
+    "@nui/adobe-io-events-client": "0.0.7",
     "fs-extra": "^4.0.2",
     "jsonwebtoken": "^8.3.0",
     "mime-types": "^2.1.18",
     "request": "^2.88.0",
-    "request-promise-native": "^1.0.5",
+    "request-promise": "^4.2.2",
     "valid-url": "^1.0.9",
     "zlib": "^1.0.5"
   },
