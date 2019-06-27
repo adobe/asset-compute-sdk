@@ -17,7 +17,7 @@
 
 'use strict';
 
-const rp = require('request-promise');
+const rp = require('request-promise-native');
 const path = require('path');
 const fs = require('fs-extra');
 const httpStorage = require('./http');
