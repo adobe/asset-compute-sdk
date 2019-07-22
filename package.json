@@ -21,7 +21,8 @@
     "request": "^2.88.0",
     "request-promise-native": "^1.0.7",
     "valid-url": "^1.0.9",
-    "zlib": "^1.0.5"
+    "zlib": "^1.0.5",
+    "cgroup-metrics": "^1.0.0"
   },
   "devDependencies": {
     "@nui/eslint-config": "^1.0.2",

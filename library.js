@@ -31,6 +31,8 @@ const { AdobeIOEvents } = require('@nui/adobe-io-events-client');
 const jsonwebtoken = require('jsonwebtoken');
 const request = require('request');
 const zlib = require('zlib');
+const cgroup = require('cgroup-metrics');
+const memory = cgroup.memory();
 
 // different storage access
 const http = require('./src/storage/http');
@@ -171,7 +173,6 @@ function sendNewRelicMetrics(params, metrics) {
         }
     })
 }
-
 // -----------------------< core processing logic >-----------------------------------
 
 function cleanup(err, context) {
@@ -205,12 +206,18 @@ function process(params, options, workerFn) {
     // update memory metrics every 1 second
     setInterval(
         () => {
-            metrics.rss = proc.memoryUsage().rss;
-            metrics.heapTotal = proc.memoryUsage().heapTotal;
-            metrics.heapUsed = proc.memoryUsage().heapUsed;
-            metrics.external = proc.memoryUsage().external;
+            memory.containerUsagePercentage().then((res) => {
+                if (!metrics.containerUsagePercentage || res > metrics.containerUsagePercentage) {
+                    metrics.containerUsagePercentage = res;
+                }
+            })
+            memory.containerUsage().then((res) => {
+                if (!metrics.containerUsage || res > metrics.containerUsage) {
+                    metrics.containerUsage = res;
+                }
+            })          
         }, 
-        1000
+        100
     ); 
 
     /*
@@ -472,12 +479,12 @@ function process(params, options, workerFn) {
                 const events = getEventHandler(params);
                 params.renditions.forEach(rendition => events.sendEvent("rendition_failed", { rendition }));
                 cleanup(error, context);
-                return sendNewRelicMetrics(
-                    params, {
-                        eventType:"worker", 
-                        status: "failed", 
-                        error:error
-                    }
+                return sendNewRelicMetrics(	   
+                    params, {	
+                        eventType:"worker", 	
+                        status: "failed", 	
+                        error:error	
+                    }	
                 ).then(
                     () => {
                         reject(error);
@@ -494,8 +501,7 @@ function process(params, options, workerFn) {
                     status: "failed", 
                     error:e
                 }
-            ).then(
-                () => {
+            ).then(() => {
                     reject(`unexpected error in worker library: ${e}`)
                 }
             );
@@ -575,8 +581,8 @@ function forEachRendition(params, options, renditionFn) {
             return promise.then(function() {
                 return { renditions: renditionResults };
             });
-        });
-    }); 
+        }); 
+    });
 }
 
 // -----------------------< shell script support >-----------------------------------
