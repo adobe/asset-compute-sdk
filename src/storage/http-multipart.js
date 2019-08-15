@@ -97,7 +97,7 @@ async function getHttpUpload(params, result) {
         if (end > filesize - 1) {
           end = filesize - 1;
         }
-        console.log(`uploading part ${index}, file range ${start} - ${endIndex}`);
+        console.log(`uploading part ${index}, file range ${start} - ${end}`);
         const body = fs.createReadStream(file, {start, end});      
         const options = {
           method: 'PUT',

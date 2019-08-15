@@ -15,9 +15,13 @@
  *  from Adobe Systems Incorporated.
  */
 
+/* eslint-env mocha */
+/* eslint mocha/no-mocha-arrows: "off" */
+
 'use strict';
 
 const testFramework = require('@aem-desktop/node-unittest-utils');
+const httpMultipart =  require('../../src/storage/http-multipart');
 
 testFramework.registerMock('fs-extra', testFramework.MockFs);
 
@@ -82,7 +86,7 @@ describe.skip('http multipart tests', () => {
   it('test multipart upload invalid maxPartSize', () => {
     const data = _buildMultipartData(0, 0);
     let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(err => {
+    return httpMultipart.upload(data.params, data.result).catch(() => {
       threw = true;
     }).then(() => {
       expect(threw).to.be.ok();
@@ -92,7 +96,7 @@ describe.skip('http multipart tests', () => {
   it('test insufficient urls', () => {
     const data = _buildMultipartData(0, 1);
     let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(err => {
+    return httpMultipart.upload(data.params, data.result).catch(() => { 
       threw = true;
     }).then(() => {
       expect(threw).to.be.ok();
@@ -102,7 +106,7 @@ describe.skip('http multipart tests', () => {
   it('test invalid min part size', () => {
     const data = _buildMultipartData(20, -1);
     let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(err => {
+    return httpMultipart.upload(data.params, data.result).catch(() => { 
       threw = true;
     }).then(() => {
       expect(threw).to.be.ok();
@@ -112,7 +116,7 @@ describe.skip('http multipart tests', () => {
   it('test multipart upload missing file', () => {
     const data = _buildMultipartData(0, -1, 5, 1, false);
     let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(err => {
+    return httpMultipart.upload(data.params, data.result).catch(() => { 
       threw = true;
     }).then(() => {
       expect(threw).to.be.ok();
@@ -129,7 +133,7 @@ describe.skip('http multipart tests', () => {
   it('test multipart small file too many parts', () => {
     const data = _buildMultipartData(100, -1);
     let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(err => {
+    return httpMultipart.upload(data.params, data.result).catch(() => { 
       threw = true;
     }).then(() => {
       expect(threw).to.be.ok();
@@ -142,7 +146,7 @@ describe.skip('http multipart tests', () => {
       callback('unit test error!');
     });
     let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(err => {
+    return httpMultipart.upload(data.params, data.result).catch(() => { 
       threw = true;
     }).then(() => {
       expect(threw).to.be.ok();
@@ -160,7 +164,7 @@ describe.skip('http multipart tests', () => {
       callback(null, {statusCode: 500});
     });
     let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(err => {
+    return httpMultipart.upload(data.params, data.result).catch(() => { 
       threw = true;
     }).then(() => {
       expect(threw).to.be.ok();

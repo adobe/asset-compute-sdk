@@ -22,15 +22,17 @@
     "request-promise-native": "^1.0.7",
     "valid-url": "^1.0.9",
     "zlib": "^1.0.5",
-    "cgroup-metrics": "^1.0.0"
+    "cgroup-metrics": "^1.0.2"
   },
   "devDependencies": {
-    "@nui/eslint-config": "^1.0.2",
     "@aem-desktop/node-unittest-utils": "^1.0.1",
+    "@nui/eslint-config": "^1.0.2",
     "expect.js": "^0.3.1",
-    "mocha": "^5.2.0"
+    "mocha": "^5.2.0",
+    "mockery": "^2.1.0"
   },
   "scripts": {
+    "pretest": "eslint ./",
     "test": "./node_modules/.bin/mocha ./test --recursive --exit"
   }
 }

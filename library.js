@@ -33,10 +33,11 @@ const request = require('request');
 const zlib = require('zlib');
 const cgroup = require('cgroup-metrics');
 const memory = cgroup.memory();
+const { GenericError, Reason } = require ('./errors.js');
 
 // different storage access
 const http = require('./src/storage/http');
-const httpMultipart = require('./src/storage/http-multipart');
+// const httpMultipart = require('./src/storage/http-multipart'); // right now this is not being used
 const local = require('./src/storage/local');
 
 // -----------------------< utils >-----------------------------------
@@ -97,22 +98,58 @@ function getEventHandler(params) {
         });
 
         return {
-            sendEvent: function(type, payload) {
-                console.log("sending event", type, "as", providerId);
-                return ioEvents.sendEvent({
-                    code: "asset_compute",
-                    payload: Object.assign(payload || {}, {
-                        type: type,
-                        date: new Date().toISOString(),
-                        requestId: params.requestId || params.ingestionId || proc.env.__OW_ACTIVATION_ID,
-                        source: params.source.url || params.source,
-                        userData: params.userData
+            sendEvent: async function(type, payload) {
+                try {
+                    console.log("sending event", type, "as", providerId);
+                    await ioEvents.sendEvent({
+                        code: "asset_compute",
+                        payload: Object.assign(payload || {}, {
+                            type: type,
+                            date: new Date().toISOString(),
+                            requestId: params.requestId || params.ingestionId || proc.env.__OW_ACTIVATION_ID,
+                            source: params.source.url || params.source,
+                            userData: params.userData
+                        })
                     })
-                }).then(() => {
                     console.log("successfully sent event");
-                }).catch(e => {
+                } catch (e) {
                     console.error("error sending event:", e.message || e);
-                });
+                    await sendNewRelicMetrics(params, {
+                        eventType: "error",
+                        reason: Reason.GenericError,
+                        location: "IOEvents",
+                        message: `Error sending IO event: ${e.message || e}`
+                    });
+                }
+            },
+            sendErrorEvent: async function(type, payload, errorMetrics) {
+                try {
+                    console.log("sending event", type, "as", providerId);
+                    await sendNewRelicMetrics(params, errorMetrics || { eventType: type });
+                    await ioEvents.sendEvent({
+                        code: "asset_compute",
+                        payload: Object.assign(payload || {}, {
+                            type: type,
+                            date: new Date().toISOString(),
+                            requestId: params.requestId || params.ingestionId || proc.env.__OW_ACTIVATION_ID,
+                            source: params.source.url || params.source,
+                            userData: params.userData
+                        })
+                    });
+                    console.log("successfully sent error events and metrics");
+
+                } catch (e) {
+                    console.error("error sending event:", e.message || e);
+                    await sendNewRelicMetrics(params, {
+                        eventType: "error",
+                        reason: Reason.GenericError,
+                        location: "IOEvents",
+                        message: `Error sending IO event: ${e.message || e}`
+                    });
+
+                }
+                    
+               
             }
         }
 
@@ -120,10 +157,16 @@ function getEventHandler(params) {
         // TODO: do not log tokens
         console.error("`auth` missing or incomplete in request, cannot send events: ", params.auth);
         return {
-            sendEvent: function(type, payload) {
+            sendEvent: async function(type, payload) {
                 // Logging info about event is useful when running in test environments
                 console.log("Following event is not sent:", type, JSON.stringify(payload));
-                return Promise.resolve();
+                await sendNewRelicMetrics(params, {
+                    eventType: "error",
+                    reason: "GenericError",
+                    location: "IOEvents",
+                    message: 'Error sending IO event: `auth` missing or incomplete in request, cannot send events'
+                });
+                
             }
         }
     }
@@ -200,7 +243,7 @@ function process(params, options, workerFn) {
 
     const context = {};
     const timers = {};
-    const metrics = {"eventType":"worker"};
+    const metrics = {};
     timers.duration = timer_start();
     
     // update memory metrics every 1 second
@@ -270,8 +313,7 @@ function process(params, options, workerFn) {
 
             let source = params.source;
             if (source === undefined) {
-                reject("No 'source' in params. Required for asset workers.");
-                return;
+                return reject(new GenericError("No 'source' in params. Required for asset workers.", `${proc.env.__OW_ACTION_NAME}_pre_download`));
             }
             if (typeof source === 'string') {
                 params.source = source = { url: source };
@@ -301,7 +343,7 @@ function process(params, options, workerFn) {
                     download = local.download(params, context);
                 }
             } else {
-                return reject("source as string or source.url is required");
+                return reject(new GenericError("Source as string or source.url is required", `${proc.env.__OW_ACTION_NAME}_pre_download`));
             }
 
             timers.download = timer_start();
@@ -345,7 +387,15 @@ function process(params, options, workerFn) {
                             context.workerResult = workerResult;
                             return Promise.resolve(context);
                         })
-                        .catch((e) => Promise.reject(e));
+                        .catch((e) => {
+                            // This is where we will catch the errors that happen inside the workers. We need to figure
+                            // out if we will throw the specific error types in workers or not. Library needs to know
+                            // what kind of error it was to pass along as `errorReason` for events/metrics
+                            if (e.reason in Reason || e instanceof GenericError) {
+                                return Promise.reject(e);
+                            }
+                            return Promise.reject(new GenericError(e.message || e, `${proc.env.__OW_ACTION_NAME}_processing`));
+                        });
 
                 } catch (e) {
                     return Promise.reject(e);
@@ -373,7 +423,7 @@ function process(params, options, workerFn) {
 
                 // Strange situation where worker didn't fail and yet there are no renditions
                 if (count === 0) {
-                    reject("No generated renditions found.");
+                    reject(new GenericError("No generated renditions found.", "worker_result"))
                 }
 
                 return context;
@@ -414,6 +464,7 @@ function process(params, options, workerFn) {
                 return upload;
 
             }).then(function(context) {
+                console.log(JSON.stringify(context));
                 try {
                     metrics.uploadInSeconds = parseFloat(timer_elapsed_seconds(timers.upload));
                 } catch(e) {
@@ -434,77 +485,79 @@ function process(params, options, workerFn) {
                     const events = getEventHandler(params);
                     chain = Promise.all(params.renditions.map(rendition => {
                         // check if successfully created
+                        metrics.duration =  parseFloat(timer_elapsed_seconds(timers.duration));
                         if (context.renditions[rendition.name]) {
-                            return events.sendEvent("rendition_created", {
-                                rendition: rendition
-                            });
+                            return events.sendEvent("rendition_created", { rendition: rendition}).then(() => {
+                                return sendNewRelicMetrics(params,
+                                    Object.assign( metrics || {} , { eventType: "rendition"}))
+                            })
                         } else {
                             // TODO: add error details - requires some refactoring
                             // - file too large for multipart upload, include actual rendition size
                             // - mime type wrong
-                            return events.sendEvent("rendition_failed", {
-                                rendition: rendition
-                            })
+                            return events.sendErrorEvent("rendition_failed", {
+                                rendition: rendition,
+                                errorReason:Reason.GenericError,
+                                errorMessage:`No rendition found for ${rendition.name}`
+                                }, Object.assign( metrics || {} , {
+                                    eventType: "error",
+                                    reason:Reason.GenericError,
+                                    message:`No rendition found for ${rendition.name}`,
+                                    location:"uploading_error"
+                                })
+                            )
                         }
                     }));
                 }
 
                 chain.then(() => {
                     cleanup(null, context);
-                
-                    // gather metrics to send to new relic
-                    metrics.totalRenditonCount = Object.keys(params.renditions).length;
-                    metrics.successfulRenditionCount = Object.keys(context.renditions).length;
-                    metrics.duration = parseFloat(timer_elapsed_seconds(timers.duration));
-                    metrics.status = "finished";
                     
-                    return sendNewRelicMetrics(params, metrics).then(() => {
-                        // remove `newRelicApiKey` and `newRelicEventsURL` from action result
-                        delete params.newRelicApiKey; 
-                        delete params.newRelicEventsURL;
-                        return resolve({
-                            ok: true,
-                            renditions: context.renditions,
-                            workerResult: context.workerResult,
-                            params: params,
-                            metrics: metrics
-                        });
-                    })
-            })
+                    delete params.newRelicApiKey; 
+                    return resolve({
+                        ok: true,
+                        renditions: context.renditions,
+                        workerResult: context.workerResult,
+                        params: params,
+                        metrics: metrics
+                    });
+                })
                 .catch(error => {
                     return reject(error);
                 });
 
             }).catch(function (error) {
                 const events = getEventHandler(params);
-                params.renditions.forEach(rendition => events.sendEvent("rendition_failed", { rendition }));
+                params.renditions.forEach(rendition => events.sendErrorEvent("rendition_failed", { 
+                    rendition,
+                    errorReason:error.name || Reason.GenericError,
+                    errorMessage: error.message || error
+                    }, Object.assign( metrics || {} , {
+                        eventType: "error",
+                        reason: error.name || Reason.GenericError,
+                        message: error.message || error,
+                        location: error.location || "library_processing_error"   
+                    })
+                ));
                 cleanup(error, context);
-                return sendNewRelicMetrics(	   
-                    params, {	
-                        eventType:"worker", 	
-                        status: "failed", 	
-                        error:error	
-                    }	
-                ).then(
-                    () => {
-                        reject(error);
-                    }
-                )
+                return reject(error);    
             });
         } catch (e) {
+        // overall try catch statement to catch unknown library errors
             const events = getEventHandler(params);
-            params.renditions.forEach(rendition => events.sendEvent("rendition_failed", { rendition }));
+            params.renditions.forEach(rendition => events.sendErrorEvent("rendition_failed", { 
+                rendition,
+                errorReason:e.name || Reason.GenericError,
+                errorMessage: e.message || e
+                }, Object.assign( metrics || {} , {
+                    eventType: "error",
+                    reason: e.name || Reason.GenericError,
+                    message: e.message || e,
+                    location: e.location || "library_unexpected_error"
+                })
+            ));
             cleanup(e, context);
-            return sendNewRelicMetrics(
-                params, {
-                    eventType:"worker", 
-                    status: "failed", 
-                    error:e
-                }
-            ).then(() => {
-                    reject(`unexpected error in worker library: ${e}`)
-                }
-            );
+            return reject(`unexpected error in worker library: ${e}`);     
         }
     });
 }
@@ -516,72 +569,66 @@ function forEachRendition(params, options, renditionFn) {
         renditionFn = options;
         options = {};
     }
-    return sendNewRelicMetrics(
-        params, {
-            eventType:"worker", 
-            status: "invoked"
-        }
-    ).then(() => {
-        return process(params, options, function(infile, params, outdir) {
+    
+    return process(params, options, function(infile, params, outdir) {
 
-            let promise = Promise.resolve();
+        let promise = Promise.resolve();
 
-            const renditionResults = [];
+        const renditionResults = [];
 
-            if (Array.isArray(params.renditions)) {
-                // for each rendition to generate, create a promise that calls the actual rendition function passed
-                const renditionPromiseFns = params.renditions.map(function (rendition) {
+        if (Array.isArray(params.renditions)) {
+            // for each rendition to generate, create a promise that calls the actual rendition function passed
+            const renditionPromiseFns = params.renditions.map(function (rendition) {
 
-                    // default rendition filename if not specified
-                    if (rendition.name === undefined) {
-                        const size = `${rendition.wid}x${rendition.hei}`;
-                        if (validUrl.isUri(infile)) {
-                            rendition.name = `${path.basename(url.parse(infile).pathname)}.${size}.${rendition.fmt}`;
-                        } else {
-                            rendition.name = `${path.basename(infile)}.${size}.${rendition.fmt}`;
-                        }
-                    }
-
-                    // for sequential execution below it's critical to not start the promise executor yet,
-                    // so we collect functions that return promises
-                    return function() {
-                        return new Promise(function (resolve, reject) {
-                            try {
-                                const result = renditionFn(infile, rendition, outdir, params);
-
-                                // Non-promises/undefined instantly resolve
-                                return Promise.resolve(result)
-                                    .then(function(result) {
-                                        renditionResults.push(result);
-                                        return resolve();
-                                    })
-                                    // TODO: do not abort processing of remaining renditions?
-                                    .catch((e) => reject(e));
-
-                            } catch (e) {
-                                return reject(e.message);
-                            }
-                        });
-                    };
-                });
-
-                if (options.parallel) {
-                    // parallel execution
-                    promise = Promise.all(renditionPromiseFns.map(function(promiseFn) {
-                        return promiseFn();
-                    }));
-                } else {
-                    // sequential execution
-                    for (let i=0; i < renditionPromiseFns.length; i++) {
-                        promise = promise.then(renditionPromiseFns[i]);
+                // default rendition filename if not specified
+                if (rendition.name === undefined) {
+                    const size = `${rendition.wid}x${rendition.hei}`;
+                    if (validUrl.isUri(infile)) {
+                        rendition.name = `${path.basename(url.parse(infile).pathname)}.${size}.${rendition.fmt}`;
+                    } else {
+                        rendition.name = `${path.basename(infile)}.${size}.${rendition.fmt}`;
                     }
                 }
-            }
 
-            return promise.then(function() {
-                return { renditions: renditionResults };
+                // for sequential execution below it's critical to not start the promise executor yet,
+                // so we collect functions that return promises
+                return function() {
+                    return new Promise(function (resolve, reject) {
+                        try {
+                            const result = renditionFn(infile, rendition, outdir, params);
+
+                            // Non-promises/undefined instantly resolve
+                            return Promise.resolve(result)
+                                .then(function(result) {
+                                    renditionResults.push(result);
+                                    return resolve();
+                                })
+                                // TODO: do not abort processing of remaining renditions?
+                                .catch((e) => reject(e));
+
+                        } catch (e) {
+                            return reject(e.message);
+                        }
+                    });
+                };
             });
-        }); 
+
+            if (options.parallel) {
+                // parallel execution
+                promise = Promise.all(renditionPromiseFns.map(function(promiseFn) {
+                    return promiseFn();
+                }));
+            } else {
+                // sequential execution
+                for (let i=0; i < renditionPromiseFns.length; i++) {
+                    promise = promise.then(renditionPromiseFns[i]);
+                }
+            }
+        }
+
+        return promise.then(function() {
+            return { renditions: renditionResults };
+        });
     });
 }
 
@@ -612,6 +659,9 @@ function shellScript(params, shellScriptName = "worker.sh") {
 
             env.file = path.resolve(infile);
             env.rendition = path.resolve(outdir, rendition.name);
+            const errDir = path.resolve(outdir, "errors");
+            fs.mkdirsSync(errDir);
+            env.errorfile = path.resolve(errDir, "error.json");
             
             for (const r in rendition) {
                 const value = rendition[r];
@@ -645,6 +695,10 @@ function shellScript(params, shellScriptName = "worker.sh") {
                 stdout.trim().split('\n').forEach(s => console.log(s))
                 stderr.trim().split('\n').forEach(s => console.error(s))
                 if (error) {
+                    if (fs.existsSync(env.errorfile)) {
+                        const json = fs.readFileSync(env.errorfile);
+                        console.log(json);
+                    }
                     console.log("FAILURE of worker processing for ingestionId", params.ingestionId, "rendition", rendition.name);
                     return reject(error);
                 } else {

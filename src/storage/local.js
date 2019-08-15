@@ -19,6 +19,7 @@
 
 const path = require('path');
 const fs = require('fs-extra');
+const { GenericError } = require ('../../errors.js');
 
 function getLocalFileDownload(params, context) {
     const source = params.source;
@@ -36,7 +37,7 @@ function getLocalFileDownload(params, context) {
     }
 
     console.error("source is not an url: ", source.url);
-    return Promise.reject(`source is not an url: ${source.url}`);
+    return Promise.reject(new GenericError(`source is not an url: ${source.url}` , "local_download_error"));
 }
 
 function getLocalFileUpload(params, result) {

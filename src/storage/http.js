@@ -21,6 +21,7 @@ const request = require('request');
 const mime = require('mime-types');
 const path = require('path');
 const fs = require('fs-extra');
+const { GenericError } = require ('../../errors.js');
 
 function readErrorMessage(file, callback) {
     const maxSize = 10000
@@ -77,8 +78,10 @@ function getHttpDownload(params, context) {
                 reject(`HTTP GET download of source ${context.infilename} failed with ${err}`);
             })
             .pipe(file);
-    });
-}
+    }).catch( (err) => {
+            throw new GenericError(err, "download_error");
+    })
+} 
 
 function getHttpUpload(params, result) {
     return Promise.all(params.renditions.map(function (rendition) {
@@ -114,7 +117,9 @@ function getHttpUpload(params, result) {
                         resolve(result);
                     }
                 });
-            });
+            }).catch((err) => {
+                throw new GenericError(err, "upload_error");
+            })
         }
         return Promise.resolve({});
     }));
