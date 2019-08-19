@@ -160,13 +160,11 @@ function getEventHandler(params) {
             sendEvent: async function(type, payload) {
                 // Logging info about event is useful when running in test environments
                 console.log("Following event is not sent:", type, JSON.stringify(payload));
-                await sendNewRelicMetrics(params, {
-                    eventType: "error",
-                    reason: "GenericError",
-                    location: "IOEvents",
-                    message: 'Error sending IO event: `auth` missing or incomplete in request, cannot send events'
-                });
-                
+            },
+            sendErrorEvent: async function(type, payload, errorMetrics) {
+                // Logging info about event is useful when running in test environments
+                console.log("Following event is not sent:", type, JSON.stringify(payload));
+                await sendNewRelicMetrics(params, errorMetrics || { eventType: type }); // still should send error metrics
             }
         }
     }
@@ -530,11 +528,11 @@ function process(params, options, workerFn) {
                 const events = getEventHandler(params);
                 params.renditions.forEach(rendition => events.sendErrorEvent("rendition_failed", { 
                     rendition,
-                    errorReason:error.name || Reason.GenericError,
+                    errorReason:error.reason || Reason.GenericError,
                     errorMessage: error.message || error
                     }, Object.assign( metrics || {} , {
                         eventType: "error",
-                        reason: error.name || Reason.GenericError,
+                        reason: error.reason || Reason.GenericError,
                         message: error.message || error,
                         location: error.location || "library_processing_error"   
                     })
@@ -551,7 +549,7 @@ function process(params, options, workerFn) {
                 errorMessage: e.message || e
                 }, Object.assign( metrics || {} , {
                     eventType: "error",
-                    reason: e.name || Reason.GenericError,
+                    reason: e.reason || Reason.GenericError,
                     message: e.message || e,
                     location: e.location || "library_unexpected_error"
                 })
