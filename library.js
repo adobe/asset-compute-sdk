@@ -659,7 +659,8 @@ function shellScript(params, shellScriptName = "worker.sh") {
             env.rendition = path.resolve(outdir, rendition.name);
             const errDir = path.resolve(outdir, "errors");
             fs.mkdirsSync(errDir);
-            env.errorfile = path.resolve(errDir, "error.json");
+            const errorFile = path.resolve(errDir, "error.json");
+            env.errorfile = errorFile;
             
             for (const r in rendition) {
                 const value = rendition[r];
@@ -693,11 +694,19 @@ function shellScript(params, shellScriptName = "worker.sh") {
                 stdout.trim().split('\n').forEach(s => console.log(s))
                 stderr.trim().split('\n').forEach(s => console.error(s))
                 if (error) {
-                    if (fs.existsSync(env.errorfile)) {
-                        const json = fs.readFileSync(env.errorfile);
-                        console.log(json);
-                    }
                     console.log("FAILURE of worker processing for ingestionId", params.ingestionId, "rendition", rendition.name);
+                    // We try to get error information from the errorfile, but ensure that we still do proper
+                    // error reporting even if the data is badly formed
+                    if (fs.existsSync(errorFile)) {
+                        const json = fs.readFileSync(errorFile);
+                        fs.removeSync(errorFile);
+                        try {
+                            const err = JSON.parse(json);
+                            return reject(err);
+                        } catch (e) {
+                            console.log(`Badly formed json for error: ${json}`);
+                        }
+                    }
                     return reject(error);
                 } else {
                     console.log("END of worker processing for ingestionId", params.ingestionId, "rendition", rendition.name);
