@@ -185,6 +185,17 @@ function sendNewRelicMetrics(params, metrics) {
             metrics.namespace = proc.env.__OW_NAMESPACE;
             metrics.activationId = proc.env.__OW_ACTIVATION_ID;
             
+            if (params.auth) {
+                try {
+                    metrics.orgId = params.auth.orgId;
+                    const jwt = jsonwebtoken.decode(params.auth.accessToken);
+                    metrics.clientId = jwt ? jwt.client_id : undefined;
+                }
+                catch (e) {
+                    console.log(e.message || e);
+                }
+            }
+            
             return zlib.gzip(JSON.stringify(metrics), function (_, result) {
                 request.post({
                     headers: {
