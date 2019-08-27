@@ -184,6 +184,7 @@ function sendNewRelicMetrics(params, metrics) {
             metrics.actionName = proc.env.__OW_ACTION_NAME.split('/').pop();
             metrics.namespace = proc.env.__OW_NAMESPACE;
             metrics.activationId = proc.env.__OW_ACTIVATION_ID;
+            metrics.ingestionId = params.ingestionId
             
             if (params.auth) {
                 try {
