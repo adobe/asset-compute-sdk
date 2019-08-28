@@ -323,7 +323,7 @@ function process(params, options, workerFn) {
 
             let source = params.source;
             if (source === undefined) {
-                return reject(new GenericError("No 'source' in params. Required for asset workers.", `${proc.env.__OW_ACTION_NAME}_pre_download`));
+                return reject(new GenericError("No 'source' in params. Required for asset workers.", `${proc.env.__OW_ACTION_NAME.split('/').pop()}_pre_download`));
             }
             if (typeof source === 'string') {
                 params.source = source = { url: source };
@@ -353,7 +353,7 @@ function process(params, options, workerFn) {
                     download = local.download(params, context);
                 }
             } else {
-                return reject(new GenericError("Source as string or source.url is required", `${proc.env.__OW_ACTION_NAME}_pre_download`));
+                return reject(new GenericError("Source as string or source.url is required", `${proc.env.__OW_ACTION_NAME.split('/').pop()}_pre_download`));
             }
 
             timers.download = timer_start();
@@ -404,7 +404,7 @@ function process(params, options, workerFn) {
                             if (e.reason in Reason || e instanceof GenericError) {
                                 return Promise.reject(e);
                             }
-                            return Promise.reject(new GenericError(e.message || e, `${proc.env.__OW_ACTION_NAME}_processing`));
+                            return Promise.reject(new GenericError(e.message || e, `${proc.env.__OW_ACTION_NAME.split('/').pop()}_processing`));
                         });
 
                 } catch (e) {

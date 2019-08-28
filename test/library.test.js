@@ -26,6 +26,7 @@ const { GenericError, Reason, SourceUnsupportedError } = require ('../errors.js'
 const fs = require('fs-extra');
 const mockery = require('mockery');
 const process =  require('../library').process;
+const proc = require('process');
 
 
 const url = 'http://hostname/testfile.png';
@@ -65,6 +66,8 @@ const mockJwt = {
     }
 }
 
+proc.env.__OW_ACTION_NAME = '112/worker-test';
+
 describe('library error handling and processing tests', function() {
     afterEach(function() {
         console.error = originalConsoleError;
@@ -96,6 +99,7 @@ describe('library error handling and processing tests', function() {
             renditions: []
         };
         let threw = false;
+
         process(params, dummyWorkerFn)
         .catch(err => {
             if (err instanceof GenericError && err.name === 'GenericError') {
