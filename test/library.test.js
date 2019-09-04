@@ -77,7 +77,7 @@ describe('library error handling and processing tests', function() {
         mockery.disable();
        
     });
-
+    
     it('test process', function(done) {
         const params = {
             source: url,
@@ -237,7 +237,6 @@ describe('library error handling and processing tests', function() {
             done();
         });
     })
-
 });
 
 

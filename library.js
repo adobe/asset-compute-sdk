@@ -180,11 +180,16 @@ function sendNewRelicMetrics(params, metrics) {
             return(resolve());
         }
         try {
+            const fullActionName = proc.env.__OW_ACTION_NAME? proc.env.__OW_ACTION_NAME.split('/'): [];
             
-            metrics.actionName = proc.env.__OW_ACTION_NAME.split('/').pop();
+            metrics.actionName = fullActionName.pop();
             metrics.namespace = proc.env.__OW_NAMESPACE;
             metrics.activationId = proc.env.__OW_ACTIVATION_ID;
-            metrics.ingestionId = params.ingestionId
+            metrics.ingestionId = params.ingestionId;
+            if (fullActionName.length > 2) {
+                metrics.package = fullActionName.pop();
+            }
+
             
             if (params.auth) {
                 try {
@@ -226,6 +231,7 @@ function sendNewRelicMetrics(params, metrics) {
         }
     })
 }
+
 // -----------------------< core processing logic >-----------------------------------
 
 function cleanup(err, context) {
@@ -256,6 +262,8 @@ function process(params, options, workerFn) {
     const metrics = {};
     timers.duration = timer_start();
     
+    let timeoutMetrics = true;
+    
     // update memory metrics every 1 second
     setInterval(
         () => {
@@ -263,12 +271,24 @@ function process(params, options, workerFn) {
                 if (!metrics.containerUsagePercentage || res > metrics.containerUsagePercentage) {
                     metrics.containerUsagePercentage = res;
                 }
-            })
+            });
             memory.containerUsage().then((res) => {
                 if (!metrics.containerUsage || res > metrics.containerUsage) {
                     metrics.containerUsage = res;
                 }
-            })          
+            });
+
+            if (timeoutMetrics && ((proc.env.__OW_DEADLINE - Date.now()) < 100)) {
+                
+                timeoutMetrics = false; // only send timeout metrics once
+                console.log(`${proc.env.__OW_ACTION_NAME} will timeout in ${proc.env.__OW_DEADLINE - Date.now()} milliseconds. Sending metrics before timeout.`);
+                if (!(metrics.duration))  { metrics.duration =  parseFloat(timer_elapsed_seconds(timers.duration)); } 
+                
+                return sendNewRelicMetrics(params, Object.assign( metrics || {} , { eventType: "timeout"})).then(() => {
+                    console.log(`Metrics sent before action timeout.`);
+                })
+
+            }         
         }, 
         100
     ); 
@@ -499,7 +519,7 @@ function process(params, options, workerFn) {
                         if (context.renditions[rendition.name]) {
                             return events.sendEvent("rendition_created", { rendition: rendition}).then(() => {
                                 return sendNewRelicMetrics(params,
-                                    Object.assign( metrics || {} , { eventType: "rendition"}))
+                                    Object.assign( metrics || {} , { eventType: "rendition"}, rendition));
                             })
                         } else {
                             // TODO: add error details - requires some refactoring
