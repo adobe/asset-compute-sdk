@@ -43,6 +43,7 @@ const local = require('./src/storage/local');
 // -----------------------< utils >-----------------------------------
 
 const DEFAULT_SOURCE_FILE = "source.file";
+const METRIC_FETCH_INTERVAL_MS = 100;
 
 // There is at least one worker (graphics magick) that in some cases depends
 // upon the file extension so it is best to use source.name if that is
@@ -232,9 +233,53 @@ function sendNewRelicMetrics(params, metrics) {
     })
 }
 
+// -----------------------< memory metric collection function >-----------------------------------
+
+function startSchedulingMetrics(params, metrics) {
+    function scheduleOSMetricsCollection() {
+        setTimeout( updateMemoryMetrics, METRIC_FETCH_INTERVAL_MS);
+    }
+    
+    async function updateMemoryMetrics() {
+            const currUsage = await memory.containerUsage();
+            
+            if (!metrics.containerUsage || currUsage > metrics.containerUsage) {
+                
+                metrics.containerUsage = currUsage;   
+                const currPercentage = await memory.containerUsagePercentage(currUsage);
+                
+                if (!metrics.containerUsagePercentage || currPercentage > metrics.containerUsagePercentage) {
+                    
+                    metrics.containerUsagePercentage = currPercentage;
+                }
+            }
+            scheduleOSMetricsCollection();
+        }
+    
+    scheduleOSMetricsCollection();
+    
+}
+
+// -----------------------< check action timeout and send metrics function >-----------------------------------
+
+function scheduleTimeoutMetrics(params, metrics, timers) {
+    const timeTillTimeout = proc.env.__OW_DEADLINE - Date.now();
+    return setTimeout(
+        () => {
+            console.log(`${proc.env.__OW_ACTION_NAME} will timeout in ${proc.env.__OW_DEADLINE - Date.now()} milliseconds. Sending metrics before action timeout.`);
+            if (!(metrics.duration))  { metrics.duration =  parseFloat(timer_elapsed_seconds(timers.duration)); } // set duration metrics if not already set
+            return sendNewRelicMetrics(params, Object.assign( metrics || {} , { eventType: "timeout"})).then(() => {
+                console.log(`Metrics sent before action timeout.`);
+            })
+        }, 
+       timeTillTimeout - 100
+    ); 
+}
+
 // -----------------------< core processing logic >-----------------------------------
 
-function cleanup(err, context) {
+function cleanup(err, context, timeoutId) {
+    clearTimeout(timeoutId);
     try {
         if (err) console.error(err);
         if (context.indir) fs.removeSync(context.indir);
@@ -262,36 +307,9 @@ function process(params, options, workerFn) {
     const metrics = {};
     timers.duration = timer_start();
     
-    let timeoutMetrics = true;
-    
-    // update memory metrics every 1 second
-    setInterval(
-        () => {
-            memory.containerUsagePercentage().then((res) => {
-                if (!metrics.containerUsagePercentage || res > metrics.containerUsagePercentage) {
-                    metrics.containerUsagePercentage = res;
-                }
-            });
-            memory.containerUsage().then((res) => {
-                if (!metrics.containerUsage || res > metrics.containerUsage) {
-                    metrics.containerUsage = res;
-                }
-            });
-
-            if (timeoutMetrics && ((proc.env.__OW_DEADLINE - Date.now()) < 100)) {
-                
-                timeoutMetrics = false; // only send timeout metrics once
-                console.log(`${proc.env.__OW_ACTION_NAME} will timeout in ${proc.env.__OW_DEADLINE - Date.now()} milliseconds. Sending metrics before timeout.`);
-                if (!(metrics.duration))  { metrics.duration =  parseFloat(timer_elapsed_seconds(timers.duration)); } 
-                
-                return sendNewRelicMetrics(params, Object.assign( metrics || {} , { eventType: "timeout"})).then(() => {
-                    console.log(`Metrics sent before action timeout.`);
-                })
-
-            }         
-        }, 
-        100
-    ); 
+    // update memory metrics and check if close to action timeout every 100ms
+    startSchedulingMetrics(params, metrics);
+    const timeoutId = scheduleTimeoutMetrics(params, metrics, timers);
 
     /*
         TODO: phases to turn into promises
@@ -541,7 +559,7 @@ function process(params, options, workerFn) {
                 }
 
                 chain.then(() => {
-                    cleanup(null, context);
+                    cleanup(null, context, timeoutId);
                     
                     delete params.newRelicApiKey; 
                     return resolve({
@@ -569,7 +587,7 @@ function process(params, options, workerFn) {
                         location: error.location || "library_processing_error"   
                     })
                 ));
-                cleanup(error, context);
+                cleanup(error, context, timeoutId);
                 return reject(error);    
             });
         } catch (e) {
@@ -586,7 +604,7 @@ function process(params, options, workerFn) {
                     location: e.location || "library_unexpected_error"
                 })
             ));
-            cleanup(e, context);
+            cleanup(e, context, timeoutId);
             return reject(`unexpected error in worker library: ${e}`);     
         }
     });
