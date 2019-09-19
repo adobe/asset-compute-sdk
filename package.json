@@ -16,6 +16,7 @@
   "dependencies": {
     "@nui/adobe-io-events-client": "^1.0.0",
     "fs-extra": "^4.0.2",
+    "image-size": "^0.8.1",
     "jsonwebtoken": "^8.3.0",
     "mime-types": "^2.1.18",
     "request": "^2.88.0",
