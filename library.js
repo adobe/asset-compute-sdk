@@ -465,8 +465,8 @@ function process(params, options, workerFn) {
                     if (stat.isFile()) {
                         console.log("- rendition found:", f);
                         context.renditions[f] = {
-                              ['repo:size']: stat.size
                         };
+                        context.renditions[f]['repo:size'] = stat.size;
                         try {
                             const dimensions = sizeOf(file);
                             context.renditions[f]['tiff:width'] = dimensions.width;
