@@ -469,8 +469,8 @@ function process(params, options, workerFn) {
                         context.renditions[f]['repo:size'] = stat.size;
                         try {
                             const dimensions = sizeOf(file);
-                            context.renditions[f]['tiff:width'] = dimensions.width;
-                            context.renditions[f]['tiff:height'] = dimensions.height;
+                            context.renditions[f]['tiff:imageWidth'] = dimensions.width;
+                            context.renditions[f]['tiff:imageHeight'] = dimensions.height;
                         } catch (err) {
                             // The rendition may or may not be an image, so log error for informational purposes
                             console.log(`No dimensions found for file ${f}`, err.message || err);
@@ -545,7 +545,7 @@ function process(params, options, workerFn) {
                         // check if successfully created
                         metrics.duration =  parseFloat(timer_elapsed_seconds(timers.duration));
                         if (context.renditions[rendition.name]) {
-                            return events.sendEvent("rendition_created", { rendition: rendition, renditionProperties: context.renditions[rendition.name] }).then(() => {
+                            return events.sendEvent("rendition_created", { rendition: rendition, metadata: context.renditions[rendition.name] }).then(() => {
                                 return sendNewRelicMetrics(params,
                                     Object.assign( metrics || {} , { eventType: "rendition"}, rendition));
                             })
