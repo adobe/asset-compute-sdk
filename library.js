@@ -23,6 +23,7 @@
 
 const url = require('url');
 const fs = require('fs-extra');
+const sizeOf = require('image-size');
 const path = require('path');
 const { exec, execSync } = require('child_process');
 const proc = require('process');
@@ -459,12 +460,21 @@ function process(params, options, workerFn) {
                 let count = 0;
                 const files = fs.readdirSync(context.outdir);
                 files.forEach(f => {
-                    const stat = fs.statSync(path.join(context.outdir, f));
+                    const file = path.join(context.outdir, f);
+                    const stat = fs.statSync(file)
                     if (stat.isFile()) {
                         console.log("- rendition found:", f);
                         context.renditions[f] = {
-                            size: stat.size
                         };
+                        context.renditions[f]['repo:size'] = stat.size;
+                        try {
+                            const dimensions = sizeOf(file);
+                            context.renditions[f]['tiff:imageWidth'] = dimensions.width;
+                            context.renditions[f]['tiff:imageHeight'] = dimensions.height;
+                        } catch (err) {
+                            // The rendition may or may not be an image, so log error for informational purposes
+                            console.log(`No dimensions found for file ${f}`, err.message || err);
+                        }
                         count += 1;
                     }
                 });
@@ -535,7 +545,7 @@ function process(params, options, workerFn) {
                         // check if successfully created
                         metrics.duration =  parseFloat(timer_elapsed_seconds(timers.duration));
                         if (context.renditions[rendition.name]) {
-                            return events.sendEvent("rendition_created", { rendition: rendition}).then(() => {
+                            return events.sendEvent("rendition_created", { rendition: rendition, metadata: context.renditions[rendition.name] }).then(() => {
                                 return sendNewRelicMetrics(params,
                                     Object.assign( metrics || {} , { eventType: "rendition"}, rendition));
                             })
