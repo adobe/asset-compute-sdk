@@ -42,7 +42,7 @@ function dummyWorkerFn(infile) {
     return Promise.resolve();
 }
 
-// Worker function varifies that it is passed the url, not a file name 
+// Worker function varifies that it is passed the url, not a file name
 // Worker fails because of source unsupported
 function workerFn(infile) {
     console.log(`infile is ${infile}`);
@@ -75,9 +75,9 @@ describe('library error handling and processing tests', function() {
 
         mockery.deregisterMock(mockJwt);
         mockery.disable();
-       
+
     });
-    
+
     it('test process', function(done) {
         const params = {
             source: url,
@@ -113,27 +113,27 @@ describe('library error handling and processing tests', function() {
     })
 
     it("should fail because of a download error", function(done) {
-        console.error = function() {}
+        console.error = function() {};
         const params = {
             source: "http://fakeurl/testfile.png",
             renditions: []
         };
         let threw = false;
-
+        proc.env.__OW_DEADLINE = Date.now() + 500 // should timeout in <1 second
         process(params, dummyWorkerFn)
         .catch(err => {
-            console.log(`error from library: ${err}`)
+            console.log(err instanceof GenericError)
             if (err instanceof GenericError) {
                 threw = true;
             }
         }).then(() => {
-            try { expect(threw).to.be.ok(); }
+            try { expect(threw).to.be.ok(); console.log('done')}
             catch (e) { return done(e); }
             done();
         });
     })
 
-    it("should fail because of a local download error", function(done) { 
+    it("should fail because of a local download error", function(done) {
         console.error = function() {}
         const params = {
             source: "fake_testfile.png",
@@ -154,7 +154,7 @@ describe('library error handling and processing tests', function() {
         });
     });
 
-    it("should fail because of a specific worker error (source unsupported)", function(done) { 
+    it("should fail because of a specific worker error (source unsupported)", function(done) {
         console.error = function() {}
         const params = {
             source: url,
@@ -203,12 +203,13 @@ describe('library error handling and processing tests', function() {
             warnOnUnregistered: false,
             useCleanCache: true
         });
-    
+
         mockery.registerMock('jsonwebtoken', mockJwt);
 
-        // must require the module after registering the mock 
+        // must require the module after registering the mock
         const process2 = require('../library').process;
         const { GenericError } = require ('../errors.js');
+        proc.env.__OW_DEADLINE = Date.now() + 500 // should timeout in <1 second
 
         const params = {
             source: url,
@@ -246,7 +247,7 @@ describe('test forEachRendition', () => {
     it("test event sending", () => {
         fs.mkdirpSync(path.resolve(__dirname,'/in'));
         fs.writeFileSync(`in/testfile.png`, "./test/files/file.png");
-        
+
         const params = {
             source: "test/files/file.png",
             renditions: [{name:'testfile.png'}]

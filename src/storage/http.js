@@ -1,10 +1,10 @@
 /**
  *  ADOBE CONFIDENTIAL
  *  __________________
- * 
+ *
  *  Copyright 2018 Adobe Systems Incorporated
  *  All Rights Reserved.
- * 
+ *
  *  NOTICE:  All information contained herein is, and remains
  *  the property of Adobe Systems Incorporated and its suppliers,
  *  if any.  The intellectual and technical concepts contained
@@ -17,113 +17,158 @@
 
 'use strict';
 
-const request = require('request');
+// const request = require('request');
+const fetch = require('fetch-retry')
 const mime = require('mime-types');
 const path = require('path');
 const fs = require('fs-extra');
 const { GenericError } = require ('../../errors.js');
 
-function readErrorMessage(file, callback) {
-    const maxSize = 10000
-    fs.stat(file, (err, stats) => {
-        if (err) {
-            return callback(err, "")
-        } else {
-            let msg = ""
-            fs.createReadStream(file, { start: 0, end: Math.min(stats.size, maxSize) })
-                .on("data", s => msg += s)
-                .on("close", () => {
-                    if (stats.size > maxSize) {
-                        msg += "..."
-                    }
-                    callback(null, msg)
-                })
-        }
-    })
+const DEFAULT_MS_TO_WAIT = 100;
+const DEFAULT_MAX_SECONDS_TO_TRY = 60;
+const BUFFER = 500 // buffer time for download maxSeconds since nui will still need time to process the asset
+
+async function readErrorMessage(file) {
+    return new Promise( (resolve, reject) => {
+        const maxSize = 10000;
+        const stats = fs.statSync(file);
+        let msg = ""
+        fs.createReadStream(file, { start: 0, end: Math.min(stats.size, maxSize) })
+            .on("data", s => msg += s)
+            .on("close", () => {
+                if (stats.size > maxSize) {
+                    msg += "..."
+                }
+                resolve(msg)
+            })
+            .on("error", error => {
+                reject(error)
+            })
+
+    });
 }
 
-function getHttpDownload(params, context) {
-    return new Promise(function (resolve, reject) {
+
+async function getHttpDownload(params, context) {
+    try {
         const file = fs.createWriteStream(context.infile);
 
-        request.get(params.source.url)
-            .on("response", response => {
-                response.on("close", () => 
-                    file.close(() => {
-                        if (response.statusCode >= 300) {
-                            const contentType = response.headers["content-type"]
-                            if (contentType && contentType.startsWith("text/")) {
-                                readErrorMessage(context.infile, (err, body) => {
-                                    fs.unlink(context.infile); // Delete the file async. (But we don't check the result)
-                                    if (err) {
-                                        console.error("failure to read error message", err)
-                                    }
-                                    console.error("download failed with", response.statusCode);
-                                    console.error(body);
-                                    reject(`HTTP GET download of source ${context.infilename} failed with ${response.statusCode}. Body: ${body}`);
-                                })
-                            } else {
-                                reject(`HTTP GET download of source ${context.infilename} failed with ${response.statusCode}.`);
-                            }
-                        } else {
-                            console.log("done downloading", context.infilename);
-                            resolve(context);
-                        }
-                    })
-                )
-            })
-            .on("error", err => {
+        const startTime = Date.now();
+        const maxSeconds = ( (process.env.__OW_DEADLINE - startTime - BUFFER) / 1000  )|| DEFAULT_MAX_SECONDS_TO_TRY;
+        let retryIntervalMillis = DEFAULT_MS_TO_WAIT;
+
+        const retryOptions = {
+            retryOn: function(attempt, error, response) {
+                const secondsWaited = ( Date.now() - startTime) / 1000.0;
+                if ((secondsWaited < maxSeconds) && (error !== null || ( response.status >= 400 ))) {
+                    const msg = `Retrying after attempt number ${attempt+1} and waiting ${secondsWaited} seconds to download file ${context.infilename} failed: ${error || (response.status)}`;
+                    console.error(msg);
+                    return true;
+                }
+                return false;
+            },
+            retryDelay: () => (retryIntervalMillis *= 2)
+        }
+
+        const response = await fetch(params.source.url, retryOptions);
+        if (response.status >= 300) {
+            const contentType = response.headers._headers["content-type"]
+            if (contentType && contentType.startsWith("text/")) {
+                const body = await readErrorMessage(context.infile);
+                fs.unlink(context.infile);
+                console.error("download failed with", response.status);
+                console.error(body);
+                throw Error(`HTTP GET download of source ${context.infilename} failed with ${response.status}. Body: ${body}`);
+            } else {
+                throw Error(`HTTP GET download of source ${context.infilename} failed with ${response.status}.`);
+            }
+        }
+        return new Promise((resolve, reject) => {
+            file.on("error", err => {
                 fs.unlink(context.infile); // Delete the file async. (But we don't check the result)
                 console.error("download failed", err);
                 reject(`HTTP GET download of source ${context.infilename} failed with ${err}`);
             })
-            .pipe(file);
-    }).catch( (err) => {
-            throw new GenericError(err, "download_error");
-    })
-} 
+            file.on('finish', () => {
+                resolve(context);
+            })
+            response.body.pipe(file);
+        })
 
-function getHttpUpload(params, result) {
-    return Promise.all(params.renditions.map(function (rendition) {
-        // if the rendition was generated...
-        if (result.renditions[rendition.name]) {
-            return new Promise(function (resolve, reject) {
+
+    } catch (e) {
+        console.log(`download error: ${e}`);
+        throw new GenericError(e.message || e, "download_error");
+    }
+}
+
+async function getHttpUpload(params, result) {
+
+    for await (const rendition of params.renditions) {
+        try {
+            if (result.renditions[rendition.name]) {
+
                 // ...upload it via PUT to the url
                 console.log("START of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
                 console.log("uploading", rendition.name, "to", rendition.url);
 
                 const file = path.join(result.outdir, rendition.name);
                 const filesize = fs.statSync(file).size;
-                request({
-                    url: rendition.target || rendition.url,
+
+
+                const startTime = Date.now();
+                const maxSeconds = ((process.env.__OW_DEADLINE - startTime) / 1000 )|| DEFAULT_MAX_SECONDS_TO_TRY;
+                let retryIntervalMillis = DEFAULT_MS_TO_WAIT;
+
+                const retryOptions = {
+                    retryOn: function(attempt, error, response) {
+                        const secondsWaited = ( Date.now() - startTime) / 1000.0;
+                        if ((secondsWaited < maxSeconds) && (error !== null || ( response.status >= 400 ))) {
+                            const msg = `Retrying after attempt number ${attempt+1} and waiting ${secondsWaited} seconds to download file ${rendition.name} failed: ${error || (response.status)}`;
+                            console.error(msg);
+                            return true;
+                        }
+                        return false;
+                    },
+                    retryDelay: () => (retryIntervalMillis *= 2)
+                }
+
+                const response = await fetch(rendition.target || rendition.url, Object.assign( {
                     method: "PUT",
                     headers: {
                         "Content-Type": rendition.mimeType || mime.lookup(rendition.name) || 'application/octet-stream'
-                    },
-                    // not using pipe() here as that leads to chunked transfer encoding which S3 does not support
+                        },
                     body: filesize === 0 ? "" : fs.readFileSync(file)
-                }, function(err, response, body) {
-                    if (err) {
+                    }, retryOptions))
+
+                let body = "undefined";
+                try {
+                    body = await response.json(); // body may be empty
+                } catch (e) {
+                    console.log("Body is empty");
+                }
+                return new Promise(function (resolve, reject) {
+                    if (response.statusCode >= 300) {
                         console.log("FAILURE of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
-                        console.error("upload failed", err);
-                        reject(`HTTP PUT upload of rendition ${rendition.name} failed with ${err}`);
-                    } else if (response.statusCode >= 300) {
-                        console.log("FAILURE of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
-                        console.error("upload failed with", response.statusCode);
+                        console.error("upload failed with", response.status);
                         console.error(body);
-                        reject(`HTTP PUT upload of rendition ${rendition.name} failed with ${response.statusCode}. Body: ${body}`);
+                        reject(`HTTP PUT upload of rendition ${rendition.name} failed with ${response.status}. Body: ${body}`);
                     } else {
                         console.log("END of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
                         resolve(result);
                     }
                 });
-            }).catch((err) => {
-                throw new GenericError(err, "upload_error");
-            })
+            }
+
+        } catch (e) {
+                console.log("FAILURE of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
+                console.error("upload failed", e);
+                throw new GenericError(e.message || e, "upload_error");
+            }
+
         }
-        return Promise.resolve({});
-    }));
-}
+        return result;
+    }
 
 module.exports = {
     /** Return a promise for downloading the original file(s). */
