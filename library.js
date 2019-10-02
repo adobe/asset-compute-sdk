@@ -41,6 +41,8 @@ const http = require('./src/storage/http');
 // const httpMultipart = require('./src/storage/http-multipart'); // right now this is not being used
 const local = require('./src/storage/local');
 
+let currentlyProcessing = false;
+
 // -----------------------< utils >-----------------------------------
 
 const DEFAULT_SOURCE_FILE = "source.file";
@@ -254,8 +256,10 @@ function startSchedulingMetrics(params, metrics) {
                     metrics.containerUsagePercentage = currPercentage;
                 }
             }
+        if (currentlyProcessing) {
             scheduleOSMetricsCollection();
         }
+    }
 
     scheduleOSMetricsCollection();
 
@@ -280,6 +284,7 @@ function scheduleTimeoutMetrics(params, metrics, timers) {
 // -----------------------< core processing logic >-----------------------------------
 
 function cleanup(err, context, timeoutId) {
+    currentlyProcessing = false;
     clearTimeout(timeoutId);
     try {
         if (err) console.error(err);
@@ -309,6 +314,7 @@ function process(params, options, workerFn) {
     timers.duration = timer_start();
 
     // update memory metrics and check if close to action timeout every 100ms
+    currentlyProcessing = true;
     startSchedulingMetrics(params, metrics);
     const timeoutId = scheduleTimeoutMetrics(params, metrics, timers);
 
