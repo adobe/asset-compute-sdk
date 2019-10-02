@@ -87,10 +87,10 @@ async function getHttpDownload(params, context) {
             file.on("error", err => {
                 fs.unlink(context.infile); // Delete the file async. (But we don't check the result)
                 console.error("download failed", err);
-                reject(`HTTP GET download of source ${context.infilename} failed with ${err}`);
+                return reject(`HTTP GET download of source ${context.infilename} failed with ${err}`);
             })
             file.on('finish', () => {
-                resolve(context);
+                return resolve(context);
             })
             response.body.pipe(file);
         })
@@ -101,6 +101,7 @@ async function getHttpDownload(params, context) {
         throw new GenericError(e.message || e, "download_error");
     }
 }
+
 
 async function getHttpUpload(params, result) {
 
@@ -124,7 +125,7 @@ async function getHttpUpload(params, result) {
                     retryOn: function(attempt, error, response) {
                         const secondsWaited = ( Date.now() - startTime) / 1000.0;
                         if ((secondsWaited < maxSeconds) && (error !== null || ( response.status >= 400 ))) {
-                            const msg = `Retrying after attempt number ${attempt+1} and waiting ${secondsWaited} seconds to download file ${rendition.name} failed: ${error || (response.status)}`;
+                            const msg = `Retrying after attempt number ${attempt+1} and waiting ${secondsWaited} seconds to upload file ${rendition.name} failed: ${error || (response.status)}`;
                             console.error(msg);
                             return true;
                         }
@@ -133,13 +134,16 @@ async function getHttpUpload(params, result) {
                     retryDelay: () => (retryIntervalMillis *= 2)
                 }
 
+                // upload file
+
                 const response = await fetch(rendition.target || rendition.url, Object.assign( {
                     method: "PUT",
                     headers: {
-                        "Content-Type": rendition.mimeType || mime.lookup(rendition.name) || 'application/octet-stream'
-                        },
-                    body: filesize === 0 ? "" : fs.readFileSync(file)
-                    }, retryOptions))
+                        "Content-Type": rendition.mimeType || mime.lookup(rendition.name) || 'application/octet-stream',
+                        "content-length": filesize
+                    },
+                    body: filesize === 0 ? "" : fs.createReadStream(file)
+                }, retryOptions));
 
                 let body = "undefined";
                 try {
@@ -152,10 +156,10 @@ async function getHttpUpload(params, result) {
                         console.log("FAILURE of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
                         console.error("upload failed with", response.status);
                         console.error(body);
-                        reject(`HTTP PUT upload of rendition ${rendition.name} failed with ${response.status}. Body: ${body}`);
+                        return reject(`HTTP PUT upload of rendition ${rendition.name} failed with ${response.status}. Body: ${body}`);
                     } else {
                         console.log("END of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
-                        resolve(result);
+                        return resolve(result);
                     }
                 });
             }

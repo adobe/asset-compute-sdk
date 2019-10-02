@@ -26,6 +26,7 @@ const fetchMock = require('fetch-mock');
 
 const url = "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg";
 const fakeUrl = 'https://fakeurl.com';
+const realUrl = "https://nuitesting.blob.core.windows.net/nui-test-library/earth.jpg?sp=rw&st=2019-10-02T21:15:03Z&se=2100-10-03T05:15:03Z&spr=https&sv=2018-03-28&sig=BfAk%2BlCSCjmRjqaH9ALlo1w6oRGXReNMEXNTlKbuBNo%3D&sr=b";
 
 fetchMock.config.overwriteRoutes = true;
 
@@ -105,6 +106,36 @@ describe('test http upload/download', () => {
             return done();
         })
     });
+
+    // we need to set the header: `"x-ms-blob-type": "BlockBlob"` to run this
+    it.skip("unmocked upload test", done => {
+
+        fetchMock.reset();
+        const params = {
+            renditions: [{
+                name:"earth.jpg",
+                url: realUrl
+            }]
+        };
+        const result = {
+            renditions: {"earth.jpg": {}},
+            outdir: './'
+        }
+        let threw = true;
+        http.upload(params, result)
+        .catch( (e) => {
+            threw = false;
+            console.log(e);
+        })
+        .then( () => {
+            try {
+                expect(threw).to.be(true);
+            } catch (e) {
+                return done(e);
+            }
+            return done();
+        })
+    }).timeout(10*1000);
 
     it("download should fail for <1s before succeeding", done => {
         const params = {
