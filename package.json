@@ -15,8 +15,6 @@
   },
   "dependencies": {
     "@nui/adobe-io-events-client": "^1.0.0",
-    "cgroup-metrics": "^1.0.3",
-    "fetch-retry": "^2.2.3",
     "fs-extra": "^4.0.2",
     "image-size": "^0.8.1",
     "jsonwebtoken": "^8.3.0",
@@ -24,15 +22,15 @@
     "request": "^2.88.0",
     "request-promise-native": "^1.0.7",
     "valid-url": "^1.0.9",
-    "zlib": "^1.0.5"
+    "zlib": "^1.0.5",
+    "cgroup-metrics": "^1.0.3"
   },
   "devDependencies": {
     "@aem-desktop/node-unittest-utils": "^1.0.1",
     "@nui/eslint-config": "^1.0.2",
     "expect.js": "^0.3.1",
     "mocha": "^5.2.0",
-    "mockery": "^2.1.0",
-    "fetch-mock": "^7.3.9"
+    "mockery": "^2.1.0"
   },
   "scripts": {
     "pretest": "eslint ./",

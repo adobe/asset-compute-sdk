@@ -152,8 +152,8 @@ function getEventHandler(params) {
                     });
 
                 }
-
-
+                    
+               
             }
         }
 
@@ -185,7 +185,7 @@ function sendNewRelicMetrics(params, metrics) {
         }
         try {
             const fullActionName = proc.env.__OW_ACTION_NAME? proc.env.__OW_ACTION_NAME.split('/'): [];
-
+            
             metrics.actionName = fullActionName.pop();
             metrics.namespace = proc.env.__OW_NAMESPACE;
             metrics.activationId = proc.env.__OW_ACTIVATION_ID;
@@ -194,7 +194,7 @@ function sendNewRelicMetrics(params, metrics) {
                 metrics.package = fullActionName.pop();
             }
 
-
+            
             if (params.auth) {
                 try {
                     metrics.orgId = params.auth.orgId;
@@ -205,7 +205,7 @@ function sendNewRelicMetrics(params, metrics) {
                     console.log(e.message || e);
                 }
             }
-
+            
             return zlib.gzip(JSON.stringify(metrics), function (_, result) {
                 request.post({
                     headers: {
@@ -215,23 +215,23 @@ function sendNewRelicMetrics(params, metrics) {
                     url:     params.newRelicEventsURL,
                     body:    result
                 }, function(err, res, body){
-                    if (err) {
-                        console.log('Error sending request to NewRelic', err.message || err);
+                    if (err) { 
+                        console.log('Error sending request to NewRelic', err.message || err); 
                     } else if (res.statusCode !== 200) {
                         console.log('NewRelic events submission error. Check response code:', res.statusCode);
                     } else {
-                        console.log('Event sent to NewRelic', body);
+                        console.log('Event sent to NewRelic', body); 
                     }
                     // promise always resolves so failure of sending metrics does not cause action to fail
                     resolve();
                 });
             });
-
+            
         } catch (error) {
             // catch all error
             console.error('Error sending metrics to NewRelic.', error.message || error);
             resolve();
-
+            
         }
     })
 }
@@ -242,17 +242,17 @@ function startSchedulingMetrics(params, metrics) {
     function scheduleOSMetricsCollection() {
         setTimeout( updateMemoryMetrics, METRIC_FETCH_INTERVAL_MS);
     }
-
+    
     async function updateMemoryMetrics() {
             const currUsage = await memory.containerUsage();
-
+            
             if (!metrics.containerUsage || currUsage > metrics.containerUsage) {
-
-                metrics.containerUsage = currUsage;
+                
+                metrics.containerUsage = currUsage;   
                 const currPercentage = await memory.containerUsagePercentage(currUsage);
-
+                
                 if (!metrics.containerUsagePercentage || currPercentage > metrics.containerUsagePercentage) {
-
+                    
                     metrics.containerUsagePercentage = currPercentage;
                 }
             }
@@ -262,7 +262,7 @@ function startSchedulingMetrics(params, metrics) {
     }
 
     scheduleOSMetricsCollection();
-
+    
 }
 
 // -----------------------< check action timeout and send metrics function >-----------------------------------
@@ -276,9 +276,9 @@ function scheduleTimeoutMetrics(params, metrics, timers) {
             return sendNewRelicMetrics(params, Object.assign( metrics || {} , { eventType: "timeout"})).then(() => {
                 console.log(`Metrics sent before action timeout.`);
             })
-        },
+        }, 
        timeTillTimeout - 100
-    );
+    ); 
 }
 
 // -----------------------< core processing logic >-----------------------------------
@@ -312,7 +312,7 @@ function process(params, options, workerFn) {
     const timers = {};
     const metrics = {};
     timers.duration = timer_start();
-
+    
     // update memory metrics and check if close to action timeout every 100ms
     currentlyProcessing = true;
     startSchedulingMetrics(params, metrics);
@@ -404,7 +404,7 @@ function process(params, options, workerFn) {
             timers.download = timer_start();
 
             download.then(function(context) {
-
+                
                const downloadInSeconds = parseFloat(timer_elapsed_seconds(timers.download));
 
                // Only set metrics if we really did a download
@@ -576,8 +576,8 @@ function process(params, options, workerFn) {
 
                 chain.then(() => {
                     cleanup(null, context, timeoutId);
-
-                    delete params.newRelicApiKey;
+                    
+                    delete params.newRelicApiKey; 
                     return resolve({
                         ok: true,
                         renditions: context.renditions,
@@ -592,7 +592,7 @@ function process(params, options, workerFn) {
 
             }).catch(function (error) {
                 const events = getEventHandler(params);
-                params.renditions.forEach(rendition => events.sendErrorEvent("rendition_failed", {
+                params.renditions.forEach(rendition => events.sendErrorEvent("rendition_failed", { 
                     rendition,
                     errorReason:error.reason || Reason.GenericError,
                     errorMessage: error.message || error
@@ -600,16 +600,16 @@ function process(params, options, workerFn) {
                         eventType: "error",
                         reason: error.reason || Reason.GenericError,
                         message: error.message || error,
-                        location: error.location || "library_processing_error"
+                        location: error.location || "library_processing_error"   
                     })
                 ));
                 cleanup(error, context, timeoutId);
-                return reject(error);
+                return reject(error);    
             });
         } catch (e) {
         // overall try catch statement to catch unknown library errors
             const events = getEventHandler(params);
-            params.renditions.forEach(rendition => events.sendErrorEvent("rendition_failed", {
+            params.renditions.forEach(rendition => events.sendErrorEvent("rendition_failed", { 
                 rendition,
                 errorReason:e.name || Reason.GenericError,
                 errorMessage: e.message || e
@@ -621,7 +621,7 @@ function process(params, options, workerFn) {
                 })
             ));
             cleanup(e, context, timeoutId);
-            return reject(`unexpected error in worker library: ${e}`);
+            return reject(`unexpected error in worker library: ${e}`);     
         }
     });
 }
@@ -633,7 +633,7 @@ function forEachRendition(params, options, renditionFn) {
         renditionFn = options;
         options = {};
     }
-
+    
     return process(params, options, function(infile, params, outdir) {
 
         let promise = Promise.resolve();
@@ -717,7 +717,7 @@ function shellScript(params, shellScriptName = "worker.sh") {
     return forEachRendition(params, function(infile, rendition, outdir) {
         return new Promise(function (resolve, reject) {
             console.log("executing shell script", shellScriptName, "for rendition", rendition.name);
-
+            
             // inherit environment variables
             const env = Object.create(proc.env || {});
 
@@ -727,7 +727,7 @@ function shellScript(params, shellScriptName = "worker.sh") {
             fs.mkdirsSync(errDir);
             const errorFile = path.resolve(errDir, "error.json");
             env.errorfile = errorFile;
-
+            
             for (const r in rendition) {
                 const value = rendition[r];
                 if (typeof value === 'object') {

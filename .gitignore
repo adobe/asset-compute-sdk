@@ -1,6 +1,3 @@
 .webpack
 .serverless
-.DS_STORE
-.nyc_output
-.vscode
 node_modules
