@@ -3,7 +3,7 @@
 
 # Asset Compute SDK
 
-(Formerly known us "worker library")
+(Formerly known as "worker library")
 
 This shared library is used by all Nui workers and takes care of common things like asset download & rendition upload.
 
