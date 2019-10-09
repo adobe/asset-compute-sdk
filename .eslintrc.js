@@ -1,3 +1,3 @@
 module.exports = {
-    "extends": "@nui/eslint-config",
+    "extends": "@nui/eslint-config"
 };

@@ -1,10 +1,10 @@
 /**
  *  ADOBE CONFIDENTIAL
  *  __________________
- * 
+ *
  *  Copyright 2019 Adobe Systems Incorporated
  *  All Rights Reserved.
- * 
+ *
  *  NOTICE:  All information contained herein is, and remains
  *  the property of Adobe Systems Incorporated and its suppliers,
  *  if any.  The intellectual and technical concepts contained
@@ -20,29 +20,56 @@
 
 'use strict';
 
-const testFramework = require('@aem-desktop/node-unittest-utils');
 const httpMultipart =  require('../../src/storage/http-multipart');
-
-testFramework.registerMock('fs-extra', testFramework.MockFs);
-
-const MockFs = testFramework.MockFs;
-const MockRequest = testFramework.MockRequest;
-// const httpMultipart = testFramework.requireMocks(testFramework.getRequireMockPath(__dirname, '../../src/storage/http-multipart'));
+const fs = require('fs-extra');
+const assert = require('assert')
+const nock = require('nock');
+const rimraf = require('rimraf');
+const util = require('util');
 const expect = require('expect.js');
 
-// Disabled the http multipart tests since they don't with with the async implementation of http-multipart
-describe.skip('http multipart tests', () => {
-  beforeEach(() => {
-    MockFs.resetFileSystem();
-    MockRequest.resetRequestState();
-    MockRequest.setCreateMethod('PUT');
-  });
+const removeFiles = util.promisify(rimraf);
 
-  function _buildMultipartData(minPartSize=0, maxPartSize=-1, urlCount=5, renditionCount=1, addFiles=true) {
+const azureUrl1 = 'https://nuitesting.blob.core.windows.net/nui-test-multipart-upload/file.ai?sp=rw&st=2019-10-04T16:42:29Z&se=2030-01-02T01:42:29Z&spr=https&sv=2018-03-28&sig=Qcb66oogH7Jn9OUpRJRqYe4rDe%2FW2XVr1PZ4XxtWVGU%3D&sr=b';
+const azureUrl2 = 'https://nuitesting.blob.core.windows.net/nui-test-multipart-upload/file.dn?sp=r&st=2019-10-04T16:44:23Z&se=2030-10-05T00:44:23Z&spr=https&sv=2018-03-28&sig=tkxVd5uMr5pSjJEDdIkvfOUna4pPIxalXnTUW%2BsqKQI%3D&sr=b';
+
+// Need to set the header: "x-ms-blob-type": "BlockBlob"` to run this
+it.skip('Unmocked multi part upload with 2 urls', async function() {
+  const sourceFile = 'file.jpg';
+  const fileSize = fs.statSync(sourceFile).size;
+  const maxSize = fileSize - 1;
+  const target = {
+    urls: [ azureUrl1, azureUrl2 ],
+    minPartSize: 100,
+    maxPartSize: maxSize
+  }
+  try {
+    await httpMultipart.uploadMulti(sourceFile, target);
+  } catch (err) {
+    assert(false);
+  }
+}).timeout(5000);
+
+
+describe('http multipart tests', function() {
+  beforeEach(async function() {
+  })
+  afterEach(async function() {
+    nock.cleanAll();
+    try {
+      await removeFiles("rendition*");
+    } catch (err) {
+      // Don't allow error to break tests.  We are just trying to do cleanup.
+      console.log('error removing files ' + err);
+    }
+   })
+
+  function _buildMultipartData(minPartSize=0, maxPartSize=-1, urlCount=5, renditionCount=1) {
     const renditions = [];
     const results = {};
     for (let i = 0; i < renditionCount; i++) {
       const renditionName = `rendition${i+1}`;
+      fs.writeFileSync(renditionName, 'hello multipart uploading world!\n', 'utf8');
       const urls = [];
       for (let u = 0; u < urlCount; u++) {
         urls.push(`http://unittest/${renditionName}_${u+1}`);
@@ -56,9 +83,6 @@ describe.skip('http multipart tests', () => {
         }
       });
       results[renditionName] = true;
-      if (addFiles) {
-        MockFs.addFile(`/${renditionName}`, {}, 'hello multipart uploading world!');
-      }
     }
 
     return {
@@ -67,112 +91,149 @@ describe.skip('http multipart tests', () => {
         renditions
       }, result: {
         renditions: results,
-        outdir: '/'
+        outdir: '.'
       }
     };
   }
 
-  it('test multipart upload', () => {
-    const data = _buildMultipartData();
-    return httpMultipart.upload(data.params, data.result).then(() => {
-      expect(MockRequest.getUrlData('http://unittest/rendition1_1')).to.be('hello m');
-      expect(MockRequest.getUrlData('http://unittest/rendition1_2')).to.be('ultipar');
-      expect(MockRequest.getUrlData('http://unittest/rendition1_3')).to.be('t uploa');
-      expect(MockRequest.getUrlData('http://unittest/rendition1_4')).to.be('ding wo');
-      expect(MockRequest.getUrlData('http://unittest/rendition1_5')).to.be('rld!');
-    });
+  it('single upload', async () => {
+    const data = _buildMultipartData(0, 10, 1);
+     nock('http://unittest')
+    .matchHeader('content-length', 33)
+    .put('/rendition1_1', 'hello multipart uploading world!\n')
+    .reply(201)
+    data.params.renditions[0].target = 'http://unittest/rendition1_1';
+    try {
+      await httpMultipart.upload(data.params, data.result);
+    } catch (err) {
+        console.log(err);
+        assert(false);
+    }
   });
 
-  it('test multipart upload invalid maxPartSize', () => {
-    const data = _buildMultipartData(0, 0);
+  it('test multipart upload', async () => {
+    const data = _buildMultipartData(5, 7, 5);
+     nock('http://unittest')
+    .matchHeader('content-length',7)
+    .put('/rendition1_1', 'hello m')
+    .reply(201);
+    nock('http://unittest')
+    .matchHeader('content-length', 7)
+    .put('/rendition1_2', 'ultipar')
+    .reply(201);
+    nock('http://unittest')
+    .matchHeader('content-length', 7)
+    .put('/rendition1_3', 't uploa')
+    .reply(201);
+    nock('http://unittest')
+    .matchHeader('content-length', 7)
+    .put('/rendition1_4', 'ding wo')
+    .reply(201);
+    nock('http://unittest')
+    .matchHeader('content-length', 5)
+    .put('/rendition1_5', 'rld!\n')
+    .reply(201);
+
+    try {
+      await httpMultipart.upload(data.params, data.result);
+    } catch (err) {
+        console.log(err);
+        assert(false);
+    }
+    assert(nock.isDone());
+  });
+
+  it('test multiple renditions', async function() {
+    const data = _buildMultipartData(5, 20, 2, 2);
+      nock('http://unittest')
+        .matchHeader('content-length',17)
+        .put('/rendition1_1', 'hello multipart u')
+        .reply(201);
+      nock('http://unittest')
+        .matchHeader('content-length', 16)
+        .put('/rendition1_2', 'ploading world!\n')
+        .reply(201);
+      nock('http://unittest')
+        .matchHeader('content-length',17)
+        .put('/rendition2_1', 'hello multipart u')
+        .reply(201);
+      nock('http://unittest')
+        .matchHeader('content-length', 16)
+        .put('/rendition2_2', 'ploading world!\n')
+        .reply(201);
+
+    try {
+        await httpMultipart.upload(data.params, data.result);
+    } catch (err) {
+        assert(false);
+    }
+    assert(nock.isDone());
+  }).timeout(5000);
+
+  it('test multiple renditions with failure', async function() {
+    const data = _buildMultipartData(5, 20, 2, 2);
+      nock('http://unittest')
+        .matchHeader('content-length',17)
+        .put('/rendition1_1', 'hello multipart u')
+        .reply(201);
+      nock('http://unittest')
+        .matchHeader('content-length', 16)
+        .put('/rendition1_2', 'ploading world!\n')
+        .reply(201);
+      const used = nock('http://unittest')
+        .matchHeader('content-length',17)
+        .put('/rendition2_1', 'hello multipart u')
+        .reply(500);
+      const unused = nock('http://unittest')
+        .matchHeader('content-length', 16)
+        .put('/rendition2_2', 'ploading world!\n')
+        .reply(201);
     let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(() => {
+    try {
+        await httpMultipart.upload(data.params, data.result);
+    } catch (err) {
       threw = true;
-    }).then(() => {
-      expect(threw).to.be.ok();
-    });
-  });
+    }
+    expect(threw).to.be.ok();
+    assert(used.isDone());
+    assert(! unused.isDone());
+    assert(! nock.isDone());
+  }).timeout(5000);
 
-  it('test insufficient urls', () => {
-    const data = _buildMultipartData(0, 1);
+  it('test insufficient urls', async () => {
+      const data = _buildMultipartData(0, 7, 2);
     let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(() => { 
+    try {
+      await httpMultipart.upload(data.params, data.result);
+    }
+    catch (e) {
       threw = true;
-    }).then(() => {
-      expect(threw).to.be.ok();
-    });
+    }
+    expect(threw).to.be.ok();
   });
 
-  it('test invalid min part size', () => {
-    const data = _buildMultipartData(20, -1);
+  it('test invalid min part size', async () => {
+    const data = _buildMultipartData(20, 100);
     let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(() => { 
+    try {
+      await httpMultipart.upload(data.params, data.result);
+    }
+    catch (e) {
       threw = true;
-    }).then(() => {
-      expect(threw).to.be.ok();
-    });
+    }
+    expect(threw).to.be.ok();
   });
 
-  it('test multipart upload missing file', () => {
-    const data = _buildMultipartData(0, -1, 5, 1, false);
+  it('test multipart upload missing file', async () => {
+    const data = _buildMultipartData(0, 10, 5, 1, false);
     let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(() => { 
+    try {
+      await httpMultipart.upload(data.params, data.result);
+    }
+    catch (e) {
       threw = true;
-    }).then(() => {
-      expect(threw).to.be.ok();
-    });
+    }
+    expect(threw).to.be.ok();
   });
 
-  it('test multipart small file size', () => {
-    const data = _buildMultipartData(100, -1, 1);
-    return httpMultipart.upload(data.params, data.result).then(() => {
-      expect(MockRequest.getUrlData('http://unittest/rendition1_1')).to.be('hello multipart uploading world!');
-    });
-  });
-
-  it('test multipart small file too many parts', () => {
-    const data = _buildMultipartData(100, -1);
-    let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(() => { 
-      threw = true;
-    }).then(() => {
-      expect(threw).to.be.ok();
-    });
-  });
-
-  it('test upload part error', () => {
-    const data = _buildMultipartData();
-    MockRequest.registerUrlCallback('PUT', 'http://unittest/rendition1_3', (options, callback) => {
-      callback('unit test error!');
-    });
-    let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(() => { 
-      threw = true;
-    }).then(() => {
-      expect(threw).to.be.ok();
-      expect(MockRequest.getUrlData('http://unittest/rendition1_1')).to.be('hello m');
-      expect(MockRequest.getUrlData('http://unittest/rendition1_2')).to.be('ultipar');
-      expect(MockRequest.getUrlData('http://unittest/rendition1_3')).not.to.be.ok();
-      expect(MockRequest.getUrlData('http://unittest/rendition1_4')).not.to.be.ok();
-      expect(MockRequest.getUrlData('http://unittest/rendition1_5')).not.to.be.ok();
-    });
-  });
-
-  it('test upload part bad status code', () => {
-    const data = _buildMultipartData();
-    MockRequest.registerUrlCallback('PUT', 'http://unittest/rendition1_3', (options, callback) => {
-      callback(null, {statusCode: 500});
-    });
-    let threw = false;
-    return httpMultipart.upload(data.params, data.result).catch(() => { 
-      threw = true;
-    }).then(() => {
-      expect(threw).to.be.ok();
-      expect(MockRequest.getUrlData('http://unittest/rendition1_1')).to.be('hello m');
-      expect(MockRequest.getUrlData('http://unittest/rendition1_2')).to.be('ultipar');
-      expect(MockRequest.getUrlData('http://unittest/rendition1_3')).not.to.be.ok();
-      expect(MockRequest.getUrlData('http://unittest/rendition1_4')).not.to.be.ok();
-      expect(MockRequest.getUrlData('http://unittest/rendition1_5')).not.to.be.ok();
-    });
-  });
 });

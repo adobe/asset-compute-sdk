@@ -17,9 +17,8 @@
 
 'use strict';
 
-const rp = require('request-promise-native');
 const path = require('path');
-const fs = require('fs-extra');
+const http = require('@nui/node-httptransfer');
 const httpStorage = require('./http');
 
 function getHttpDownload(params, context) {
@@ -45,6 +44,8 @@ function getHttpDownload(params, context) {
  *  file to upload.
  * @returns {Promise} Completion of this promise indicates that all renditions have been uploaded.
  */
+
+
 async function getHttpUpload(params, result) {
   for (const rendition of params.renditions) {
     if (result.renditions[rendition.name]) {
@@ -52,63 +53,16 @@ async function getHttpUpload(params, result) {
       console.log("START of multipart upload for ingestionId", params.ingestionId, "rendition", rendition.name);
       console.log("uploading", rendition.name);
 
+      // Protect against it not being specified as a multi part upload
       const file = path.join(result.outdir, rendition.name);
-      const stat = await fs.stat(file);
-      const filesize = stat.size;
+      const target = rendition.target || rendition.url;
 
-      // ensure expected information was provided
-      const {target={}} = rendition;
-      const {minPartSize=0, maxPartSize=-1, urls=[]} = target;
-      console.log(`multipart upload min part size of ${minPartSize}, max part size of ${maxPartSize}, url count: ${urls.length}`);
-      if (maxPartSize === 0) {
-        throw 'maxPartSize for a rendition must be specified and not equal to 0';
-      }
-
-      // ensure there are enough URLs
-      if (maxPartSize > 0) {
-        const numParts = Math.ceil(filesize / maxPartSize);
-        if (numParts > urls.length) {
-          throw `number of parts (${numParts}) is more than the number of available part urls (${urls.length})`;
-        }
-      }
-
-      let partSize;
-
-      // if file size is less than minimum part size, use the file's size
-      if (filesize < minPartSize) {
-        partSize = filesize;
-        if (urls.length !== 1) {
-          throw `filesize less than min part size must only have one url`;
-        }
+      if (typeof target === 'string') {
+        await http.uploadFile(file, target);
+      } else if (typeof target === 'object') {
+        await http.uploadMultipartFile(file, target);
       } else {
-        // calculate part size based on number of urls
-        partSize = Math.floor((filesize + urls.length - 1) / urls.length);
-
-        if (partSize < minPartSize) {
-          throw `calculated part size ${partSize} is less than min part size ${minPartSize}`;
-        }
-      }
-
-      console.log(`multipart upload part size is ${partSize}`);
-
-      for (const [index, uri] of urls.entries()) {
-        const start = index * partSize;
-        let end = start + partSize - 1;
-        if (end > filesize - 1) {
-          end = filesize - 1;
-        }
-        console.log(`uploading part ${index}, file range ${start} - ${end}`);
-        const body = fs.createReadStream(file, {start, end});      
-        const options = {
-          method: 'PUT',
-          uri,
-          body
-        };
-        const res = await rp(options)
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          throw `unexpected status code uploading part ${res.statusCode}`;
-        }
-        console.log(`successfully uploaded part ${index}`);
+        throw new Error('target is neither a string nor an object');
       }
     }
   }
