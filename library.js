@@ -33,7 +33,6 @@ const jsonwebtoken = require('jsonwebtoken');
 const request = require('request');
 const zlib = require('zlib');
 const cgroup = require('cgroup-metrics');
-const memory = cgroup.memory();
 const { GenericError, Reason } = require ('./errors.js');
 
 // different storage access
@@ -244,18 +243,39 @@ function startSchedulingMetrics(params, metrics) {
     }
     
     async function updateMemoryMetrics() {
-            const currUsage = await memory.containerUsage();
-            
-            if (!metrics.containerUsage || currUsage > metrics.containerUsage) {
-                
-                metrics.containerUsage = currUsage;   
-                const currPercentage = await memory.containerUsagePercentage(currUsage);
-                
-                if (!metrics.containerUsagePercentage || currPercentage > metrics.containerUsagePercentage) {
-                    
-                    metrics.containerUsagePercentage = currPercentage;
+
+        // currently it just stores the max of each metric
+        // this will change once node-newrelic-serverless is integrated
+        try {
+            const metrics_object = await cgroup.metrics(true);
+            const keys = Object.keys(metrics_object);
+            for (let met in keys) {
+                met = keys[met];
+                const current_metric = metrics_object[met];
+
+                // cpuacct.usage_percpu is an Array
+                if (typeof(current_metric) == "object") {
+                    if (metrics[met]) {
+                        for (const i in current_metric) {
+                            if (!metrics[met][i] || (current_metric[i] > metrics[met][i])) {
+                                metrics[met][i] = current_metric[i];
+                            }
+                        }
+
+                    } else {
+                        metrics[met] = current_metric;
+                    }
+                } else {
+                    if (!metrics[met] || (current_metric > metrics[met])) {
+                        metrics[met] = current_metric;
+                    }
                 }
             }
+
+        } catch (e) {
+            // this is expected to fail in testing environment
+        }
+
         if (currentlyProcessing) {
             scheduleOSMetricsCollection();
         }
@@ -264,6 +284,7 @@ function startSchedulingMetrics(params, metrics) {
     scheduleOSMetricsCollection();
     
 }
+
 
 // -----------------------< check action timeout and send metrics function >-----------------------------------
 

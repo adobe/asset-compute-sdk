@@ -66,6 +66,23 @@ const mockJwt = {
     }
 }
 
+// mock cgroup-metrics
+const mockCgroupMetrics = {
+    metrics: () => {
+        const rand1 = Math.floor(Math.random() * 100);
+        const rand2 = Math.floor(Math.random() * 100);
+        return {
+            "memory.containerUsage": rand1,
+            "memory.containerUsagePercentage": 0.1,
+            "cpuacct.usage": rand1,
+            "cpuacct.stat.user": 3,
+            "cpuacct.stat.system": 5,
+            "cpuacct.usage_percpu": [rand1, rand2, 400, 100]
+        }
+
+    }
+}
+
 proc.env.__OW_ACTION_NAME = '112/worker-test';
 
 describe('library error handling and processing tests', function() {
@@ -74,6 +91,7 @@ describe('library error handling and processing tests', function() {
         fs.removeSync('in/');
 
         mockery.deregisterMock(mockJwt);
+        mockery.deregisterMock(mockCgroupMetrics);
         mockery.disable();
        
     });
@@ -197,8 +215,8 @@ describe('library error handling and processing tests', function() {
         });
     });
 
-    it("should fail with upload error", function (done) {
-        console.error = function() {}
+    it("should fail with upload error", async () => {
+        console.error = function() {};
         mockery.enable({
             warnOnUnregistered: false,
             useCleanCache: true
@@ -224,42 +242,62 @@ describe('library error handling and processing tests', function() {
         let threw = false;
         const options = {
             disableSourceDownloadSource: true
-            };
+        };
 
-        process2(params, options, dummyWorkerFnRendition)
-        .catch(err => {
+        try {
+            await process2(params, options, dummyWorkerFnRendition)
+        }
+        catch(err) {
             if (err instanceof GenericError && err.name === 'GenericError' && err.location === "upload_error") {
                 threw = true;
             }
-        }).then(() => {
-            try { expect(threw).to.be.ok(); }
-            catch (e) { return done(e); }
-            done();
-        });
+        }
+        expect(threw).to.be.ok();
     })
-});
+
+    it('test process with cgroup metrics', async () => {
+        // to verfiy metrics, add log statements printing out metrics
+        console.error = function() {}
+        mockery.enable({
+            warnOnUnregistered: false,
+            useCleanCache: true
+        });
+
+        mockery.registerMock('jsonwebtoken', mockJwt);
+        mockery.registerMock('cgroup-metrics', mockCgroupMetrics);
+
+        const process2 = require('../library').process;
+        const { GenericError } = require ('../errors.js');
+        proc.env.__OW_DEADLINE = Date.now() + 500 // should timeout in <1 second
 
 
-
-/*
-describe('test forEachRendition', () => {
-    it("test event sending", () => {
-        fs.mkdirpSync(path.resolve(__dirname,'/in'));
-        fs.writeFileSync(`in/testfile.png`, "./test/files/file.png");
-        
         const params = {
-            source: "test/files/file.png",
-            renditions: [{name:'testfile.png'}]
+            source: url,
+            renditions: [{
+                fmt:"png",
+                name:"testfile.png"
+            }],
+            auth: {
+                accessToken:true,
+                orgId:true
+            }
+        };
+        let threw = false;
+        const options = {
+            disableSourceDownloadSource: true
         };
 
-        forEachRendition(params, dummyRenditionFn)
-        .then((r) => {
-            console.log(r)
-        })
-        .catch( (e) => {
-            console.log(e);
-        })
-    })
+        try {
+            await process2(params, options, dummyWorkerFnRendition)
+        }
+        catch(err) {
+            if (err instanceof GenericError && err.name === 'GenericError' && err.location === "upload_error") {
+                threw = true;
+            }
+        }
+        expect(threw).to.be.ok();
+    });
 });
-*/
+
+
 
