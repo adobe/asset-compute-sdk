@@ -26,7 +26,8 @@ const Reason = Object.freeze({
     SourceFormatUnsupported: "SourceFormatUnsupported",
     RenditionFormatUnsupported: "RenditionFormatUnsupported",
     SourceUnsupported: "SourceUnsupported",
-    SourceCorrupt: "SourceCorrupt"  
+    SourceCorrupt: "SourceCorrupt",
+    RenditionTooLarge: "RenditionTooLarge"
 });
 
 
@@ -103,6 +104,16 @@ class SourceCorruptError extends AssetComputeBaseError {
     }
 }
 
+// The rendition was too large to send
+class RenditionTooLarge extends AssetComputeBaseError {
+    constructor(message) {
+        super(message, "RenditionTooLarge", Reason.RenditionTooLarge);
+
+        Error.captureStackTrace(this, RenditionTooLarge);
+
+    }
+}
+
 
 module.exports = {
     GenericError,
@@ -110,5 +121,6 @@ module.exports = {
     RenditionFormatUnsupportedError,
     SourceFormatUnsupportedError,
     SourceUnsupportedError,
-    SourceCorruptError
+    SourceCorruptError,
+    RenditionTooLarge
 }

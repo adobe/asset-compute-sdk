@@ -20,6 +20,8 @@
 const path = require('path');
 const http = require('@nui/node-httptransfer');
 const httpStorage = require('./http');
+const fs = require('fs');
+const { GenericError, RenditionTooLarge } = require ('../../errors.js');
 
 function getHttpDownload(params, context) {
   // for now, use single download
@@ -46,28 +48,36 @@ function getHttpDownload(params, context) {
  */
 
 
-async function getHttpUpload(params, result) {
-  for (const rendition of params.renditions) {
-    if (result.renditions[rendition.name]) {
-      // ...upload it via PUT to the url
-      console.log("START of multipart upload for ingestionId", params.ingestionId, "rendition", rendition.name);
-      console.log("uploading", rendition.name);
+function getHttpUpload(params, result) {
+    return Promise.all(params.renditions.map(async function (rendition) {
+        // if the rendition was generated...
+        if (result.renditions[rendition.name]) {
+            console.log("START of multipart upload for ingestionId", params.ingestionId, "rendition", rendition.name);
+            console.log("uploading", rendition.name);
 
-      // Protect against it not being specified as a multi part upload
-      const file = path.join(result.outdir, rendition.name);
-      const target = rendition.target || rendition.url;
-
-      if (typeof target === 'string') {
-        await http.uploadFile(file, target);
-      } else if (typeof target === 'object') {
-        await http.uploadMultipartFile(file, target);
-      } else {
-        throw new Error('target is neither a string nor an object');
-      }
-    }
-  }
-  return result;
+            // Protect against it not being specified as a multi part upload
+            const file = path.join(result.outdir, rendition.name);
+            const target = rendition.target || rendition.url;
+            try {
+                if (typeof target === 'string') {
+                    await http.uploadFile(file, target);
+                } else if (typeof target === 'object') {
+                    await http.uploadAEMMultipartFile(file, target);
+                } else {
+                    throw new GenericError('target is neither a string nor an object', 'upload_error');
+                }
+            } catch (err) {
+                if (err.message && err.message.includes('file is too large')) {
+                  const renditionSize = fs.statSync(file).size;
+                  throw new RenditionTooLarge(`rendition size of ${renditionSize} for ${rendition.name} is too large`);
+                } else {
+                  throw new GenericError(err, "upload_error");
+                }
+            }
+        }
+    }));
 }
+
 
 module.exports = {
   /** Return a promise for downloading the original file(s). */

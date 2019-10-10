@@ -20,6 +20,7 @@
 
 'use strict';
 
+const { RenditionTooLarge } = require ('../../errors.js');
 const httpMultipart =  require('../../src/storage/http-multipart');
 const fs = require('fs-extra');
 const assert = require('assert')
@@ -64,12 +65,14 @@ describe('http multipart tests', function() {
     }
    })
 
-  function _buildMultipartData(minPartSize=0, maxPartSize=-1, urlCount=5, renditionCount=1) {
+  function _buildMultipartData(minPartSize=0, maxPartSize=-1, urlCount=5, renditionCount=1, addFiles=true) {
     const renditions = [];
     const results = {};
     for (let i = 0; i < renditionCount; i++) {
       const renditionName = `rendition${i+1}`;
-      fs.writeFileSync(renditionName, 'hello multipart uploading world!\n', 'utf8');
+      if (addFiles) {
+        fs.writeFileSync(renditionName, 'hello multipart uploading world!\n', 'utf8');
+      }
       const urls = [];
       for (let u = 0; u < urlCount; u++) {
         urls.push(`http://unittest/${renditionName}_${u+1}`);
@@ -109,6 +112,24 @@ describe('http multipart tests', function() {
         console.log(err);
         assert(false);
     }
+    assert(nock.isDone());
+  });
+
+  it('single upload_no_target', async () => {
+    const data = _buildMultipartData(0, 10, 1);
+     nock('http://unittest')
+    .matchHeader('content-length', 33)
+    .put('/rendition1_1', 'hello multipart uploading world!\n')
+    .reply(201)
+    delete data.params.renditions[0].target;
+    data.params.renditions[0].url = 'http://unittest/rendition1_1';
+    try {
+      await httpMultipart.upload(data.params, data.result);
+    } catch (err) {
+        console.log(err);
+        assert(false);
+    }
+    assert(nock.isDone());
   });
 
   it('test multipart upload', async () => {
@@ -165,6 +186,7 @@ describe('http multipart tests', function() {
     try {
         await httpMultipart.upload(data.params, data.result);
     } catch (err) {
+        console.log(err);
         assert(false);
     }
     assert(nock.isDone());
@@ -192,6 +214,8 @@ describe('http multipart tests', function() {
     try {
         await httpMultipart.upload(data.params, data.result);
     } catch (err) {
+      assert(err.name === 'GenericError');
+      assert(err.location === 'upload_error');
       threw = true;
     }
     expect(threw).to.be.ok();
@@ -207,6 +231,7 @@ describe('http multipart tests', function() {
       await httpMultipart.upload(data.params, data.result);
     }
     catch (e) {
+      assert(e instanceof RenditionTooLarge);
       threw = true;
     }
     expect(threw).to.be.ok();
@@ -218,8 +243,9 @@ describe('http multipart tests', function() {
     try {
       await httpMultipart.upload(data.params, data.result);
     }
-    catch (e) {
-      threw = true;
+    catch (err) {
+      assert(err.name === 'GenericError');
+      assert(err.location === 'upload_error');threw = true;
     }
     expect(threw).to.be.ok();
   });
@@ -230,7 +256,9 @@ describe('http multipart tests', function() {
     try {
       await httpMultipart.upload(data.params, data.result);
     }
-    catch (e) {
+    catch (err) {
+      assert(err.name === 'GenericError');
+      assert(err.location === 'upload_error');
       threw = true;
     }
     expect(threw).to.be.ok();
