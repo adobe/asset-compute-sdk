@@ -1,10 +1,10 @@
 /**
  *  ADOBE CONFIDENTIAL
  *  __________________
- * 
+ *
  *  Copyright 2018 Adobe Systems Incorporated
  *  All Rights Reserved.
- * 
+ *
  *  NOTICE:  All information contained herein is, and remains
  *  the property of Adobe Systems Incorporated and its suppliers,
  *  if any.  The intellectual and technical concepts contained
@@ -17,117 +17,72 @@
 
 'use strict';
 
-const request = require('request');
-const mime = require('mime-types');
 const path = require('path');
-const fs = require('fs-extra');
-const { GenericError } = require ('../../errors.js');
+const http = require('@nui/node-httptransfer');
+const fs = require('fs');
+const { GenericError, RenditionTooLarge } = require ('../../errors.js');
 
-function readErrorMessage(file, callback) {
-    const maxSize = 10000
-    fs.stat(file, (err, stats) => {
-        if (err) {
-            return callback(err, "")
-        } else {
-            let msg = ""
-            fs.createReadStream(file, { start: 0, end: Math.min(stats.size, maxSize) })
-                .on("data", s => msg += s)
-                .on("close", () => {
-                    if (stats.size > maxSize) {
-                        msg += "..."
-                    }
-                    callback(null, msg)
-                })
-        }
-    })
+async function getHttpDownload(params, context) {
+    try {
+        await http.downloadFile(params.source.url, context.infile);
+        return context;
+    } catch (err) {
+        throw new GenericError(err.message, "download_error");    
+    }
 }
 
-function getHttpDownload(params, context) {
-    return new Promise(function (resolve, reject) {
-        const file = fs.createWriteStream(context.infile);
-
-        request.get(params.source.url)
-            .on("response", response => {
-                response.on("close", () => 
-                    file.close(() => {
-                        if (response.statusCode >= 300) {
-                            const contentType = response.headers["content-type"]
-                            if (contentType && contentType.startsWith("text/")) {
-                                readErrorMessage(context.infile, (err, body) => {
-                                    fs.unlink(context.infile); // Delete the file async. (But we don't check the result)
-                                    if (err) {
-                                        console.error("failure to read error message", err)
-                                    }
-                                    console.error("download failed with", response.statusCode);
-                                    console.error(body);
-                                    reject(`HTTP GET download of source ${context.infilename} failed with ${response.statusCode}. Body: ${body}`);
-                                })
-                            } else {
-                                reject(`HTTP GET download of source ${context.infilename} failed with ${response.statusCode}.`);
-                            }
-                        } else {
-                            console.log("done downloading", context.infilename);
-                            resolve(context);
-                        }
-                    })
-                )
-            })
-            .on("error", err => {
-                fs.unlink(context.infile); // Delete the file async. (But we don't check the result)
-                console.error("download failed", err);
-                reject(`HTTP GET download of source ${context.infilename} failed with ${err}`);
-            })
-            .pipe(file);
-    }).catch( (err) => {
-            throw new GenericError(err, "download_error");
-    })
-} 
-
-function getHttpUpload(params, result) {
-    return Promise.all(params.renditions.map(function (rendition) {
+/**
+ * "Splits" the source file into equal chunks based on the number of upload URLs provided, and PUTs each chunk to the
+ * URLs.
+ *
+ * @param {Object} params Parameters passed to the nui process.
+ * @param {Array} params.renditions List of renditions to be processed by the multipart upload. It's expected that
+ *  each rendition object contain at least the following elements:
+ *    name (string): The name of the rendition, which will be used to construct the local path of the file to upload.
+ *    target (Object): Information about where the rendition will be uploaded.
+ *      minPartSize (number): The minimum size of a single part that will be accepted by the target endpoint.
+ *      maxPartSize (number): The maximum size of a single part that will be accepted by the target endpoint.
+ *      urls (Array): List of URLs to which the target rendition will be uploaded in parts.
+ * @param {Object} result Information about the output of the nui process.
+ * @param {string} result.outdir Will be used, along with each rendition's name, to construct the local path to each
+ *  file to upload.
+ * @returns {Promise} Completion of this promise indicates that all renditions have been uploaded.
+ */
+async function getHttpUpload(params, result) {
+    await Promise.all(params.renditions.map(async function (rendition) {
         // if the rendition was generated...
         if (result.renditions[rendition.name]) {
-            return new Promise(function (resolve, reject) {
-                // ...upload it via PUT to the url
-                console.log("START of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
-                console.log("uploading", rendition.name, "to", rendition.url);
+            console.log("START of multipart upload for ingestionId", params.ingestionId, "rendition", rendition.name);
+            console.log("uploading", rendition.name);
 
-                const file = path.join(result.outdir, rendition.name);
-                const filesize = fs.statSync(file).size;
-                request({
-                    url: rendition.target || rendition.url,
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": rendition.mimeType || mime.lookup(rendition.name) || 'application/octet-stream'
-                    },
-                    // not using pipe() here as that leads to chunked transfer encoding which S3 does not support
-                    body: filesize === 0 ? "" : fs.readFileSync(file)
-                }, function(err, response, body) {
-                    if (err) {
-                        console.log("FAILURE of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
-                        console.error("upload failed", err);
-                        reject(`HTTP PUT upload of rendition ${rendition.name} failed with ${err}`);
-                    } else if (response.statusCode >= 300) {
-                        console.log("FAILURE of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
-                        console.error("upload failed with", response.statusCode);
-                        console.error(body);
-                        reject(`HTTP PUT upload of rendition ${rendition.name} failed with ${response.statusCode}. Body: ${body}`);
-                    } else {
-                        console.log("END of upload for ingestionId", params.ingestionId, "rendition", rendition.name);
-                        resolve(result);
-                    }
-                });
-            }).catch((err) => {
-                throw new GenericError(err, "upload_error");
-            })
+            // Protect against it not being specified as a multi part upload
+            const file = path.join(result.outdir, rendition.name);
+            const target = rendition.target || rendition.url;
+            try {
+                if (typeof target === 'string') {
+                    await http.uploadFile(file, target);
+                } else if (typeof target === 'object') {
+                    await http.uploadAEMMultipartFile(file, target);
+                } else {
+                    // a bit ugly -- this is caught, and re-thrown below
+                    throw new GenericError('target is neither a string nor an object', 'upload_error');
+                }
+            } catch (err) {
+                if (err.message && err.message.includes('file is too large')) {
+                    const renditionSize = fs.statSync(file).size;
+                    throw new RenditionTooLarge(`rendition size of ${renditionSize} for ${rendition.name} is too large`);
+                } else {
+                    throw new GenericError(err.message, "upload_error");
+                }
+            }
         }
-        return Promise.resolve({});
     }));
+    return result;
 }
 
 module.exports = {
-    /** Return a promise for downloading the original file(s). */
-    download: getHttpDownload,
-    /** Return a promise for uploading the rendition(s). */
-    upload: getHttpUpload
+  /** Return a promise for downloading the original file(s). */
+  download: getHttpDownload,
+  /** Return a promise for uploading the rendition(s). */
+  upload: getHttpUpload
 };

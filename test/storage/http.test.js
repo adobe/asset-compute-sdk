@@ -128,7 +128,7 @@ describe('test http upload/download', () => {
     it("upload should fail", async () => {
         nock("http://fakeurl3.com")
             .put("/earth.jpg")
-            .reply(400, "error!")
+            .reply(400, "error!", { "content-type": "text/plain" })
 
         const params = {
             renditions: [{
@@ -146,7 +146,7 @@ describe('test http upload/download', () => {
             await http.upload(params, result);
         } catch (e) {
             threw = false;
-            expect(e.message).to.be("HTTP PUT upload of rendition earth.jpg failed with 400. Body: error!");
+            expect(e.message).to.be("PUT 'http://fakeurl3.com/earth.jpg' failed with status 400: error!");
         }
         expect(threw).to.be(false);
     }).timeout(10*1000);
@@ -183,7 +183,7 @@ describe('test http upload/download', () => {
                 outdir: './'
             }
             const res = await http.upload(params, result);
-            expect(res.length).to.be(2);
+            expect(res).to.equal(result);
 
         });
 
@@ -221,7 +221,7 @@ describe('test http upload/download', () => {
             }
             catch (e) {
                 threw = false;
-                expect(e.message).to.be("Error: ENOENT: no such file or directory, stat 'earth3.jpg'")
+                expect(e.message).to.be("ENOENT: no such file or directory, stat 'earth3.jpg'")
             }
             expect(threw).to.be(false);
         });

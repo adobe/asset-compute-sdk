@@ -36,8 +36,7 @@ const cgroup = require('cgroup-metrics');
 const { GenericError, Reason } = require ('./errors.js');
 
 // different storage access
-const http = require('./src/storage/http');
-const httpMultipart = require('./src/storage/http-multipart'); 
+const http = require('./src/storage/http'); 
 const local = require('./src/storage/local');
 
 let currentlyProcessing = false;
@@ -534,7 +533,7 @@ function process(params, options, workerFn) {
                     upload = local.upload(params, context);
 
                 } else {
-                    upload = httpMultipart.upload(params, context);
+                    upload = http.upload(params, context);
                 }
                 return upload;
 
@@ -548,11 +547,6 @@ function process(params, options, workerFn) {
                 console.log("download of source file took", metrics.downloadInSeconds, "seconds");
                 console.log("processing of all renditions took", metrics.processingInSeconds, "seconds");
                 console.log("uploading of all renditions took",metrics.uploadInSeconds, "seconds");
-
-                // TODO: bug from http.js returning a Promise.all() array of context
-                if (Array.isArray(context)) {
-                    context = context[0];
-                }
 
                 // send events
                 let chain = Promise.resolve();
