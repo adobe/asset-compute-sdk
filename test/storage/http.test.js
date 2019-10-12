@@ -23,6 +23,7 @@ const expect = require('expect.js');
 const fs = require('fs-extra');
 const http = require('../../src/storage/http');
 const nock = require('nock');
+const assert = require('assert');
 
 const url = "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg";
 const fakeUrl = 'https://fakeurl.com';
@@ -72,7 +73,8 @@ describe('test http upload/download', () => {
         }
 
         await http.download(params, context);
-    });
+        assert(fs.existsSync('./earth.jpg'));
+    }).timeout(5000);
 
     it("test http upload ", async () => {
 		nock(fakeUrl)
@@ -91,7 +93,8 @@ describe('test http upload/download', () => {
             renditions: {"earth.jpg": {}},
             outdir: './'
         }
-        await http.upload(params, result);
+        const res = await http.upload(params, result);
+        expect(res).to.equal(result);
     });
 
     it.skip("download should fail for <1s before succeeding", async () => {
@@ -141,14 +144,14 @@ describe('test http upload/download', () => {
             outdir: './'
         }
         process.env.__OW_DEADLINE = Date.now() + 2000;
-        let threw = true;
+        let threw = false;
         try {
             await http.upload(params, result);
         } catch (e) {
-            threw = false;
+            threw = true;
             expect(e.message).to.be("PUT 'http://fakeurl3.com/earth.jpg' failed with status 400: error!");
         }
-        expect(threw).to.be(false);
+        expect(threw).to.be(true);
     }).timeout(10*1000);
 
 
@@ -215,15 +218,15 @@ describe('test http upload/download', () => {
                 },
                 outdir: './'
             }
-            let threw = true
+            let threw = false;
             try {
                 await http.upload(params, result);
             }
             catch (e) {
-                threw = false;
+                threw = true;
                 expect(e.message).to.be("ENOENT: no such file or directory, stat 'earth3.jpg'")
             }
-            expect(threw).to.be(false);
+            expect(threw).to.be(true);
         });
 
         // we need to set the header: `"x-ms-blob-type": "BlockBlob"` to run this
