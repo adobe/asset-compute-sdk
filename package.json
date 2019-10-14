@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@nui/adobe-io-events-client": "^1.0.0",
-    "@nui/node-httptransfer": "0.0.4",
+    "@nui/node-httptransfer": "0.0.5",
     "cgroup-metrics": "^1.1.2",
     "fs-extra": "^4.0.2",
     "image-size": "^0.8.1",
