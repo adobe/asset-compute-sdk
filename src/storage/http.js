@@ -68,7 +68,8 @@ async function getHttpUpload(params, result) {
                     throw new GenericError('target is neither a string nor an object', 'upload_error');
                 }
             } catch (err) {
-                if (err.message && err.message.includes('file is too large')) {
+                if (err.message && err.message.includes('file is too large') ||
+                    err.status === 413) {
                     const renditionSize = fs.statSync(file).size;
                     throw new RenditionTooLarge(`rendition size of ${renditionSize} for ${rendition.name} is too large`);
                 } else {

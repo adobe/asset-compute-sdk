@@ -224,6 +224,22 @@ describe('http multipart tests', function() {
     assert(! nock.isDone());
   }).timeout(5000);
 
+  it('test multiple renditions with RenditionTooLarge failure', async function() {
+    const data = _buildMultipartData(0, 33, 1, 1);
+      nock('http://unittest')
+        .matchHeader('content-length',33)
+        .put('/rendition1_1', 'hello multipart uploading world!\n')
+        .reply(413, 'The request body is too large ');
+    let threw = false;
+    try {
+        await http.upload(data.params, data.result);
+    } catch (err) {
+      assert(err.name === 'RenditionTooLarge');
+      threw = true;
+    }
+    expect(threw).to.be.ok();
+  }).timeout(5000);
+
   it('test insufficient urls', async () => {
       const data = _buildMultipartData(0, 7, 2);
     let threw = false;
