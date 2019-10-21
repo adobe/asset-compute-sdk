@@ -1,6 +1,6 @@
 {
   "name": "@nui/library",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "main": "library.js",
   "description": "Project Nui – Worker Library",
   "author": {
