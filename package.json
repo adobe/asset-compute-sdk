@@ -34,11 +34,12 @@
     "mocha": "^5.2.0",
     "mockery": "^2.1.0",
     "nock": "^11.4.0",
+    "nyc": "^14.1.1",
     "rimraf": "^3.0.0",
     "util": "^0.12.1"
   },
   "scripts": {
     "pretest": "eslint ./",
-    "test": "./node_modules/.bin/mocha ./test --recursive --exit"
+    "test": "nyc --reporter=html --reporter=text ./node_modules/.bin/mocha ./test --recursive --exit"
   }
 }
