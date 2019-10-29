@@ -193,7 +193,7 @@ describe('http multipart tests', function() {
   }).timeout(5000);
 
   it('test multiple renditions with failure', async function() {
-    const data = _buildMultipartData(5, 20, 2, 2);
+      const data = _buildMultipartData(5, 20, 2, 2);
       nock('http://unittest')
         .matchHeader('content-length',17)
         .put('/rendition1_1', 'hello multipart u')
@@ -202,26 +202,20 @@ describe('http multipart tests', function() {
         .matchHeader('content-length', 16)
         .put('/rendition1_2', 'ploading world!\n')
         .reply(201);
-      const used = nock('http://unittest')
+      nock('http://unittest')
         .matchHeader('content-length',17)
         .put('/rendition2_1', 'hello multipart u')
-        .reply(500);
-      const unused = nock('http://unittest')
+        .reply(500); // invokes retry
+      nock('http://unittest')
+        .matchHeader('content-length',17)
+        .put('/rendition2_1', 'hello multipart u')
+        .reply(201); // retry succeeds
+      nock('http://unittest')
         .matchHeader('content-length', 16)
         .put('/rendition2_2', 'ploading world!\n')
         .reply(201);
-    let threw = false;
-    try {
-        await http.upload(data.params, data.result);
-    } catch (err) {
-      assert(err.name === 'GenericError');
-      assert(err.location === 'upload_error');
-      threw = true;
-    }
-    expect(threw).to.be.ok();
-    assert(used.isDone());
-    assert(! unused.isDone());
-    assert(! nock.isDone());
+      await http.upload(data.params, data.result);
+      assert(nock.isDone());
   }).timeout(5000);
 
   it('test multiple renditions with RenditionTooLarge failure', async function() {
@@ -241,29 +235,32 @@ describe('http multipart tests', function() {
   }).timeout(5000);
 
   it('test insufficient urls', async () => {
-      const data = _buildMultipartData(0, 7, 2);
+    const data = _buildMultipartData(0, 7, 2);
     let threw = false;
     try {
       await http.upload(data.params, data.result);
     }
     catch (e) {
+      console.log(e);
       assert(e instanceof RenditionTooLarge);
       threw = true;
     }
     expect(threw).to.be.ok();
   });
 
-  it('test invalid min part size', async () => {
+  it('test min part size', async () => {
+    nock('http://unittest')
+      .matchHeader('content-length',20)
+      .put('/rendition1_1', 'hello multipart uplo')
+      .reply(201);
+    nock('http://unittest')
+      .matchHeader('content-length',13)
+      .put('/rendition1_2', 'ading world!\n')
+      .reply(201);
+
     const data = _buildMultipartData(20, 100);
-    let threw = false;
-    try {
-      await http.upload(data.params, data.result);
-    }
-    catch (err) {
-      assert(err.name === 'GenericError');
-      assert(err.location === 'upload_error');threw = true;
-    }
-    expect(threw).to.be.ok();
+    await http.upload(data.params, data.result);
+    assert(nock.isDone());
   });
 
   it('test multipart upload missing file', async () => {

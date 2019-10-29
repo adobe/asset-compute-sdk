@@ -26,6 +26,7 @@ const assert = require('assert');
 const { GenericError, Reason, SourceUnsupportedError } = require ('../errors.js');
 const fs = require('fs-extra');
 const mockery = require('mockery');
+const nock = require('nock');
 const process =  require('../library').process;
 const proc = require('process');
 
@@ -204,6 +205,10 @@ describe('library error handling and processing tests', function() {
     })
 
     it("should fail because of a download error", function(done) {
+        nock("http://fakeurl")
+            .get("/testfile.png")
+            .reply(400);
+    
         console.error = function() {}
         const params = {
             source: "http://fakeurl/testfile.png",
