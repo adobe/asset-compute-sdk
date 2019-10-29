@@ -21,6 +21,7 @@
 'use strict';
 
 const expect = require('expect.js');
+const assert = require('assert');
 
 const { GenericError, Reason, SourceUnsupportedError } = require ('../errors.js');
 const fs = require('fs-extra');
@@ -28,6 +29,10 @@ const mockery = require('mockery');
 const process =  require('../library').process;
 const proc = require('process');
 
+const rewire = require('rewire');
+const lib = rewire('../library.js');
+const sourceFilename = lib.__get__('sourceFilename');
+const renditionFilename = lib.__get__('renditionFilename');
 
 const url = 'http://hostname/testfile.png';
 
@@ -84,6 +89,74 @@ const mockCgroupMetrics = {
 }
 
 proc.env.__OW_ACTION_NAME = '112/worker-test';
+
+describe('library source filename tests', function() {
+    it('source as string tests', function() {
+        let source = 'https://server.name/file.jpg?queryPortion';
+        assert.strictEqual(sourceFilename(source), `source.jpg`);
+        source = '';
+        assert.strictEqual(sourceFilename(source), 'source');
+    });
+    it('source.name tests', function() {
+        const source = { };
+        source.name = 'abcdz-AZ1234567890.jpg';
+        assert.strictEqual(sourceFilename(source), `source.jpg`);
+        source.name =  `  %789.PSD`;
+        assert.strictEqual(sourceFilename(source), `source.PSD`);
+        source.name =  `!@#$%^&*().png`;
+        assert.strictEqual(sourceFilename(source), `source.png`);
+        source.name = '';
+        assert.strictEqual(sourceFilename(source), 'source');
+    });
+    it('source.name with mime type tests', function() {
+        const source = { };
+        source.name = 'abcdz-AZ1234567890';
+        source.mimeType = 'image/jpeg';
+        assert.strictEqual(sourceFilename(source), `source.jpeg`);
+        source.name =  '';
+        source.mimeType = 'unknown mimeType'
+        assert.strictEqual(sourceFilename(source), 'source');
+        source.name = 'foo.png';
+        source.mimeType = 'image/jpeg';
+        assert.strictEqual(sourceFilename(source), `source.png`);
+    });
+    it('source.url tests', function() {
+        const source = { url: ''};
+        source.url = 'https://server.name/file.jpg?queryPortion';
+        assert.strictEqual(sourceFilename(source), `source.jpg`);
+        source.url = 'http://server.name/directory/file%20.png?query';
+        assert.strictEqual(sourceFilename(source), `source.png`);
+        source.url = 'http://server.name/directory/file%20.png?';
+        assert.strictEqual(sourceFilename(source), `source.png`);
+        source.url = 'xxx://server.name/directory/file.png?query';
+        assert.strictEqual(sourceFilename(source), `source.png`);
+        source.url = 'NotAUrl';
+        assert.strictEqual(sourceFilename(source), 'source');
+        source.url='';
+        assert.strictEqual(sourceFilename(source), 'source');
+        source.mimeType ='image/png';
+        assert.strictEqual(sourceFilename(source), `source.png`);
+    });
+    it('empty source object', function() {
+        const source = { };
+        assert.strictEqual(sourceFilename(source), 'source');
+    });
+});
+
+describe('library rendition filename tests', function() {
+    it('rendition.fmt undefined', function() {
+        const rendition = { };
+        assert.strictEqual(renditionFilename(rendition, 1), `rendition1`);
+    });
+    it('rendition.fmt set strangely', function() {
+        const rendition = { fmt: '  '};
+        assert.strictEqual(renditionFilename(rendition, 1), `rendition1.  `);
+    });
+    it('rendition.fmt defined', function() {
+        const rendition = { fmt: 'gif' };
+        assert.strictEqual(renditionFilename(rendition, 1), `rendition1.gif`);
+    });
+});
 
 describe('library error handling and processing tests', function() {
     afterEach(function() {

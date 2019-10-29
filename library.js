@@ -21,8 +21,10 @@
 // WARN: this code needs to be cleaned up and reworked. It is still based on the Nui
 //       proof of concept. Its issues are known.
 
+const validURL = require('valid-url');
 const url = require('url');
 const fs = require('fs-extra');
+const mime = require('mime-types')
 const sizeOf = require('image-size');
 const path = require('path');
 const { exec, execSync } = require('child_process');
@@ -39,30 +41,59 @@ const { GenericError, Reason } = require ('./errors.js');
 const http = require('./src/storage/http'); 
 const local = require('./src/storage/local');
 
+const RENDITION_BASENAME = 'rendition';
+const SOURCE_BASENAME = 'source';
+
+
 let currentlyProcessing = false;
 
 // -----------------------< utils >-----------------------------------
 
-const DEFAULT_SOURCE_FILE = "source.file";
 const METRIC_FETCH_INTERVAL_MS = 100;
 
+// function to return an extension for a file
+// if not empty returns a leading period
+// prefers extension from the file over name determined by mimeType
+function extension(filename, mimeType) {
+    let ext = '';
+    if (filename) {
+        ext = path.extname(filename);
+    }
+    if (! ext && mimeType) {
+        const mimeExt = mime.extension(mimeType);
+        ext = mimeExt ? `.${mimeExt}` : '';
+    }
+    return ext;
+}
+
+// Function to return a file name that should be safe for all workers.
+// Respect the format if specified just in case the proper extension is needed
+function renditionFilename(rendition, index) {
+    if (rendition.fmt) {
+        return `${RENDITION_BASENAME}${index}.${rendition.fmt}`;
+    } else {
+        return `${RENDITION_BASENAME}${index}`;
+    }
+}
+
 // There is at least one worker (graphics magick) that in some cases depends
-// upon the file extension so it is best to use source.name if that is
-// defined
-function filename(source) {
+// upon the file extension so it is best to try to use the appropriate one
+// based on the filename, url, or mimetype
+function sourceFilename(source) {
+    if (source.name) {
+        return `${SOURCE_BASENAME}${extension(source.name, source.mimeType)}`;
+    }
+
     if (typeof source === 'string') {
         source = { url: source };
     }
 
-    if (source.name) {
-        return source.name;
+    if (source.url && validURL.isUri(source.url)) {
+        const basename = path.basename(url.parse(source.url).pathname);
+        return  `${SOURCE_BASENAME}${extension(basename, source.mimeType)}`;
     }
 
-    if (source.url) {
-        return path.basename(url.parse(source.url).pathname) || DEFAULT_SOURCE_FILE;
-    }
-
-    return DEFAULT_SOURCE_FILE;
+    return `${SOURCE_BASENAME}${extension(null, source.mimeType)}`;
 }
 
 function timer_start() {
@@ -394,7 +425,7 @@ function process(params, options, workerFn) {
                 params.source = source = { url: source };
             }
 
-            context.infilename = filename(source);
+            context.infilename = sourceFilename(source);
             context.infile = path.join(context.indir, context.infilename);
 
             // 1. download source file
@@ -647,16 +678,11 @@ function forEachRendition(params, options, renditionFn) {
 
         if (Array.isArray(params.renditions)) {
             // for each rendition to generate, create a promise that calls the actual rendition function passed
-            const renditionPromiseFns = params.renditions.map(function (rendition) {
+            const renditionPromiseFns = params.renditions.map(function (rendition, index) {
 
                 // default rendition filename if not specified
                 if (rendition.name === undefined) {
-                    const size = `${rendition.wid}x${rendition.hei}`;
-                    if (validUrl.isUri(infile)) {
-                        rendition.name = `${path.basename(url.parse(infile).pathname)}.${size}.${rendition.fmt}`;
-                    } else {
-                        rendition.name = `${path.basename(infile)}.${size}.${rendition.fmt}`;
-                    }
+                    rendition.name = renditionFilename(rendition, infile, index);
                 }
 
                 // for sequential execution below it's critical to not start the promise executor yet,
@@ -797,7 +823,6 @@ function shellScriptWorker(shellScriptName) {
 // -----------------------< exports >-----------------------------------
 
 module.exports = {
-    filename,
     process,
     forEachRendition,
     shellScriptWorker,
