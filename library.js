@@ -526,8 +526,8 @@ function process(params, options, workerFn) {
                         context.renditions[f]['repo:size'] = stat.size;
                         try {
                             const dimensions = sizeOf(file);
-                            context.renditions[f]['tiff:ImageWidth'] = dimensions.width;
-                            context.renditions[f]['tiff:ImageHeight'] = dimensions.height;
+                            context.renditions[f]['tiff:imageWidth'] = dimensions.width;
+                            context.renditions[f]['tiff:imageHeight'] = dimensions.height;
                         } catch (err) {
                             // The rendition may or may not be an image, so log error for informational purposes
                             console.log(`No dimensions found for file ${f}`, err.message || err);
