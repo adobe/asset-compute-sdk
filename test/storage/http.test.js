@@ -224,7 +224,7 @@ describe('test http upload/download', () => {
             }
             catch (e) {
                 threw = true;
-                expect(e.message).to.be("ENOENT: no such file or directory, stat 'earth3.jpg'")
+                expect(e.message).to.contain('earth3.jpg');
             }
             expect(threw).to.be(true);
         });

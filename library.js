@@ -680,10 +680,7 @@ function forEachRendition(params, options, renditionFn) {
             // for each rendition to generate, create a promise that calls the actual rendition function passed
             const renditionPromiseFns = params.renditions.map(function (rendition, index) {
 
-                // default rendition filename if not specified
-                if (rendition.name === undefined) {
-                    rendition.name = renditionFilename(rendition, infile, index);
-                }
+                rendition.name = renditionFilename(rendition, index);
 
                 // for sequential execution below it's critical to not start the promise executor yet,
                 // so we collect functions that return promises

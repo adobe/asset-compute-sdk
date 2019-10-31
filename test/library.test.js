@@ -27,7 +27,7 @@ const { GenericError, Reason, SourceUnsupportedError } = require ('../errors.js'
 const fs = require('fs-extra');
 const mockery = require('mockery');
 const nock = require('nock');
-const process =  require('../library').process;
+const {forEachRendition, process} =  require('../library');
 const proc = require('process');
 
 const rewire = require('rewire');
@@ -376,6 +376,35 @@ describe('library error handling and processing tests', function() {
         expect(threw).to.be.ok();
     });
 });
+
+describe('forEachRendition tests', function() {
+    it('should text rendition with no name provided', async () => {
+        // Dummy Rendition function that resolves
+        function ValidateRenditionNameFn(infile, rendition, outdir) {
+            assert.equal(infile, 'in/source.jpg');
+            assert.equal(rendition.name, 'rendition0.png');
+            fs.writeFileSync(`${outdir}/${rendition.name}`, "hello world");
+            return Promise.resolve(rendition);
+        }
+        nock('https://example.com')
+            .get('/MySourceFile.jpg')
+            .reply(200, "hello world");
+        nock('https://example.com')
+            .put('/MyRendition.png')
+            .reply(200);
+
+        const params = {
+            source: 'https://example.com/MySourceFile.jpg',
+            renditions: [{
+                fmt:"png",
+                target:"https://example.com/MyRendition.png"
+            }]
+        };
+        await forEachRendition(params, ValidateRenditionNameFn);
+
+    })
+})
+
 
 
 
