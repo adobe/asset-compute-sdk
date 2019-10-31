@@ -1,5 +1,12 @@
 .vscode
 .serverless
+coverage
+.nyc_output
+test/
+.circleci
+Jenkinsfile
+.eslintrc.js
 
 # npm pack leftovers
 *.tgz
+
