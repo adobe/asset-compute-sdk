@@ -480,6 +480,12 @@ function process(params, options, workerFn) {
 
                 // --------------------------------------------------------
 
+                // set rendition names
+
+                params.renditions.forEach(function(rendition, index) {
+                    rendition.name = renditionFilename(rendition, index);
+                });
+
                 // 3. run worker (or get worker promise)
                 try {
                     timers.processing = timer_start();
@@ -678,9 +684,7 @@ function forEachRendition(params, options, renditionFn) {
 
         if (Array.isArray(params.renditions)) {
             // for each rendition to generate, create a promise that calls the actual rendition function passed
-            const renditionPromiseFns = params.renditions.map(function (rendition, index) {
-
-                rendition.name = renditionFilename(rendition, index);
+            const renditionPromiseFns = params.renditions.map(function (rendition) {
 
                 // for sequential execution below it's critical to not start the promise executor yet,
                 // so we collect functions that return promises

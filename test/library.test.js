@@ -60,7 +60,7 @@ function workerFn(infile) {
 function dummyWorkerFnRendition(infile) {
     console.log(`infile is ${infile}`);
     expect(infile).to.equal(url);
-    fs.writeFileSync(`out/testfile.png`, "./test/files/file.png");
+    fs.writeFileSync(`out/rendition0.png`, "./test/files/file.png");
     return Promise.resolve({fmt:"png"});
 }
 
@@ -309,8 +309,7 @@ describe('library error handling and processing tests', function() {
         const params = {
             source: url,
             renditions: [{
-                fmt:"png",
-                name:"testfile.png"
+                fmt:"png"
             }],
             auth: {
                 accessToken:true,
@@ -352,8 +351,7 @@ describe('library error handling and processing tests', function() {
         const params = {
             source: url,
             renditions: [{
-                fmt:"png",
-                name:"testfile.png"
+                fmt:"png"
             }],
             auth: {
                 accessToken:true,
@@ -377,8 +375,8 @@ describe('library error handling and processing tests', function() {
     });
 });
 
-describe('forEachRendition tests', function() {
-    it('should text rendition with no name provided', async () => {
+describe('source and rendition name tests', function() {
+    it('forEachRendition() should have correct rendition name', async () => {
         // Dummy Rendition function that resolves
         function ValidateRenditionNameFn(infile, rendition, outdir) {
             assert.equal(infile, 'in/source.jpg');
@@ -402,8 +400,36 @@ describe('forEachRendition tests', function() {
         };
         await forEachRendition(params, ValidateRenditionNameFn);
 
+    });
+
+    it('process() should have correct rendition name', async () => {
+        // Dummy Rendition function that resolves
+        function ValidateRenditionNameFn(infile, params, outdir) {
+            assert.equal(params.renditions.length, 1);
+            const rendition = params.renditions[0];
+            assert.equal(infile, 'in/source.jpg');
+            assert.equal(rendition.name, 'rendition0.png');
+            fs.writeFileSync(`${outdir}/${rendition.name}`, "hello world");
+            return Promise.resolve(rendition);
+        }
+        nock('https://example.com')
+            .get('/MySourceFile.jpg')
+            .reply(200, "hello world");
+        nock('https://example.com')
+            .put('/MyRendition.png')
+            .reply(200);
+
+        const params = {
+            source: 'https://example.com/MySourceFile.jpg',
+            renditions: [{
+                fmt:"png",
+                target:"https://example.com/MyRendition.png"
+            }]
+        };
+        await process(params, ValidateRenditionNameFn);
+
     })
-})
+});
 
 
 
