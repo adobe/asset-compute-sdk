@@ -21,15 +21,23 @@
 'use strict';
 
 const assert = require('assert');
-
 const Source = require('../lib/source');
 
-describe("Source", () => {
+describe("source.js", () => {
     it('gives a filename when source as string tests', function() {
-        let source = 'test-source.png';
-        assert.strictEqual(new Source(source).name, 'test-source.png');
-        source = '';
-        assert.strictEqual(new Source(source).name, '');
+        let sourceName = 'test-source.png';
+        let source = new Source(sourceName);
+        assert.strictEqual(source.name, 'test-source.png');
+        assert.strictEqual(source.path, 'test-source.png');
+        source = new Source(sourceName, "/");
+        assert.strictEqual(source.name, 'test-source.png');
+        assert.strictEqual(source.path, '/test-source.png');
+        source = new Source(sourceName, "/tmp");
+        assert.strictEqual(source.name, 'test-source.png');
+        assert.strictEqual(source.path, '/tmp/test-source.png');
+        sourceName = '';
+        source = new Source(sourceName);
+        assert.strictEqual(source.name, '');
     });
     it('handles source.name for name generation tests', function() {
         const source = { };
