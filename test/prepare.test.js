@@ -20,13 +20,20 @@
 
 'use strict';
 
-//const mockFs = require('mock-fs');
-//const fs = require('fs-extra');
-//const nock = require('nock');
+const mockFs = require('mock-fs');
+const fs = require('fs-extra');
+const nock = require('nock');
 const assert = require('assert');
-
+const {actionName, validateParameters, createDirectories, cleanupDirectories} = require('../lib/prepare');
 
 describe('prepare tests', () => {
+    it('just fails', () => {
+        assert.fail();
+    });
+});
+
+
+describe('cleanup tests for folders', () => {
     it('just fails', () => {
         assert.fail();
     });

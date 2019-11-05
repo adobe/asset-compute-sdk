@@ -24,9 +24,38 @@
 //const fs = require('fs-extra');
 //const nock = require('nock');
 const assert = require('assert');
+const sinon = require('sinon');
 
-describe('cleanup tests', () => {
-    it('just fails', () => {
-        assert.fail();
+const {removeTimers} = require('../lib/cleanup');
+
+describe('cleanup tests for timers', () => {
+    let clock;
+    beforeEach(() => {
+        clock = sinon.useFakeTimers();
+    });
+
+    afterEach(() => {
+        clock.restore();
+    });
+    it('does nothing when there are no timers set', () => {
+        sinon.spy(clock, "clearTimeout");
+
+        const scheduledEvents = []; 
+        const result = removeTimers(scheduledEvents);
+        assert.equal(result.length, 0);
+
+        sinon.assert.notCalled(clock.clearTimeout);
+    });
+
+    it('stops scheduled timers', () => {
+        const spy = sinon.spy(clock, "clearTimeout");
+
+        const scheduledEvents = [ 42, 404, 1337 ]; 
+        const result = removeTimers(scheduledEvents);
+        assert.equal(result.length, 0);
+
+        sinon.assert.calledWith(spy.firstCall, 42);
+        sinon.assert.calledWith(spy.secondCall, 404);
+        sinon.assert.calledWith(spy.thirdCall, 1337);
     });
 });
