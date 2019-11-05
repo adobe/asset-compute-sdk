@@ -21,7 +21,7 @@
 'use strict';
 const expect = require('expect.js');
 const fs = require('fs-extra');
-const http = require('../../src/storage/http');
+const http = require('../../lib/storage/http');
 const nock = require('nock');
 const assert = require('assert');
 

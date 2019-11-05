@@ -21,39 +21,25 @@
 'use strict';
 
 const expect = require('expect.js');
+const mockery = require('mockery');
+const fs = require('fs-extra');
+const mockFs = require('mock-fs');
+const nock = require('nock');
+const {forEachRendition, process} =  require('../index');
+const proc = require('process');
 const assert = require('assert');
 
-const { GenericError, Reason, SourceUnsupportedError } = require ('../errors.js');
-const fs = require('fs-extra');
-const mockery = require('mockery');
-const nock = require('nock');
-const {forEachRendition, process} =  require('../library');
-const proc = require('process');
-
-const rewire = require('rewire');
-const lib = rewire('../library.js');
-const sourceFilename = lib.__get__('sourceFilename');
-const renditionFilename = lib.__get__('renditionFilename');
+const { GenericError, Reason, SourceUnsupportedError } = require('@nui/asset-compute-commons');
 
 const url = 'http://hostname/testfile.png';
 
 const originalConsoleError = console.error;
-
-
 
 // Dummy Worker function that returns a resolved promise
 function dummyWorkerFn(infile) {
     console.log(`infile is ${infile}`);
     expect(infile).to.equal(url);
     return Promise.resolve();
-}
-
-// Worker function varifies that it is passed the url, not a file name 
-// Worker fails because of source unsupported
-function workerFn(infile) {
-    console.log(`infile is ${infile}`);
-    expect(infile).to.equal(url);
-    return Promise.reject(new SourceUnsupportedError(`Source unsupported: ${infile}`))
 }
 
 // Dummy Worker function that returns rendition
@@ -91,75 +77,10 @@ const mockCgroupMetrics = {
 
 proc.env.__OW_ACTION_NAME = '112/worker-test';
 
-describe('library source filename tests', function() {
-    it('source as string tests', function() {
-        let source = 'https://server.name/file.jpg?queryPortion';
-        assert.strictEqual(sourceFilename(source), `source.jpg`);
-        source = '';
-        assert.strictEqual(sourceFilename(source), 'source');
+describe('library error handling and processing tests', function () {
+    beforeEach(() => {
+        mockFs();
     });
-    it('source.name tests', function() {
-        const source = { };
-        source.name = 'abcdz-AZ1234567890.jpg';
-        assert.strictEqual(sourceFilename(source), `source.jpg`);
-        source.name =  `  %789.PSD`;
-        assert.strictEqual(sourceFilename(source), `source.PSD`);
-        source.name =  `!@#$%^&*().png`;
-        assert.strictEqual(sourceFilename(source), `source.png`);
-        source.name = '';
-        assert.strictEqual(sourceFilename(source), 'source');
-    });
-    it('source.name with mime type tests', function() {
-        const source = { };
-        source.name = 'abcdz-AZ1234567890';
-        source.mimeType = 'image/jpeg';
-        assert.strictEqual(sourceFilename(source), `source.jpeg`);
-        source.name =  '';
-        source.mimeType = 'unknown mimeType'
-        assert.strictEqual(sourceFilename(source), 'source');
-        source.name = 'foo.png';
-        source.mimeType = 'image/jpeg';
-        assert.strictEqual(sourceFilename(source), `source.png`);
-    });
-    it('source.url tests', function() {
-        const source = { url: ''};
-        source.url = 'https://server.name/file.jpg?queryPortion';
-        assert.strictEqual(sourceFilename(source), `source.jpg`);
-        source.url = 'http://server.name/directory/file%20.png?query';
-        assert.strictEqual(sourceFilename(source), `source.png`);
-        source.url = 'http://server.name/directory/file%20.png?';
-        assert.strictEqual(sourceFilename(source), `source.png`);
-        source.url = 'xxx://server.name/directory/file.png?query';
-        assert.strictEqual(sourceFilename(source), `source.png`);
-        source.url = 'NotAUrl';
-        assert.strictEqual(sourceFilename(source), 'source');
-        source.url='';
-        assert.strictEqual(sourceFilename(source), 'source');
-        source.mimeType ='image/png';
-        assert.strictEqual(sourceFilename(source), `source.png`);
-    });
-    it('empty source object', function() {
-        const source = { };
-        assert.strictEqual(sourceFilename(source), 'source');
-    });
-});
-
-describe('library rendition filename tests', function() {
-    it('rendition.fmt undefined', function() {
-        const rendition = { };
-        assert.strictEqual(renditionFilename(rendition, 1), `rendition1`);
-    });
-    it('rendition.fmt set strangely', function() {
-        const rendition = { fmt: '  '};
-        assert.strictEqual(renditionFilename(rendition, 1), `rendition1.  `);
-    });
-    it('rendition.fmt defined', function() {
-        const rendition = { fmt: 'gif' };
-        assert.strictEqual(renditionFilename(rendition, 1), `rendition1.gif`);
-    });
-});
-
-describe('library error handling and processing tests', function() {
     afterEach(function() {
         console.error = originalConsoleError;
         fs.removeSync('in/');
@@ -167,22 +88,26 @@ describe('library error handling and processing tests', function() {
         mockery.deregisterMock(mockJwt);
         mockery.deregisterMock(mockCgroupMetrics);
         mockery.disable();
-       
+        mockFs.restore();
     });
     
-    it('test process', function(done) {
+    it('tests process with 3 parameters', function(done) {
         const params = {
             source: url,
             renditions: []
         };
         const options = {
-        disableSourceDownloadSource: true
+            disableSourceDownload: true
         };
+
+        function workerFn(infile) {
+            expect(infile).to.equal(url);
+            return Promise.reject(new SourceUnsupportedError(`Source unsupported: ${infile}`))
+        }
         process(params, options, workerFn)
         .then(() => { done(Error('process should fail'))})
         .catch(() => { console.log('in catch as we should'); done(); })
     });
-
 
     it("should fail with GenericError because no source url found", function(done) {
         console.error = function() {}
@@ -208,7 +133,7 @@ describe('library error handling and processing tests', function() {
         nock("http://fakeurl")
             .get("/testfile.png")
             .reply(400);
-    
+            
         console.error = function() {}
         const params = {
             source: "http://fakeurl/testfile.png",
@@ -221,7 +146,7 @@ describe('library error handling and processing tests', function() {
             console.log(`error from library: ${err}`)
             if (err instanceof GenericError) {
                 threw = true;
-            }
+            } 
         }).then(() => {
             try { expect(threw).to.be.ok(); }
             catch (e) { return done(e); }
@@ -258,9 +183,14 @@ describe('library error handling and processing tests', function() {
         };
         let threw = false;
         const options = {
-            disableSourceDownloadSource: true
-            };
+            disableSourceDownload: true
+        };
 
+        function workerFn(infile) {
+            console.log(`infile is ${infile}`);
+            expect(infile).to.equal(url);
+            return Promise.reject(new SourceUnsupportedError(`Source unsupported: ${infile}`))
+        }
         process(params, options, workerFn)
         .catch(err => {
             console.log('Expected errorReason: SourceUnsupported', err.name);
@@ -304,7 +234,7 @@ describe('library error handling and processing tests', function() {
 
         // must require the module after registering the mock 
         const process2 = require('../library').process;
-        const { GenericError } = require ('../errors.js');
+        const { GenericError } = require('@nui/asset-compute-commons');
 
         const params = {
             source: url,
@@ -318,11 +248,11 @@ describe('library error handling and processing tests', function() {
         };
         let threw = false;
         const options = {
-            disableSourceDownloadSource: true
+            disableSourceDownload: true
         };
 
         try {
-            await process2(params, options, dummyWorkerFnRendition)
+            await process2(params, options, dummyWorkerFnRendition);
         }
         catch(err) {
             if (err instanceof GenericError && err.name === 'GenericError' && err.location === "upload_error") {
@@ -344,9 +274,8 @@ describe('library error handling and processing tests', function() {
         mockery.registerMock('cgroup-metrics', mockCgroupMetrics);
 
         const process2 = require('../library').process;
-        const { GenericError } = require ('../errors.js');
-        proc.env.__OW_DEADLINE = Date.now() + 500 // should timeout in <1 second
-
+        const { GenericError } = require('@nui/asset-compute-commons');
+        proc.env.__OW_DEADLINE = Date.now() + 500; // should timeout in <1 second
 
         const params = {
             source: url,
@@ -360,11 +289,11 @@ describe('library error handling and processing tests', function() {
         };
         let threw = false;
         const options = {
-            disableSourceDownloadSource: true
+            disableSourceDownload: true
         };
 
         try {
-            await process2(params, options, dummyWorkerFnRendition)
+            await process2(params, options, dummyWorkerFnRendition);
         }
         catch(err) {
             if (err instanceof GenericError && err.name === 'GenericError' && err.location === "upload_error") {
@@ -399,7 +328,6 @@ describe('source and rendition name tests', function() {
             }]
         };
         await forEachRendition(params, ValidateRenditionNameFn);
-
     });
 
     it('process() should have correct rendition name', async () => {
@@ -409,6 +337,7 @@ describe('source and rendition name tests', function() {
             const rendition = params.renditions[0];
             assert.equal(infile, 'in/source.jpg');
             assert.equal(rendition.name, 'rendition0.png');
+            console.log(outdir);
             fs.writeFileSync(`${outdir}/${rendition.name}`, "hello world");
             return Promise.resolve(rendition);
         }
@@ -432,5 +361,29 @@ describe('source and rendition name tests', function() {
 });
 
 
+/*
+        const rendition = {};
+        rendition.hei = '42';
+        rendition.wid = '84';
+        rendition.fmt = 'png';
 
+        const infile = 'infile-path'; 
 
+        const returnedRenditionName = nameGenerator(rendition, infile);
+        expect(returnedRenditionName).to.equal('infile-path.84x42.png');
+    });
+
+    it('handles generating rendition name with valid url', function() {
+        const nameGenerator = rewiredLib.__get__('generateRenditionName'); 
+
+        const rendition = {};
+        rendition.hei = '42';
+        rendition.wid = '84';
+        rendition.fmt = 'png';
+
+        const infile = 'http://myurl.com/hello'; 
+
+        const returnedRenditionName = nameGenerator(rendition, infile);
+        expect(returnedRenditionName).to.equal('hello.84x42.png');
+    });
+});*/

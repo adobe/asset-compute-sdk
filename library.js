@@ -21,191 +21,204 @@
 // WARN: this code needs to be cleaned up and reworked. It is still based on the Nui
 //       proof of concept. Its issues are known.
 
-const validURL = require('valid-url');
-const url = require('url');
-const fs = require('fs-extra');
-const mime = require('mime-types')
-const sizeOf = require('image-size');
-const path = require('path');
-const { exec, execSync } = require('child_process');
 const proc = require('process');
-const validUrl = require('valid-url');
-const { AdobeIOEvents } = require('@nui/adobe-io-events-client');
-const jsonwebtoken = require('jsonwebtoken');
-const request = require('request');
-const zlib = require('zlib');
-const cgroup = require('cgroup-metrics');
-const { GenericError, Reason } = require ('./errors.js');
 
-// different storage access
-const http = require('./src/storage/http'); 
-const local = require('./src/storage/local');
+const { GenericError, Reason } = require('@nui/asset-compute-commons');
 
-const RENDITION_BASENAME = 'rendition';
-const SOURCE_BASENAME = 'source';
+// from src/libraries
+// TODO: General import for all this, once dependencies have been minimized and encapsulated
 
+const shellRunner = require('./lib/shell/shellscript');
+const fileUtils = require('./lib/utils/file-utils');
+const timerUtils = require('./lib/utils/timer');
+const eventUtils = require('./lib/utils/events-utils');
+const metricsUtils = require('./lib/utils/metrics-utils');
+const renditionProcess = require('./lib/rendition-process/rendition-process');
+const renditionHelper = require('./lib/rendition-process/rendition-helper');
 
-let currentlyProcessing = false;
-
-// -----------------------< utils >-----------------------------------
-
-const METRIC_FETCH_INTERVAL_MS = 100;
-
-// function to return an extension for a file
-// if not empty returns a leading period
-// prefers extension from the file over name determined by mimeType
-function extension(filename, mimeType) {
-    let ext = '';
-    if (filename) {
-        ext = path.extname(filename);
+// -----------------------< event handlers >------------------------------------------
+/*function getEventHandler(params){
+    return eventUtils.getEventHandler(params);
+}*/
+// -----------------------< core processing logic >-----------------------------------
+async function cleanup(err, context, scheduledEvents) {
+    for(let i = 0; i < scheduledEvents.length; i++){
+        clearTimeout(scheduledEvents[i]);
     }
-    if (! ext && mimeType) {
-        const mimeExt = mime.extension(mimeType);
-        ext = mimeExt ? `.${mimeExt}` : '';
-    }
-    return ext;
-}
+    if (err) console.error(err);
 
-// Function to return a file name that should be safe for all workers.
-// Respect the format if specified just in case the proper extension is needed
-function renditionFilename(rendition, index) {
-    if (rendition.fmt) {
-        return `${RENDITION_BASENAME}${index}.${rendition.fmt}`;
-    } else {
-        return `${RENDITION_BASENAME}${index}`;
-    }
-}
-
-// There is at least one worker (graphics magick) that in some cases depends
-// upon the file extension so it is best to try to use the appropriate one
-// based on the filename, url, or mimetype
-function sourceFilename(source) {
-    if (source.name) {
-        return `${SOURCE_BASENAME}${extension(source.name, source.mimeType)}`;
-    }
-
-    if (typeof source === 'string') {
-        source = { url: source };
-    }
-
-    if (source.url && validURL.isUri(source.url)) {
-        const basename = path.basename(url.parse(source.url).pathname);
-        return  `${SOURCE_BASENAME}${extension(basename, source.mimeType)}`;
-    }
-
-    return `${SOURCE_BASENAME}${extension(null, source.mimeType)}`;
-}
-
-function timer_start() {
-    return proc.hrtime();
-}
-
-function timer_elapsed_seconds(time) {
-    const elapsed = proc.hrtime(time);
-    return (elapsed[0] + (elapsed[1] / 1e9)).toFixed(3);
-}
-
-// -----------------------< events >--------------------------------------------------
-
-function getEventHandler(params) {
-    if (params.auth && params.auth.accessToken && params.auth.orgId) {
-        const auth = params.auth;
-
-        const jwt = jsonwebtoken.decode(auth.accessToken);
-        if (!jwt) {
-            console.error("invalid accessToken: ", params.auth);
-            return {
-                sendEvent: function() {
-                    return Promise.resolve();
-                }
+    try {
+        if (context.indir) await fileUtils.remove(context.indir);
+        if (context.outdir) {
+            if (context.isLocalFile) {
+                // TODO: remove just file?
+            } else {
+                await fileUtils.remove(context.outdir);
             }
         }
-        const providerId = `asset_compute_${auth.orgId}_${jwt.client_id}`;
+    } catch(e) {
+        console.error("error during cleanup:", e.message || e);
+    }
+}
 
-        const ioEvents = new AdobeIOEvents({
-            accessToken: auth.accessToken,
-            orgId: auth.orgId,
-            defaults: {
-                providerId: providerId
+function process(params, options, workerFnAsync) {
+    // prepare options
+    if (typeof options === "function") {
+        workerFnAsync = options;
+        options = {};
+    }
+    options = options || {};
+    options.dir = options.dir || ".";
+
+    // set up metrics
+    const timers = {};
+    const metrics = {};
+    timers.duration = timerUtils.timer_start();
+
+    // metrics scheduling
+    const osMetricsTimeoutId = metricsUtils.scheduleOSMetrics(metrics);
+    const timeoutId = metricsUtils.scheduleTimeoutMetrics(metrics, timers);
+    const scheduledMetrics = [osMetricsTimeoutId, timeoutId];
+
+    return new Promise(async function(resolve, reject) {
+        const context = {};
+        try {
+            // PHASE 1 - PREPARE
+            try{
+                const source = await renditionProcess.createInDirectory(context, options, params);
+                await renditionProcess.createOutDirectory(context, options, params);
+
+                timers.download = timerUtils.timer_start();
+
+                await renditionProcess.download(params, options, context, source);
+
+                // Only set metrics if we really did a download
+                if (renditionProcess.isUrlDownload()) {
+                    try {
+                        metrics.downloadInSeconds = parseFloat(timerUtils.timer_elapsed_seconds(timers.download));
+                    } catch(e) {
+                        console.error("error getting timing metrics:", e.message || e);
+                    }
+                    console.log("END download for ingestionId", params.ingestionId, "file", context.infile);
+                    const stats = fileUtils.statSync(context.infile);
+                    metrics.sourceSize = stats.size;
+                    metrics.sourceName = context.infilename;
+                    metrics.sourceMimetype = source.mimeType;
+                }
+            } catch(err){
+                eventUtils.sendError(params, err, metrics, "download_error"); // fire and forget
+                await cleanup(err, context, scheduledMetrics);
+                return reject(err);
             }
-        });
 
-        return {
-            sendEvent: async function(type, payload) {
+            // PHASE 2 - RUN RENDITION PROCESS
+            try{
+                timers.processing = timerUtils.timer_start();
+
+                context.workerResult = await renditionProcess.executeWorker(context.infile,
+                                                                            params,
+                                                                            context.outdir,
+                                                                            options.processingOptions,
+                                                                            workerFnAsync);
+                console.log("workerResult", context.workerResult);
+
                 try {
-                    console.log("sending event", type, "as", providerId);
-                    await ioEvents.sendEvent({
-                        code: "asset_compute",
-                        payload: Object.assign(payload || {}, {
-                            type: type,
-                            date: new Date().toISOString(),
-                            requestId: params.requestId || params.ingestionId || proc.env.__OW_ACTIVATION_ID,
-                            source: params.source.url || params.source,
-                            userData: params.userData
-                        })
-                    })
-                    console.log("successfully sent event");
-                } catch (e) {
-                    console.error("error sending event:", e.message || e);
-                    await sendNewRelicMetrics(params, {
-                        eventType: "error",
-                        reason: Reason.GenericError,
-                        location: "IOEvents",
-                        message: `Error sending IO event: ${e.message || e}`
-                    });
+                    metrics.processingInSeconds = parseFloat(timerUtils.timer_elapsed_seconds(timers.processing));
+                } catch(e) {
+                    console.error("error getting timing metrics:", e.message || e);
                 }
-            },
-            sendErrorEvent: async function(type, payload, errorMetrics) {
-                try {
-                    console.log("sending event", type, "as", providerId);
-                    await sendNewRelicMetrics(params, errorMetrics || { eventType: type });
-                    await ioEvents.sendEvent({
-                        code: "asset_compute",
-                        payload: Object.assign(payload || {}, {
-                            type: type,
-                            date: new Date().toISOString(),
-                            requestId: params.requestId || params.ingestionId || proc.env.__OW_ACTIVATION_ID,
-                            source: params.source.url || params.source,
-                            userData: params.userData
-                        })
-                    });
-                    console.log("successfully sent error events and metrics");
-
-                } catch (e) {
-                    console.error("error sending event:", e.message || e);
-                    await sendNewRelicMetrics(params, {
-                        eventType: "error",
-                        reason: Reason.GenericError,
-                        location: "IOEvents",
-                        message: `Error sending IO event: ${e.message || e}`
-                    });
-
+            } catch(err){
+                eventUtils.sendError(params, err, metrics, "worker_error"); // fire and forget
+                await cleanup(err, context, scheduledMetrics);
+                // This is where we will catch the errors that happen inside the workers. We need to figure
+                // out if we will throw the specific error types in workers or not. Library needs to know
+                // what kind of error it was to pass along as `errorReason` for events/metrics
+                if (err.reason in Reason || err instanceof GenericError) {
+                    return reject(err);
                 }
-                    
-               
+                return reject(new GenericError(err.message || err, `${proc.env.__OW_ACTION_NAME.split('/').pop()}_processing`));
             }
-        }
 
-    } else {
-        // TODO: do not log tokens
-        console.error("`auth` missing or incomplete in request, cannot send events: ", params.auth);
-        return {
-            sendEvent: async function(type, payload) {
-                // Logging info about event is useful when running in test environments
-                console.log("Following event is not sent:", type, JSON.stringify(payload));
-            },
-            sendErrorEvent: async function(type, payload, errorMetrics) {
-                // Logging info about event is useful when running in test environments
-                console.log("Following event is not sent:", type, JSON.stringify(payload));
-                await sendNewRelicMetrics(params, errorMetrics || { eventType: type }); // still should send error metrics
+            try{
+                // collect generated files
+                const count = await renditionProcess.collectRenditionFiles(context);
+
+                // Strange situation where worker didn't fail and yet there are no renditions
+                if (count === 0) {
+                    return reject(new GenericError("No generated renditions found.", "worker_result"));
+                }
+
+                await renditionProcess.uploadRenditionFiles(params, context);
+                console.log(JSON.stringify(context));
+            } catch(err){
+                eventUtils.sendError(params, err, metrics, "library_processing_error"); // fire and forget
+                await cleanup(err, context, scheduledMetrics);
+                return reject(err);
             }
+
+            // from now on, there is at least one rendition generated
+            // PHASE 3 - SEND METRICS (and then resolve)
+            try {
+                metrics.uploadInSeconds = parseFloat(timerUtils.timer_elapsed_seconds(timers.upload));
+            } catch(e) {
+                console.error("error getting timing metrics:", e.message || e);
+            }
+            console.log("download of source file took", metrics.downloadInSeconds, "seconds");
+            console.log("processing of all renditions took", metrics.processingInSeconds, "seconds");
+            console.log("uploading of all renditions took", metrics.uploadInSeconds, "seconds");
+
+            try {
+                if (!Array.isArray(params.renditions)) {
+                    await Promise.all(params.renditions.map(rendition => {
+                        try {
+                            metrics.duration = parseFloat(timerUtils.timer_elapsed_seconds(timers.duration));
+                        } catch(e) {
+                            console.error("error getting timing metrics:", e.message || e);
+                        }
+                        return metricsUtils.sendRenditionMetrics(rendition, params, context, metrics, eventUtils.getEventHandler(params));
+                    }));
+                }
+            } catch(err) {
+                console.error("error sending timing metrics:", err.message || err);
+            }
+
+            await cleanup(null, context, scheduledMetrics); // cannot throw (swallows exceptions)
+
+            delete params.newRelicApiKey;
+            return resolve({
+                ok: true,
+                renditions: context.renditions,
+                workerResult: context.workerResult,
+                params: params,
+                metrics: metrics
+            });
+
+        } catch (err) {
+            // overall try catch statement to catch unknown library errors
+            eventUtils.sendError(params, err, metrics, "library_unexpected_error");
+            await cleanup(err, context, scheduledMetrics);
+            return reject(`unexpected error in worker library: ${err}`);
         }
+    });
+}
+
+// -----------------------< helper for workers that do one rendition at a time >-----------------------------------
+const forEachRendition = function(params, options, renditionFn) {
+    if (typeof options === "function") {
+        renditionFn = options;
+        options = {};
     }
+
+    options.processingOptions = {
+        renditionFn: renditionFn,
+        parallel: options.parallel
+    };
+
+    return process(params, options, renditionHelper.doRenditionHandlingAsync);
 }
 
 // -----------------------< new relic metrics >---------------------------------------
-
-function sendNewRelicMetrics(params, metrics) {
+/*function sendNewRelicMetrics(params, metrics) {
     return new Promise(resolve => {
         // We still want to continue the action even if there is an error in sending metrics to New Relic
         if (!params.newRelicEventsURL || !params.newRelicApiKey) {
@@ -214,7 +227,7 @@ function sendNewRelicMetrics(params, metrics) {
         }
         try {
             const fullActionName = proc.env.__OW_ACTION_NAME? proc.env.__OW_ACTION_NAME.split('/'): [];
-            
+
             metrics.actionName = fullActionName.pop();
             metrics.namespace = proc.env.__OW_NAMESPACE;
             metrics.activationId = proc.env.__OW_ACTIVATION_ID;
@@ -223,7 +236,6 @@ function sendNewRelicMetrics(params, metrics) {
                 metrics.package = fullActionName.pop();
             }
 
-            
             if (params.auth) {
                 try {
                     metrics.orgId = params.auth.orgId;
@@ -234,7 +246,7 @@ function sendNewRelicMetrics(params, metrics) {
                     console.log(e.message || e);
                 }
             }
-            
+
             return zlib.gzip(JSON.stringify(metrics), function (_, result) {
                 request.post({
                     headers: {
@@ -244,496 +256,27 @@ function sendNewRelicMetrics(params, metrics) {
                     url:     params.newRelicEventsURL,
                     body:    result
                 }, function(err, res, body){
-                    if (err) { 
-                        console.log('Error sending request to NewRelic', err.message || err); 
+                    if (err) {
+                        console.log('Error sending request to NewRelic', err.message || err);
                     } else if (res.statusCode !== 200) {
                         console.log('NewRelic events submission error. Check response code:', res.statusCode);
                     } else {
-                        console.log('Event sent to NewRelic', body); 
+                        console.log('Event sent to NewRelic', body);
                     }
                     // promise always resolves so failure of sending metrics does not cause action to fail
                     resolve();
                 });
             });
-            
         } catch (error) {
             // catch all error
             console.error('Error sending metrics to NewRelic.', error.message || error);
             resolve();
-            
+
         }
     })
-}
-
-// -----------------------< memory metric collection function >-----------------------------------
-
-function startSchedulingMetrics(params, metrics) {
-    function scheduleOSMetricsCollection() {
-        setTimeout( updateMemoryMetrics, METRIC_FETCH_INTERVAL_MS);
-    }
-    
-    async function updateMemoryMetrics() {
-
-        // currently it just stores the max of each metric
-        // this will change once node-newrelic-serverless is integrated
-        try {
-            const metrics_object = await cgroup.metrics(true);
-            const keys = Object.keys(metrics_object);
-            for (let met in keys) {
-                met = keys[met];
-                const current_metric = metrics_object[met];
-
-                // cpuacct.usage_percpu is an Array
-                if (typeof(current_metric) == "object") {
-                    if (metrics[met]) {
-                        for (const i in current_metric) {
-                            if (!metrics[met][i] || (current_metric[i] > metrics[met][i])) {
-                                metrics[met][i] = current_metric[i];
-                            }
-                        }
-
-                    } else {
-                        metrics[met] = current_metric;
-                    }
-                } else {
-                    if (!metrics[met] || (current_metric > metrics[met])) {
-                        metrics[met] = current_metric;
-                    }
-                }
-            }
-
-        } catch (e) {
-            // this is expected to fail in testing environment
-        }
-
-        if (currentlyProcessing) {
-            scheduleOSMetricsCollection();
-        }
-    }
-
-    scheduleOSMetricsCollection();
-    
-}
-
-
-// -----------------------< check action timeout and send metrics function >-----------------------------------
-
-function scheduleTimeoutMetrics(params, metrics, timers) {
-    const timeTillTimeout = proc.env.__OW_DEADLINE - Date.now();
-    return setTimeout(
-        () => {
-            console.log(`${proc.env.__OW_ACTION_NAME} will timeout in ${proc.env.__OW_DEADLINE - Date.now()} milliseconds. Sending metrics before action timeout.`);
-            if (!(metrics.duration))  { metrics.duration =  parseFloat(timer_elapsed_seconds(timers.duration)); } // set duration metrics if not already set
-            return sendNewRelicMetrics(params, Object.assign( metrics || {} , { eventType: "timeout"})).then(() => {
-                console.log(`Metrics sent before action timeout.`);
-            })
-        }, 
-       timeTillTimeout - 100
-    ); 
-}
-
-// -----------------------< core processing logic >-----------------------------------
-
-function cleanup(err, context, timeoutId) {
-    currentlyProcessing = false;
-    clearTimeout(timeoutId);
-    try {
-        if (err) console.error(err);
-        if (context.indir) fs.removeSync(context.indir);
-        if (context.outdir) {
-            if (context.isLocalFile) {
-                // TODO: remove just file?
-            } else {
-                fs.removeSync(context.outdir);
-            }
-        }
-    } catch(e) {
-        console.error("error during cleanup:", e.message || e);
-    }
-}
-
-function process(params, options, workerFn) {
-    if (typeof options === "function") {
-        workerFn = options;
-        options = {};
-    }
-    options.dir = options.dir || ".";
-
-    const context = {};
-    const timers = {};
-    const metrics = {};
-    timers.duration = timer_start();
-    
-    // update memory metrics and check if close to action timeout every 100ms
-    currentlyProcessing = true;
-    startSchedulingMetrics(params, metrics);
-    const timeoutId = scheduleTimeoutMetrics(params, metrics, timers);
-
-    /*
-        TODO: phases to turn into promises
-
-        TODO: optimization: support upload of renditions once they are finished
-              and while others are still being processed (if using forEachRendition())
-
-        0. prepare()
-            - create directories
-            - select download mechanism (http, local, ...)
-
-        1. download()
-            - invoke download
-
-        2. prepareOutDir()
-            - TODO: move to 0 prepare()
-
-        3. process()
-            - run worker processing
-
-        4. collect()
-            - collect renditions
-
-        5. upload()
-            - upload renditions
-
-        6. finish()
-            - end timers
-            - log results
-            - send events for renditions
-            - send new relic events for metrics
-            - return result info (not important in async model)
-
-        X. catch()
-            - catch errors
-            - send error events
-     */
-
-    return new Promise(function(resolve, reject) {
-        try {
-
-            // 0. create in dir
-            context.indir = path.join(options.dir, "in");
-            fs.removeSync(context.indir);
-            fs.mkdirsSync(context.indir);
-            console.log("indir:", path.resolve(context.indir));
-
-            let download;
-
-            let source = params.source;
-            if (source === undefined) {
-                return reject(new GenericError("No 'source' in params. Required for asset workers.", `${proc.env.__OW_ACTION_NAME.split('/').pop()}_pre_download`));
-            }
-            if (typeof source === 'string') {
-                params.source = source = { url: source };
-            }
-
-            context.infilename = sourceFilename(source);
-            context.infile = path.join(context.indir, context.infilename);
-
-            // 1. download source file
-            let downloadedFromUrl = false;
-            if (source.url) {
-                if (validUrl.isUri(source.url)) {
-	            if (options.disableSourceDownloadSource) {
-                        context.infile = source.url;
-                        console.log(`infile is url: ${context.infile}`);
-                        download = Promise.resolve(context);
-                    } else {
-                        console.log("START download for ingestionId", params.ingestionId, "file", context.infile);
-                        // download http/https url into file
-                        download = http.download(params, context);
-                        downloadedFromUrl = true;
-                    }
-
-
-                } else {
-                    // possibly local file mounted on the docker image - for unit testing
-                    download = local.download(params, context);
-                }
-            } else {
-                return reject(new GenericError("Source as string or source.url is required", `${proc.env.__OW_ACTION_NAME.split('/').pop()}_pre_download`));
-            }
-
-            timers.download = timer_start();
-
-            download.then(function(context) {
-                
-               const downloadInSeconds = parseFloat(timer_elapsed_seconds(timers.download));
-
-               // Only set metrics if we really did a download
-               if (downloadedFromUrl) {
-                    console.log("END download for ingestionId", params.ingestionId, "file", context.infile);
-                    metrics.downloadInSeconds = downloadInSeconds;
-                    const stats = fs.statSync(context.infile);
-                    metrics.sourceSize = stats.size;
-               }
-
-                // 2. prepare out dir
-
-                if (context.isLocalFile) {
-                    // TODO: check that rendition names are safe and not a URL?
-                    context.outdir = "/out";
-                } else {
-                    context.outdir = path.join(options.dir, "out");
-                    fs.removeSync(context.outdir);
-                    fs.mkdirsSync(context.outdir);
-                }
-                console.log("outdir:", path.resolve(context.outdir));
-
-                // --------------------------------------------------------
-
-                // set rendition names
-
-                params.renditions.forEach(function(rendition, index) {
-                    rendition.name = renditionFilename(rendition, index);
-                });
-
-                // 3. run worker (or get worker promise)
-                try {
-                    timers.processing = timer_start();
-
-                    const workerResult = workerFn(context.infile, params, context.outdir);
-
-                    // Non-promises/undefined instantly resolve
-                    return Promise.resolve(workerResult)
-                        .then(function(workerResult) {
-                            metrics.processingInSeconds = parseFloat(timer_elapsed_seconds(timers.processing));
-                            context.workerResult = workerResult;
-                            return Promise.resolve(context);
-                        })
-                        .catch((e) => {
-                            // This is where we will catch the errors that happen inside the workers. We need to figure
-                            // out if we will throw the specific error types in workers or not. Library needs to know
-                            // what kind of error it was to pass along as `errorReason` for events/metrics
-                            if (e.reason in Reason || e instanceof GenericError) {
-                                return Promise.reject(e);
-                            }
-                            return Promise.reject(new GenericError(e.message || e, `${proc.env.__OW_ACTION_NAME.split('/').pop()}_processing`));
-                        });
-
-                } catch (e) {
-                    return Promise.reject(e);
-                }
-
-                // --------------------------------------------------------
-
-            }).then(function (context) {
-                console.log("workerResult", context.workerResult);
-
-                // 4. collect generated files
-                context.renditions = {};
-                let count = 0;
-                const files = fs.readdirSync(context.outdir);
-                files.forEach(f => {
-                    const file = path.join(context.outdir, f);
-                    const stat = fs.statSync(file)
-                    if (stat.isFile()) {
-                        console.log("- rendition found:", f);
-                        context.renditions[f] = {
-                        };
-                        context.renditions[f]['repo:size'] = stat.size;
-                        try {
-                            const dimensions = sizeOf(file);
-                            context.renditions[f]['tiff:imageWidth'] = dimensions.width;
-                            context.renditions[f]['tiff:imageHeight'] = dimensions.height;
-                        } catch (err) {
-                            // The rendition may or may not be an image, so log error for informational purposes
-                            console.log(`No dimensions found for file ${f}`, err.message || err);
-                        }
-                        count += 1;
-                    }
-                });
-
-                // Strange situation where worker didn't fail and yet there are no renditions
-                if (count === 0) {
-                    reject(new GenericError("No generated renditions found.", "worker_result"))
-                }
-
-                return context;
-
-            }).then(function(context) {
-                // 5. upload generated renditions (entire outdir)
-
-                timers.upload = timer_start();
-
-                let upload;
-
-                // add other target storage types here
-                // if (target.ftp) {
-                //     upload = new Promise(function (resolve, reject) {
-                //     });
-                // } else if (target.azure) {
-                //     upload = new Promise(function (resolve, reject) {
-                //     });
-                // } else {
-                // }
-
-                if (context.isLocalFile) {
-                    upload = local.upload(params, context);
-
-                } else {
-                    upload = http.upload(params, context);
-                }
-                return upload;
-
-            }).then(function(context) {
-                console.log(JSON.stringify(context));
-                try {
-                    metrics.uploadInSeconds = parseFloat(timer_elapsed_seconds(timers.upload));
-                } catch(e) {
-                    console.error("error getting timing metrics:", e.message || e);
-                }
-                console.log("download of source file took", metrics.downloadInSeconds, "seconds");
-                console.log("processing of all renditions took", metrics.processingInSeconds, "seconds");
-                console.log("uploading of all renditions took",metrics.uploadInSeconds, "seconds");
-
-                // send events
-                let chain = Promise.resolve();
-                if (Array.isArray(params.renditions)) {
-                    const events = getEventHandler(params);
-                    chain = Promise.all(params.renditions.map(rendition => {
-                        // check if successfully created
-                        metrics.duration =  parseFloat(timer_elapsed_seconds(timers.duration));
-                        if (context.renditions[rendition.name]) {
-                            return events.sendEvent("rendition_created", { rendition: rendition, metadata: context.renditions[rendition.name] }).then(() => {
-                                return sendNewRelicMetrics(params,
-                                    Object.assign( metrics || {} , { eventType: "rendition"}, rendition));
-                            })
-                        } else {
-                            // TODO: add error details - requires some refactoring
-                            // - file too large for multipart upload, include actual rendition size
-                            // - mime type wrong
-                            return events.sendErrorEvent("rendition_failed", {
-                                rendition: rendition,
-                                errorReason:Reason.GenericError,
-                                errorMessage:`No rendition found for ${rendition.name}`
-                                }, Object.assign( metrics || {} , {
-                                    eventType: "error",
-                                    reason:Reason.GenericError,
-                                    message:`No rendition found for ${rendition.name}`,
-                                    location:"uploading_error"
-                                })
-                            )
-                        }
-                    }));
-                }
-
-                chain.then(() => {
-                    cleanup(null, context, timeoutId);
-                    
-                    delete params.newRelicApiKey; 
-                    return resolve({
-                        ok: true,
-                        renditions: context.renditions,
-                        workerResult: context.workerResult,
-                        params: params,
-                        metrics: metrics
-                    });
-                })
-                .catch(error => {
-                    return reject(error);
-                });
-
-            }).catch(function (error) {
-                const events = getEventHandler(params);
-                params.renditions.forEach(rendition => events.sendErrorEvent("rendition_failed", { 
-                    rendition,
-                    errorReason:error.reason || Reason.GenericError,
-                    errorMessage: error.message || error
-                    }, Object.assign( metrics || {} , {
-                        eventType: "error",
-                        reason: error.reason || Reason.GenericError,
-                        message: error.message || error,
-                        location: error.location || "library_processing_error"   
-                    })
-                ));
-                cleanup(error, context, timeoutId);
-                return reject(error);    
-            });
-        } catch (e) {
-        // overall try catch statement to catch unknown library errors
-            const events = getEventHandler(params);
-            params.renditions.forEach(rendition => events.sendErrorEvent("rendition_failed", { 
-                rendition,
-                errorReason:e.name || Reason.GenericError,
-                errorMessage: e.message || e
-                }, Object.assign( metrics || {} , {
-                    eventType: "error",
-                    reason: e.reason || Reason.GenericError,
-                    message: e.message || e,
-                    location: e.location || "library_unexpected_error"
-                })
-            ));
-            cleanup(e, context, timeoutId);
-            return reject(`unexpected error in worker library: ${e}`);     
-        }
-    });
-}
-
-// -----------------------< helper for workers that do one rendition at a time >-----------------------------------
-
-function forEachRendition(params, options, renditionFn) {
-    if (typeof options === "function") {
-        renditionFn = options;
-        options = {};
-    }
-    
-    return process(params, options, function(infile, params, outdir) {
-
-        let promise = Promise.resolve();
-
-        const renditionResults = [];
-
-        if (Array.isArray(params.renditions)) {
-            // for each rendition to generate, create a promise that calls the actual rendition function passed
-            const renditionPromiseFns = params.renditions.map(function (rendition) {
-
-                // for sequential execution below it's critical to not start the promise executor yet,
-                // so we collect functions that return promises
-                return function() {
-                    return new Promise(function (resolve, reject) {
-                        try {
-                            const result = renditionFn(infile, rendition, outdir, params);
-
-                            // Non-promises/undefined instantly resolve
-                            return Promise.resolve(result)
-                                .then(function(result) {
-                                    renditionResults.push(result);
-                                    return resolve();
-                                })
-                                // TODO: do not abort processing of remaining renditions?
-                                .catch((e) => reject(e));
-
-                        } catch (e) {
-                            return reject(e.message);
-                        }
-                    });
-                };
-            });
-
-            if (options.parallel) {
-                // parallel execution
-                promise = Promise.all(renditionPromiseFns.map(function(promiseFn) {
-                    return promiseFn();
-                }));
-            } else {
-                // sequential execution
-                for (let i=0; i < renditionPromiseFns.length; i++) {
-                    promise = promise.then(renditionPromiseFns[i]);
-                }
-            }
-        }
-
-        return promise.then(function() {
-            return { renditions: renditionResults };
-        });
-    });
-}
+}*/
 
 // -----------------------< shell script support >-----------------------------------
-
-// TODO: #6 ensure everything passed to the shell script is shell escaped, so that an attacker
-//       cannot do tricks like `param: "; curl -X <copy proprietary libraries from image to the internet>"`
-//       which then might get executed by the shell inside the container
-
 // TODO: support shell script worker with all renditions at once
 //       passing array of $rendition, e.g.
 //
@@ -744,89 +287,16 @@ function forEachRendition(params, options, renditionFn) {
 //       for developers and the command is easily readable (as compared to very hidden
 //       inside some strings in js code for example).
 
-function shellScript(params, shellScriptName = "worker.sh") {
-    console.log("START of worker processing for ingestionId", params.ingestionId);
-    return forEachRendition(params, function(infile, rendition, outdir) {
-        return new Promise(function (resolve, reject) {
-            console.log("executing shell script", shellScriptName, "for rendition", rendition.name);
-            
-            // inherit environment variables
-            const env = Object.create(proc.env || {});
-
-            env.file = path.resolve(infile);
-            env.rendition = path.resolve(outdir, rendition.name);
-            const errDir = path.resolve(outdir, "errors");
-            fs.mkdirsSync(errDir);
-            const errorFile = path.resolve(errDir, "error.json");
-            env.errorfile = errorFile;
-            
-            for (const r in rendition) {
-                const value = rendition[r];
-                if (typeof value === 'object') {
-                    for (const r2 in value) {
-                        // TODO: unlimited object nesting support, not just 1 level
-                        env[`rendition_${r}_${r2}`] = value[r2];
-                    }
-                } else {
-                    env[`rendition_${r}`] = value;
-                }
-            }
-            const shellScript = path.resolve(__dirname, shellScriptName);
-
-            if (!fs.existsSync(shellScript)) {
-                console.log("FAILURE of worker processing for ingestionId", params.ingestionId, "rendition", rendition.name);
-                return reject(`shell script '${shellScriptName}' not found`);
-            }
-
-            // ensure script is executable
-            execSync(`chmod u+x ${shellScript}`, {stdio: [0,1,2]});
-
-            const options = {
-                env: env,
-                stdio: [0,1,2]
-            };
-
-            exec(`/usr/bin/env bash -x ${shellScript}`, options, function (error, stdout, stderr) {
-                // I/O Runtime's log handling (reading logs from Splunk) currently does not like longer multi-line logs
-                // so we log each line individually
-                stdout.trim().split('\n').forEach(s => console.log(s))
-                stderr.trim().split('\n').forEach(s => console.error(s))
-                if (error) {
-                    console.log("FAILURE of worker processing for ingestionId", params.ingestionId, "rendition", rendition.name);
-                    // We try to get error information from the errorfile, but ensure that we still do proper
-                    // error reporting even if the data is badly formed
-                    if (fs.existsSync(errorFile)) {
-                        const json = fs.readFileSync(errorFile);
-                        fs.removeSync(errorFile);
-                        try {
-                            const err = JSON.parse(json);
-                            return reject(err);
-                        } catch (e) {
-                            console.log(`Badly formed json for error: ${json}`);
-                        }
-                    }
-                    return reject(error);
-                } else {
-                    console.log("END of worker processing for ingestionId", params.ingestionId, "rendition", rendition.name);
-                    return resolve(rendition.name);
-                }
-            });
-        });
-    });
-}
-
 function shellScriptWorker(shellScriptName) {
+    // inject foreachRendition to define the forEachRendition to use
     return function(params) {
-        return shellScript(params, shellScriptName);
-    }
+        return shellRunner.shellScript(params, forEachRendition, shellScriptName);
+    };
 }
 
 // -----------------------< exports >-----------------------------------
-
 module.exports = {
-    process,
-    forEachRendition,
-    shellScriptWorker,
-    getEventHandler,
-    sendNewRelicMetrics
+    process, // for node.js workers
+    forEachRendition, // for node.js workers, on top of process
+    shellScriptWorker // all shellscript workers
 }

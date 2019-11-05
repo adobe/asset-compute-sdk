@@ -20,8 +20,8 @@
 
 'use strict';
 
-const { RenditionTooLarge } = require ('../../errors.js');
-const http =  require('../../src/storage/http');
+const { RenditionTooLarge } = require('@nui/asset-compute-commons');
+const http =  require('../../lib/storage/http');
 const fs = require('fs-extra');
 const assert = require('assert')
 const nock = require('nock');
@@ -55,6 +55,7 @@ it.skip('Unmocked multi part upload with 2 urls', async function() {
 describe('http multipart tests', function() {
   beforeEach(async function() {
   })
+  
   afterEach(async function() {
     nock.cleanAll();
     try {
@@ -63,7 +64,7 @@ describe('http multipart tests', function() {
       // Don't allow error to break tests.  We are just trying to do cleanup.
       console.log('error removing files ' + err);
     }
-   })
+  })
 
   function _buildMultipartData(minPartSize=0, maxPartSize=-1, urlCount=5, renditionCount=1, addFiles=true) {
     const renditions = [];
