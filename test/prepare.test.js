@@ -24,43 +24,194 @@ const fs = require('fs-extra');
 const assert = require('assert');
 const sinon = require('sinon');
 
+const path = require('path');
 const {actionName, validateParameters, createDirectories, cleanupDirectories} = require('../lib/prepare');
 
 describe('prepare tests, filesystem related', () => {
     beforeEach(() => {
         // we actually want to test that fs behaves as expected
-        process.env.NUI_UNIT_TEST_MODE = false;
-
+        //process.env.NUI_UNIT_TEST_MODE = null;
         process.env.__OW_ACTION_NAME = 'test_action_fs';
+        process.env.__OW_ACTIVATION_ID = 'test_activation_id';
     });
 
-    it('just fails', () => {
-        assert.fail();
+    afterEach(() => {
+        fs.removeSync(path.resolve("work"));
     });
 
-    it('creates needed directories', () => {
-        assert.fail();
+    it('creates needed directories', async () => {
+        const result = await createDirectories();
+
+        const baseDir = path.resolve("work", process.env.__OW_ACTIVATION_ID);
+        
+        assert.equal(result.base, baseDir);
+        assert.equal(result.in, path.resolve(baseDir, "in"));
+        assert.equal(result.out, path.resolve(baseDir, "out"));
+
+        // check directories were created
+        let existence = await fs.exists(baseDir);
+        assert.ok(existence, "Base directory does not exist");
+
+        existence = await fs.exists(path.resolve(baseDir, "in"));
+        assert.ok(existence, "in directory does not exist");
+
+        existence = await fs.exists(path.resolve(baseDir, "out"));
+        assert.ok(existence, "out directory does not exist");
+
+        // cleanup
+        await fs.remove(baseDir);
     });
 
-    it('does not throw if directories to create already exist', () => {
-        assert.fail();
+    it('does not throw if directories to create already exist', async () => {
+        // make sure directories exist
+        await fs.mkdir(path.resolve("work"));
+        const baseDir = path.resolve("work", process.env.__OW_ACTIVATION_ID);
+        await fs.mkdir(baseDir);
+        await fs.mkdir(path.resolve(baseDir, "in"));
+        await fs.mkdir(path.resolve(baseDir, "out"));
+        let existence = await fs.exists(baseDir);
+        assert.ok(existence, "test setup failed - base directory does not exist");
+        existence = await fs.exists(path.resolve(baseDir, "in"));
+        assert.ok(existence, "test setup failed - in directory does not exist");
+        existence = await fs.exists(path.resolve(baseDir, "out"));
+        assert.ok(existence, "test setup failed - out directory does not exist");
+
+        existence = false;
+        const result = await createDirectories();
+        assert.equal(result.base, baseDir);
+        assert.equal(result.in, path.resolve(baseDir, "in"));
+        assert.equal(result.out, path.resolve(baseDir, "out"));
+
+        // check directories were created
+        existence = await fs.exists(baseDir);
+        assert.ok(existence, "Base directory does not exist");
+
+        existence = await fs.exists(path.resolve(baseDir, "in"));
+        assert.ok(existence, "in directory does not exist");
+
+        existence = await fs.exists(path.resolve(baseDir, "out"));
+        assert.ok(existence, "out directory does not exist");
+
+        // cleanup
+        await fs.remove(baseDir);
     });
 
-    it('cleans up folders on the filesystem', () => {
-        assert.fail();
+    it('cleans up folders on the filesystem', async () => {
+        await fs.mkdir(path.resolve("work"));
+        const baseDir = path.resolve("work", process.env.__OW_ACTIVATION_ID);
+        const inDir = path.resolve(baseDir, "in");
+        const outDir = path.resolve(baseDir, "out");
+
+        await fs.mkdir(baseDir);
+        await fs.mkdir(inDir);
+        await fs.mkdir(outDir);
+        let existence = await fs.exists(baseDir);
+        assert.ok(existence, "test setup failed - base directory does not exist");
+        existence = await fs.exists(inDir);
+        assert.ok(existence, "test setup failed - in directory does not exist");
+        existence = await fs.exists(outDir);
+        assert.ok(existence, "test setup failed - out directory does not exist");
+
+        const directories = {
+            base: baseDir,
+            in: inDir,
+            out: outDir
+        };
+        await cleanupDirectories(directories);
+
+        existence = await fs.exists(baseDir);
+        assert.ok(!existence, "base directory still exist");
+        existence = await fs.exists(inDir);
+        assert.ok(!existence, "in directory still exist");
+        existence = await fs.exists(outDir);
+        assert.ok(!existence, "out directory still exist");
+
+        // work directory should not be deleted
+        existence = await fs.exists(path.resolve("work"));
+        assert.ok(existence, "work directory does not exist");
+
+        // cleanup
+        await fs.remove(baseDir);
     });
 
-    it('does not throw if directories to remove do not exist', () => {
-        assert.fail();
+    it('does not throw if directories to remove do not exist', async () => {
+        // make sure directories DO NOT exist
+        const baseDir = path.resolve("work", process.env.__OW_ACTIVATION_ID);
+        const inDir = path.resolve(baseDir, "in");
+        const outDir = path.resolve(baseDir, "out");
+
+        let existence = await fs.exists(baseDir);
+        assert.ok(!existence, "test setup failed - base directory does exist");
+        existence = await fs.exists(inDir);
+        assert.ok(!existence, "test setup failed - in directory does exist");
+        existence = await fs.exists(outDir);
+        assert.ok(!existence, "test setup failed - out directory does exist");
+
+        const directories = {
+            base: baseDir,
+            in: inDir,
+            out: outDir
+        };
+        await cleanupDirectories(directories);
+
+        existence = await fs.exists(baseDir);
+        assert.ok(!existence, "base directory exists");
+        existence = await fs.exists(inDir);
+        assert.ok(!existence, "in directory exists");
+        existence = await fs.exists(outDir);
+        assert.ok(!existence, "out directory exists");
+
+        // work directory should not be deleted
+        existence = await fs.exists(path.resolve("work"));
+        assert.ok(!existence, "work directory exists");
+    });
+
+    it('does not throw if directories param is empty (no side-effects)', async () => {
+        const baseDir = path.resolve("work", process.env.__OW_ACTIVATION_ID);
+        const inDir = path.resolve(baseDir, "in");
+        const outDir = path.resolve(baseDir, "out");
+
+        // make sure directories DO NOT exist
+        const directories = {};
+        await cleanupDirectories(directories);
+
+        let existence = await fs.exists(baseDir);
+        assert.ok(!existence, "base directory exists");
+        existence = await fs.exists(inDir);
+        assert.ok(!existence, "in directory exists");
+        existence = await fs.exists(outDir);
+        assert.ok(!existence, "out directory exists");
+
+        // work directory should not be deleted
+        existence = await fs.exists(path.resolve("work"));
+        assert.ok(!existence, "work directory exists");
+    });
+
+    it('does not throw if directories param is null (no side-effects)', async () => {
+        const baseDir = path.resolve("work", process.env.__OW_ACTIVATION_ID);
+        const inDir = path.resolve(baseDir, "in");
+        const outDir = path.resolve(baseDir, "out");
+
+        // make sure directories DO NOT exist
+        const directories = null;
+        await cleanupDirectories(directories);
+
+        let existence = await fs.exists(baseDir);
+        assert.ok(!existence, "base directory exists");
+        existence = await fs.exists(inDir);
+        assert.ok(!existence, "in directory exists");
+        existence = await fs.exists(outDir);
+        assert.ok(!existence, "out directory exists");
+
+        // work directory should not be deleted
+        existence = await fs.exists(path.resolve("work"));
+        assert.ok(!existence, "work directory exists");
     });
 });
 
 describe('validation tests', () => {
     beforeEach(() => {
         process.env.__OW_ACTION_NAME = 'test_action_validation';
-    });
-    it('just fails', () => {
-        assert.fail();
     });
 
     it('throws when params.source is undefined or null', () => {
