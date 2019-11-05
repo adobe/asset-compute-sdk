@@ -22,10 +22,9 @@
 
 const fs = require('fs-extra');
 const assert = require('assert');
-const sinon = require('sinon');
 
 const path = require('path');
-const {actionName, validateParameters, createDirectories, cleanupDirectories} = require('../lib/prepare');
+const {validateParameters, createDirectories, cleanupDirectories} = require('../lib/prepare');
 
 describe('prepare tests, filesystem related', () => {
     beforeEach(() => {
@@ -206,6 +205,84 @@ describe('prepare tests, filesystem related', () => {
         // work directory should not be deleted
         existence = await fs.exists(path.resolve("work"));
         assert.ok(!existence, "work directory exists");
+    });
+
+    it('cleans up work directory if it already exists', async () => {
+        await fs.mkdir(path.resolve("work"));
+        const baseDir = path.resolve("work", process.env.__OW_ACTIVATION_ID);
+        const inDir = path.resolve(baseDir, "in");
+        const outDir = path.resolve(baseDir, "out");
+
+        // make additional directories under work 
+        const moreDir1 = path.resolve("work", "test-1");
+        await fs.mkdir(moreDir1);
+        let existence = await fs.exists(moreDir1);
+        assert.ok(existence, "test setup failed");
+        const moreDir2 = path.resolve("work", "test-2");
+        await fs.mkdir(moreDir2);
+        existence = await fs.exists(moreDir2);
+        assert.ok(existence, "test setup failed");
+        const moreDir3 = path.resolve("work", "test-3");
+        await fs.mkdir(moreDir3);
+        existence = await fs.exists(moreDir3);
+        assert.ok(existence, "test setup failed");
+
+        await fs.mkdir(baseDir);
+
+        // make additional directories under baseDir
+        const moreDirToMove = path.resolve(baseDir, "in1");
+        await fs.mkdir(moreDirToMove);
+        existence = await fs.exists(moreDirToMove);
+        assert.ok(existence, "test setup failed");
+        const moreDirToMove2 = path.resolve(baseDir, "in2");
+        await fs.mkdir(moreDirToMove2);
+        existence = await fs.exists(moreDirToMove2);
+        assert.ok(existence, "test setup failed");
+
+        await fs.mkdir(inDir);
+        await fs.mkdir(outDir);
+        existence = await fs.exists(baseDir);
+        assert.ok(existence, "test setup failed - base directory does not exist");
+        existence = await fs.exists(inDir);
+        assert.ok(existence, "test setup failed - in directory does not exist");
+        existence = await fs.exists(outDir);
+        assert.ok(existence, "test setup failed - out directory does not exist");
+
+        const directories = {
+            base: baseDir,
+            in: inDir,
+            out: outDir
+        };
+        await cleanupDirectories(directories);
+
+        // items under baseDir should be cleaned
+        existence = await fs.exists(moreDirToMove);
+        assert.ok(!existence, "baseDir not cleaned properly");
+        existence = await fs.exists(moreDirToMove2);
+        assert.ok(!existence, "baseDir not cleaned properly");
+
+        existence = await fs.exists(baseDir);
+        assert.ok(!existence, "base directory still exist");
+        existence = await fs.exists(inDir);
+        assert.ok(!existence, "in directory still exist");
+        existence = await fs.exists(outDir);
+        assert.ok(!existence, "out directory still exist");
+
+        // work directory should not be deleted
+        existence = await fs.exists(path.resolve("work"));
+        assert.ok(existence, "work directory does not exist");
+
+        // other items directly under work should not be cleaned
+        // this is tested to ensure future concurrency does not trigger bigs
+        existence = await fs.exists(moreDir1);
+        assert.ok(existence, "work directory original content was removed");
+        existence = await fs.exists(moreDir2);
+        assert.ok(existence, "work directory original content was removed");
+        existence = await fs.exists(moreDir3);
+        assert.ok(existence, "work directory original content was removed");
+
+        // cleanup
+        await fs.remove(baseDir);
     });
 });
 
