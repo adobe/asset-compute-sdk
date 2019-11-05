@@ -20,9 +20,6 @@
 
 'use strict';
 
-//const mockFs = require('mock-fs');
-//const fs = require('fs-extra');
-//const nock = require('nock');
 const assert = require('assert');
 const sinon = require('sinon');
 

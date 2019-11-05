@@ -20,21 +20,66 @@
 
 'use strict';
 
-const mockFs = require('mock-fs');
 const fs = require('fs-extra');
-const nock = require('nock');
 const assert = require('assert');
+const sinon = require('sinon');
+
 const {actionName, validateParameters, createDirectories, cleanupDirectories} = require('../lib/prepare');
 
-describe('prepare tests', () => {
+describe('prepare tests, filesystem related', () => {
+    beforeEach(() => {
+        // we actually want to test that fs behaves as expected
+        process.env.NUI_UNIT_TEST_MODE = false;
+
+        process.env.__OW_ACTION_NAME = 'test_action_fs';
+    });
+
     it('just fails', () => {
+        assert.fail();
+    });
+
+    it('creates needed directories', () => {
+        assert.fail();
+    });
+
+    it('does not throw if directories to create already exist', () => {
+        assert.fail();
+    });
+
+    it('cleans up folders on the filesystem', () => {
+        assert.fail();
+    });
+
+    it('does not throw if directories to remove do not exist', () => {
         assert.fail();
     });
 });
 
-
-describe('cleanup tests for folders', () => {
+describe('validation tests', () => {
+    beforeEach(() => {
+        process.env.__OW_ACTION_NAME = 'test_action_validation';
+    });
     it('just fails', () => {
+        assert.fail();
+    });
+
+    it('throws when params.source is undefined or null', () => {
+        assert.fail();
+    });
+
+    it('normalizes the url param', () => {
+        assert.fail();
+    });
+
+    it('verifies renditions is an array (1 element)', () => {
+        assert.fail();
+    });
+
+    it('verifies renditions is an array (many elements)', () => {
+        assert.fail();
+    });
+
+    it('verifies rendition target is a string or an object', () => {
         assert.fail();
     });
 });
