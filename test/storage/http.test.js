@@ -19,240 +19,247 @@
 /* eslint mocha/no-mocha-arrows: "off" */
 
 'use strict';
-const expect = require('expect.js');
+const mockFs = require("mock-fs");
 const fs = require('fs-extra');
-const http = require('../../lib/storage/http');
+const {download, upload} = require('../../lib/storage/http');
 const nock = require('nock');
 const assert = require('assert');
 
-const url = "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg";
-const fakeUrl = 'https://fakeurl.com';
-const realUrl = "https://nuitesting.blob.core.windows.net/nui-test-library/earth.jpg?sp=rw&st=2019-10-02T21:15:03Z&se=2100-10-03T05:15:03Z&spr=https&sv=2018-03-28&sig=BfAk%2BlCSCjmRjqaH9ALlo1w6oRGXReNMEXNTlKbuBNo%3D&sr=b";
-const realUrl2 = "https://nuitesting.blob.core.windows.net/nui-test-library/top8second14FileNum35.jpg?sp=rw&st=2019-10-08T23:06:55Z&se=2119-10-09T07:06:55Z&spr=https&sv=2018-03-28&sig=zo2T88IeEcxiFFXZ3R6OuIdxvWcxoZ1VAjxag%2By5OUs%3D&sr=b";
+const http = require('@nui/node-httptransfer');
 
+const oldDownloadFileHttpTransfer = http.downloadFile;
 
-function createFetchMock() {
-	nock("https://upload.wikimedia.org")
-        .get("/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg")
-        .reply(404, "error")
-    setTimeout(() => {
-        nock.cleanAll();
-    }, 500)
-}
+describe('http.js', () => {
 
+    describe('download', () => {
 
-function createPutFetchMock() {
-	nock(fakeUrl)
-        .put('/earth.jpg')
-        .reply(400, "error")
-    setTimeout(() => {
-		nock(fakeUrl)
-            .put('earth.jpg')
-            .reply(200, "success!")
-    }, 500)
-}
-
-describe('test http upload/download', () => {
-
-    after( () => {
-        fs.unlinkSync("./earth.jpg");
-        fs.unlinkSync("./earth2.jpg");
-        nock.cleanAll()
-    })
-    afterEach( () => {
-        nock.cleanAll();
-    })
-
-    it("test http download", async () => {
-        const params = {
-            source: { url: url }
-        };
-        const context = {
-            infile: './earth.jpg',
-            infilename:'earth.jpg'
-        }
-
-        await http.download(params, context);
-        assert(fs.existsSync('./earth.jpg'));
-    }).timeout(5000);
-
-    it("test http upload ", async () => {
-		nock(fakeUrl)
-            .put('/earth.jpg')
-            .reply(200)
-
-        const params = {
-            renditions: [
-                {
-                    name:"earth.jpg",
-                    url: `${fakeUrl}/earth.jpg`
-                }
-            ]
-        };
-        const result = {
-            renditions: {"earth.jpg": {}},
-            outdir: './'
-        }
-        const res = await http.upload(params, result);
-        expect(res).to.equal(result);
-    });
-
-    it.skip("download should fail for <1s before succeeding", async () => {
-        const params = {
-            source: { url: url }
-        };
-        const context = {
-            infile: './earth2.jpg',
-            infilename:'earth2.jpg'
-        }
-        createFetchMock();
-        process.env.__OW_DEADLINE = Date.now() + 1000;
-        await http.download(params, context);
-    });
-
-    it.skip("upload should fail once before succeeding", async () => {
-
-        const params = {
-            renditions: [{
-                name:"earth.jpg",
-                url: fakeUrl
-            }]
-        };
-        const result = {
-            renditions: {"earth.jpg": {}},
-            outdir: './'
-        }
-        createPutFetchMock();
-        process.env.__OW_DEADLINE = Date.now() + 30000;
-        await http.upload(params, result);
-        expect(result.renditions["earth.jpg"].uploaded).to.be(true);
-    });
-
-    it("upload should fail", async () => {
-        nock("http://fakeurl3.com")
-            .put("/earth.jpg")
-            .reply(400, "error!", { "content-type": "text/plain" })
-
-        const params = {
-            renditions: [{
-                name:"earth.jpg",
-                url: "http://fakeurl3.com/earth.jpg"
-            }]
-        };
-        const result = {
-            renditions: {"earth.jpg": {}},
-            outdir: './'
-        }
-        process.env.__OW_DEADLINE = Date.now() + 2000;
-        let threw = false;
-        try {
-            await http.upload(params, result);
-        } catch (e) {
-            threw = true;
-            expect(e.message).to.be("PUT 'http://fakeurl3.com/earth.jpg' failed with status 400: error!");
-        }
-        expect(threw).to.be(true);
-    }).timeout(10*1000);
-
-
-        it("test http upload of multiple renditions", async () => {
-			fs.copyFileSync("./earth.jpg", "./earth2.jpg");
-			nock("http://fakeurl1.com")
-                .put("/earth.jpg")
-                .reply(200, "success!");
-
-			nock("http://fakeurl1.com")
-                .put("/earth2.jpg")
-                .reply(200, "success!");
-
-            const params = {
-                ingestionId: 12345,
-                renditions: [{
-                        name:"earth.jpg",
-                        url: "http://fakeurl1.com/earth.jpg"
-                    },
-                    {
-                        name:"earth2.jpg",
-                        url: "http://fakeurl1.com/earth2.jpg"
-                }]
-            };
-            const result = {
-                renditions: {
-                    "earth.jpg": {
-                    },
-                    "earth2.jpg": {
-                    }
-                },
-                outdir: './'
-            }
-            const res = await http.upload(params, result);
-            expect(res).to.equal(result);
-
-        });
-
-        it("test http upload of multiple renditions: one fails and one succeeds", async () => {
-			fs.copyFileSync("./earth.jpg", "./earth2.jpg");
-
-			nock("http://fakeurl1.com")
-                .put("/earth.jpg")
-                .reply(200, "success!");
-
-			nock("http://fakeurl1.com")
-                .put("/earth3.jpg")
-                .reply(400, "error!");
-            const params = {
-                ingestionId: 12345,
-                renditions: [{
-                        name:"earth.jpg",
-                        url: "http://fakeurl1.com/earth.jpg"
-                    },
-                    {
-                        name:"earth3.jpg",
-                        url: "http://fakeurl1.com/earth3.jpg"
-                }]
-            };
-            const result = {
-                renditions: {
-                    "earth.jpg": {},
-                    "earth3.jpg": {}
-                },
-                outdir: './'
-            }
-            let threw = false;
-            try {
-                await http.upload(params, result);
-            }
-            catch (e) {
-                threw = true;
-                expect(e.message).to.contain('earth3.jpg');
-            }
-            expect(threw).to.be(true);
-        });
-
-        // we need to set the header: `"x-ms-blob-type": "BlockBlob"` to run this
-        it.skip("unnocked upload test", async () => {
-
+        beforeEach( () => {
+            mockFs();
+        })
+        afterEach( () => {
+            http.downloadFile = oldDownloadFileHttpTransfer;
             nock.cleanAll();
-            const params = {
-                renditions: [{
-                    name:"earth.jpg",
-                    url: realUrl
-                },
-                {
-                    name:"earth2.jpg",
-                    url: realUrl2
-                }]
-            };
-            const result = {
-                renditions: {
-                    "earth.jpg": {
-                    },
-                    "earth2.jpg": {
-                    }
-                },
-                outdir: './'
-            }
-			await http.upload(params, result);
-        }).timeout(10*10000);
+            mockFs.restore();
+        })
 
+        it.skip("should download actual jpg file", async () => { // this test is skipped in case internet is down
+            const source = {
+                url: "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg"
+            };
+
+            mockFs({ './storeFiles/jpg': {} });
+
+            const file = './storeFiles/jpg/earth.jpg'
+            await download(source, file);
+            assert.ok(fs.existsSync(file));
+        }).timeout(5000);
+
+        it("should download jpg file", async () => { // this test is skipped in case internet is down
+            const source = {
+                url: "https://example.com/fakeEarth.jpg"
+            };
+
+            mockFs({ './storeFiles/jpg': {} });
+
+            nock("https://example.com")
+                .get("/fakeEarth.jpg")
+                .reply(200, "ok")
+
+            const file = './storeFiles/jpg/fakeEarth.jpg'
+
+            await download(source, file);
+            assert.ok(fs.existsSync(file));
+            assert.ok(nock.isDone());
+        });
+
+        it("should fail downloading a jpg file", async () => { // this test is skipped in case internet is down
+            const source = {
+                url: "https://example.com/fakeEarth.jpg"
+            };
+            mockFs({ './storeFiles/jpg': {} });
+
+            http.downloadFile = function() {
+                throw new Error('ERRRR. GET \'https://example.com/fakeEarth.jpg\' failed with status 404.')
+            }
+            const file = './storeFiles/jpg/fakeEarth.jpg';
+            try {
+                await download(source, file);
+            } catch (e) {
+                assert.equal(e.name, 'GenericError');
+                assert.equal(e.message, 'ERRRR. GET \'https://example.com/fakeEarth.jpg\' failed with status 404.');
+                assert.equal(e.location, 'worker-test_download');
+            }
+            assert.ok(! fs.existsSync(file));
+        });
+
+        it("should fail downloading once before succeeding", async () => {
+            const source = { url: "https://example.com/fakeEarth.jpg" };
+
+            mockFs({ './storeFiles/jpg': {} });
+
+            const file = './storeFiles/jpg/fakeEarth.jpg';
+
+            nock("https://example.com")
+                .get("/fakeEarth.jpg")
+                .reply(504, "error")
+            nock("https://example.com")
+                .get("/fakeEarth.jpg")
+                .reply(200, "ok")
+
+            process.env.__OW_DEADLINE = Date.now() + 1000;
+            await download(source, file);
+            assert.ok(nock.isDone());
+            assert.ok(fs.existsSync(file));
+        });
+    })
+    describe('upload', () => {
+
+        beforeEach( () => {
+            mockFs();
+        })
+        afterEach( () => {
+            nock.cleanAll();
+            mockFs.restore();
+            process.env.NUI_DISABLE_RETRIES = undefined;
+        })
+
+        it("should upload one rendition successfully", async () => {
+            mockFs({ "./storeFiles/jpg": {
+                "fakeEarth.jpg": "hello world!"
+            } });
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+
+            const rendition = {
+                path: file,
+                target: "https://example.com/fakeEarth.jpg"
+            };
+
+            nock("https://example.com")
+                .put("/fakeEarth.jpg", "hello world!")
+                .reply(200)
+
+            assert.ok(fs.existsSync(file));
+            await upload(rendition);
+            assert.ok(nock.isDone());
+        });
+
+        it("should fail uploading a rendition with 504", async () => {
+            process.env.NUI_DISABLE_RETRIES = true // disable retries to test upload failure
+            mockFs({ "./storeFiles/jpg": {
+                "fakeEarth.jpg": "hello world!"
+            } });
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+
+            const rendition = {
+                path: file,
+                target: "https://example.com/fakeEarth.jpg"
+            };
+
+            nock("https://example.com")
+                .put("/fakeEarth.jpg", "hello world!")
+                .replyWithError(504)
+
+            assert.ok(fs.existsSync(file));
+            try {
+                await upload(rendition);
+            } catch (e) {
+                assert.equal(e.name, "GenericError");
+                assert.equal(e.message, "PUT 'https://example.com/fakeEarth.jpg' failed: request to https://example.com/fakeEarth.jpg failed, reason: 504");
+                assert.equal(e.location, "worker-test_upload");
+            }
+            assert.ok(nock.isDone());
+        });
+
+        it.skip("should fail uploading once before succeeding", async () => {
+            mockFs({ "./storeFiles/jpg": {
+                "fakeEarth.jpg": "hello world!"
+            } });
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+
+            const rendition = {
+                path: file,
+                target: "https://example.com/fakeEarth.jpg"
+            };
+            nock("https://example.com")
+                .put("/fakeEarth.jpg", "hello world!")
+                .reply(503, "error")
+            nock("https://example.com")
+                .put("/fakeEarth.jpg", "hello world!")
+                .reply(200, "ok")
+
+            assert.ok(fs.existsSync(file));
+            await upload(rendition);
+            assert.ok(nock.isDone());
+        });
+
+
+        it("should fail uploading a rendition with 404", async () => {
+            process.env.NUI_DISABLE_RETRIES = true // disable retries to test upload failure
+            mockFs({ "./storeFiles/jpg": {
+                "fakeEarth.jpg": "hello world!"
+            } });
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+
+            const rendition = {
+                path: file,
+                target: "https://example.com/fakeEarth.jpg"
+            };
+
+            nock("https://example.com")
+                .put("/fakeEarth.jpg", "hello world!")
+                .reply(404, "error")
+
+            assert.ok(fs.existsSync(file));
+            try {
+                await upload(rendition);
+            } catch (e) {
+                assert.equal(e.name, "GenericError");
+                assert.equal(e.message, "PUT 'https://example.com/fakeEarth.jpg' failed with status 404");
+                assert.equal(e.location, "worker-test_upload");
+            }
+            assert.ok(nock.isDone());
+        });
+
+        it("should not fail when trying to update a rendition with no file path bu", async () => {
+            mockFs({ "./storeFiles/jpg": {
+                "fakeEarth.jpg": "hello world!"
+            } });
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+
+            nock("https://example.com")
+                .put("/fakeEarth.jpg", "hello world!")
+                .reply(200)
+
+            const rendition = {
+                id: () => { return '1234'},
+                target: "https://example.com/fakeEarth.jpg"
+            };
+
+
+            assert.ok(fs.existsSync(file));
+            await upload(rendition);
+            assert.ok( ! nock.isDone());
+        });
+
+        it("should not fail when trying to update a rendition with no target", async () => {
+            mockFs({ "./storeFiles/jpg": {
+                "fakeEarth.jpg": "hello world!"
+            } });
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+
+            const rendition = {
+                id: () => { return '1234'},
+                path: file
+            };
+
+            nock("https://example.com")
+                .put("/fakeEarth.jpg", "hello world!")
+                .reply(200)
+
+            assert.ok(fs.existsSync(file));
+            await upload(rendition);
+            assert.ok(! nock.isDone());
+        });
+
+    });
 });
