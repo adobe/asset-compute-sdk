@@ -22,7 +22,8 @@
 
 const assert = require('assert');
 
-const {validateParameters, validateRendition} = require('../lib/validate');
+const { validateParameters, validateRendition } = require('../lib/validate');
+const { GenericError } = require('@nui/asset-compute-commons');
 
 describe('validation tests', () => {
     beforeEach(() => {
@@ -30,42 +31,204 @@ describe('validation tests', () => {
     });
 
     it('validates a rendition', () => {
-        assert.fail();
+        const rendition = {
+            target: "one-target"
+        };
+
+        validateRendition(rendition);
+        assert.equal(rendition.target, "one-target");
     });
 
     it('sets renditions target properly when a url is entered', () => {
-        assert.fail();
+        const rendition = {
+            url: "one-url"
+        };
+
+        validateRendition(rendition);
+        assert.equal(rendition.target, "one-url");
     });
 
     it('sets renditions target properly when a target and a url is entered (target takes precedence)', () => {
-        assert.fail();
+        const rendition = {
+            url: "one-url",
+            target: "one-target"
+        };
+
+        validateRendition(rendition);
+        assert.equal(rendition.target, "one-target");
     });
 
     it('throws if a rendition has no target and no url', () => {
-        assert.fail();
+        let rendition = {
+            nothing: "nothing"
+        };
+        try {
+            validateRendition(rendition);
+        } catch(err){
+            assert.ok(err instanceof GenericError);
+        }
+        
+        rendition = {
+            target: 42
+        };
+        try {
+            validateRendition(rendition);
+        } catch(err){
+            assert.ok(err instanceof GenericError);
+        }
+
+        rendition = {
+            url: 42
+        };
+        try {
+            validateRendition(rendition);
+        } catch(err){
+            assert.ok(err instanceof GenericError);
+        }
+
+        rendition = {
+            url: null
+        };
+        try {
+            validateRendition(rendition);
+        } catch(err){
+            assert.ok(err instanceof GenericError);
+        }
     });
 
     it('throws when params.source is undefined or null', () => {
-        assert.fail();
+        let paramsToValidate = {           
+        };
+
+        try {
+            validateParameters(paramsToValidate);
+        } catch(err){
+            assert.ok(err instanceof GenericError);
+            assert.equal(err.message, "No 'source' in params. Required for asset workers.");
+        }
+
+        paramsToValidate = { 
+            source: null          
+        };
+
+        try {
+            validateParameters(paramsToValidate);
+        } catch(err){
+            assert.ok(err instanceof GenericError);
+            assert.equal(err.message, "No 'source' in params. Required for asset workers.");
+        }
     });
 
     it('normalizes the url param', () => {
-        assert.fail();
+        const paramsToValidate = {    
+            source: "string-source",
+            renditions: [
+                {
+                    target: "one-target"
+                },
+                {
+                    target: "two-targets"
+                }
+            ]       
+        };
+
+        validateParameters(paramsToValidate);
+        assert.equal(typeof paramsToValidate.source, "object");
+        assert.equal(paramsToValidate.source.url, "string-source");
     });
 
     it('verifies renditions is an array (1 element)', () => {
-        assert.fail();
+        const paramsToValidate = {    
+            source: "string-source",
+            renditions: [
+                {
+                    target: "one-target"
+                }
+            ]       
+        };
+
+        validateParameters(paramsToValidate);
+
+        // verify array did not change size
+        assert.equal(paramsToValidate.renditions.length, 1);
     });
 
     it('verifies renditions is an array (many elements)', () => {
-        assert.fail();
+        const paramsToValidate = {    
+            source: "string-source",
+            renditions: [
+                {
+                    target: "one-target"
+                },
+                {
+                    target: "two-target"
+                },
+                {
+                    target: "three-target"
+                }
+            ]       
+        };
+
+        validateParameters(paramsToValidate);
+
+        // verify array did not change size
+        assert.equal(paramsToValidate.renditions.length, 3);
+
+        // verify order did not change
+        assert.equal(paramsToValidate.renditions[0].target, "one-target");
+        assert.equal(paramsToValidate.renditions[1].target, "two-target");
+        assert.equal(paramsToValidate.renditions[2].target, "three-target");
     });
 
     it('throws if rendition array is empty', () => {
-        assert.fail();
+        let paramsToValidate = {    
+            source: "string-source",
+            renditions: []       
+        };
+
+        try{
+            validateParameters(paramsToValidate);}
+        catch(err){
+            assert.ok(err instanceof GenericError);
+            assert.equal(err.message, "'renditions' array is empty.");
+        }
+
+        paramsToValidate = {    
+            source: "string-source",
+            renditions: [null, null]       
+        };
+
+        try{
+            validateParameters(paramsToValidate);}
+        catch(err){
+            assert.ok(err instanceof GenericError);
+            assert.equal(err.message, "'renditions' array is empty.");
+        }
     });
 
-    it('verifies rendition target is a string or an object', () => {
-        assert.fail();
+    it('throws if rendition is not an array', () => {
+        let paramsToValidate = {    
+            source: "string-source",
+            renditions: "rendition-array"       
+        };
+
+        try{
+            validateParameters(paramsToValidate);}
+        catch(err){
+            assert.ok(err instanceof GenericError);
+            assert.equal(err.message, "'renditions' is not an array.");
+        }
+
+        paramsToValidate = {    
+            source: "string-source",
+            renditions: {}      
+        };
+
+        try{
+            validateParameters(paramsToValidate);}
+        catch(err){
+            assert.ok(err instanceof GenericError);
+            assert.equal(err.message, "'renditions' is not an array.");
+        }
     });
 });
