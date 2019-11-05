@@ -24,7 +24,7 @@ const fs = require('fs-extra');
 const assert = require('assert');
 
 const path = require('path');
-const {validateParameters, createDirectories, cleanupDirectories} = require('../lib/prepare');
+const {createDirectories, cleanupDirectories} = require('../lib/prepare');
 
 describe('prepare tests, filesystem related', () => {
     beforeEach(() => {
@@ -283,31 +283,5 @@ describe('prepare tests, filesystem related', () => {
 
         // cleanup
         await fs.remove(baseDir);
-    });
-});
-
-describe('validation tests', () => {
-    beforeEach(() => {
-        process.env.__OW_ACTION_NAME = 'test_action_validation';
-    });
-
-    it('throws when params.source is undefined or null', () => {
-        assert.fail();
-    });
-
-    it('normalizes the url param', () => {
-        assert.fail();
-    });
-
-    it('verifies renditions is an array (1 element)', () => {
-        assert.fail();
-    });
-
-    it('verifies renditions is an array (many elements)', () => {
-        assert.fail();
-    });
-
-    it('verifies rendition target is a string or an object', () => {
-        assert.fail();
     });
 });
