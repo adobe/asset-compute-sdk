@@ -120,23 +120,24 @@ describe('storage.js', () => {
 			assert.equal(source.path, '/in/file.jpg');
 		})
 
-		it('should fail because of invalid localfile in unittest mode', async () => {
+		it('should fail to download because path ends with /..', async () => {
 			process.env.NUI_UNIT_TEST_MODE = true;
 			const paramsSource = {
-				url: 'file/../../../../evilcode/elephant.jpg'
+				url: 'file.jpg/..'
 			};
 			const inDirectory = '/in';
+
 			let threw = false;
 			try {
 				await getSource(paramsSource, inDirectory)
 			} catch (e) {
-				assert.equal(e.message, 'Invalid or missing local file file/../../../../evilcode/elephant.jpg')
+				assert.equal(e.message, 'Invalid or missing local file file.jpg/..')
 				threw = true;
 			}
 			assert.ok(threw);
 		})
 
-		it('should fail because of indirectory is not /in in unittest mode', async () => {
+		it('should fail because of invalid localfile in unittest mode', async () => {
 			process.env.NUI_UNIT_TEST_MODE = true;
 			const paramsSource = {
 				url: 'file/../../../../evilcode/elephant.jpg'
