@@ -140,8 +140,14 @@ describe("rendition.js", () => {
         ];
         const renditions = Rendition.forEach(renditionInstructions, outDirectory);
         assert.strictEqual(renditions.length, 2);
+        assert.strictEqual(renditions[0].directory, outDirectory);
+        assert.strictEqual(renditions[1].directory, outDirectory);
         assert.strictEqual(renditions[0].name, "rendition0.png");
         assert.strictEqual(renditions[1].name, "rendition1.jpeg");
+        assert.strictEqual(renditions[0].path, "out/rendition0.png");
+        assert.strictEqual(renditions[1].path, "out/rendition1.jpeg");
+        assert.strictEqual(renditions[0].index, 0);
+        assert.strictEqual(renditions[1].index, 1);
         assert.strictEqual(renditions[0].instructions.fmt, "png");
         assert.strictEqual(renditions[1].instructions.fmt, "jpeg");
     });
