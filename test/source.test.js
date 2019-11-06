@@ -21,38 +21,18 @@
 'use strict';
 
 const assert = require('assert');
+
 const Source = require('../lib/source');
 
-describe("source.js", () => {
-    it('verifies name and path with source as string and with no directory', function() {
-        const sourceName = 'test-source.png';
-        const source = new Source(sourceName);
-        assert.strictEqual(source.name, 'test-source.png');
-        assert.strictEqual(source.path, 'test-source.png');
+describe("Source", () => {
+    it('gives a filename when source as string tests', function() {
+        let source = 'test-source.png';
+        assert.strictEqual(new Source(source).name, 'test-source.png');
+        source = '';
+        assert.strictEqual(new Source(source).name, '');
     });
-
-    it('verifies name and path with source as string and with a directory with trailing slash', function () {
-        const sourceName = 'test-source.png';
-        const source = new Source(sourceName, "/");
-        assert.strictEqual(source.name, 'test-source.png');
-        assert.strictEqual(source.path, '/test-source.png');
-    });
-
-    it('verifies name and path with source as string and with a direcory witn no trailing slash', function () {
-        const sourceName = 'test-source.png';
-        const source = new Source(sourceName, "/tmp");
-        assert.strictEqual(source.name, 'test-source.png');
-        assert.strictEqual(source.path, '/tmp/test-source.png');
-    });
-
-    it('verifies name and path with source as empty string', function () {
-        const sourceName = '';
-        const source = new Source(sourceName);
-        assert.strictEqual(source.name, '');
-    });
-    it('verifies name with source as an object', function() {
-        const source = {};
-        assert.strictEqual(new Source(source).name, 'source');
+    it('handles source.name for name generation tests', function() {
+        const source = { };
         source.name = 'abcdz-AZ1234567890.jpg';
         assert.strictEqual(new Source(source).name, `source.jpg`);
         source.name =  `  %789.PSD`;
@@ -62,7 +42,7 @@ describe("source.js", () => {
         source.name = '';
         assert.strictEqual(new Source(source).name, 'source');
     });
-    it('verifies name using mimeType', function() {
+    it('handles mime-type for source.name tests', function() {
         const source = { };
         source.name = 'abcdz-AZ1234567890';
         source.mimeType = 'image/jpeg';
@@ -74,7 +54,7 @@ describe("source.js", () => {
         source.mimeType = 'image/jpeg';
         assert.strictEqual(new Source(source).name, `source.png`);
     });
-    it('verifies name with source a url', function() {
+    it('handles source.url tests', function() {
         const source = { url: ''};
         source.url = 'https://server.name/file.jpg?queryPortion';
         assert.strictEqual(new Source(source).name, `source.jpg`);
@@ -91,7 +71,7 @@ describe("source.js", () => {
         source.mimeType ='image/png';
         assert.strictEqual(new Source(source).name, `source.png`);
     });
-    it('verifies name with empty source object', function() {
+    it('handles empty source object', function() {
         const source = { };
         assert.strictEqual(new Source(source).name, 'source');
     });
