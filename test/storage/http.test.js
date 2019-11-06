@@ -72,7 +72,7 @@ describe('http.js', () => {
             assert.ok(nock.isDone());
         });
 
-        it("should fail downloading a jpg file", async () => { // this test is skipped in case internet is down
+        it("should fail downloading a jpg file mocking @nui/node-httptransfer", async () => { 
             const source = {
                 url: "https://example.com/fakeEarth.jpg"
             };
@@ -90,6 +90,29 @@ describe('http.js', () => {
                 assert.equal(e.location, 'worker-test_download');
             }
             assert.ok(! fs.existsSync(file));
+        });
+
+        it("should fail downloading a jpg file", async () => {
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+
+            assert.ok(! fs.existsSync(file));
+            const source = {
+                url: "https://example.com/fakeEarth.jpg"
+            };
+            mockFs({ "./storeFiles/jpg": {} });
+
+            nock("https://example.com")
+                .get("/fakeEarth.jpg")
+                .reply(404, "error")
+
+            try {
+                await download(source, file);
+            } catch (e) {
+                assert.equal(e.name, "GenericError");
+                assert.equal(e.message, "GET 'https://example.com/fakeEarth.jpg' failed with status 404");
+                assert.equal(e.location, "worker-test_download");
+            }
+            assert.equal(fs.statSync(file).size, 0) // should error on createReadStream
         });
 
         it("should fail downloading once before succeeding", async () => {
