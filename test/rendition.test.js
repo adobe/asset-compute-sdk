@@ -31,7 +31,6 @@ const PNG_SIZE = fs.statSync(filePath).size;
 
 describe("rendition.js", () => {
     beforeEach(() => {
-
         mockFs();
     });
     afterEach(() => {
@@ -78,7 +77,7 @@ describe("rendition.js", () => {
         assert.strictEqual(sha1, 'fe16bfbff4e31fcf726c18fe4051b71ee8c96150');
     });
 
-    it('verifies method id works properly', async function () {
+    it('verifies method id works properly', function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
         let rendition = new Rendition(instructions, directory, 11);
@@ -90,7 +89,7 @@ describe("rendition.js", () => {
         assert.strictEqual(rendition.id(), "idName");
     });
 
-    it('verifies method instructionsForEvent works properly', async function () {
+    it('verifies method instructionsForEvent works properly', function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
         const rendition = new Rendition(instructions, directory, 11);
