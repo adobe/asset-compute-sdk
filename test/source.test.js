@@ -38,7 +38,7 @@ describe("source.js", () => {
         assert.strictEqual(source.path, '/test-source.png');
     });
 
-    it('verifies name and path with source as string and with a direcory witn no trailing slash', function () {
+    it('verifies name and path with source as string and with a directory with no trailing slash', function () {
         const sourceName = 'test-source.png';
         const source = new Source(sourceName, "/tmp");
         assert.strictEqual(source.name, 'test-source.png');
