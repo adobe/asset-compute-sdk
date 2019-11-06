@@ -99,7 +99,7 @@ describe('storage.js', () => {
 			try {
 				await getSource(paramsSource, inDirectory)
 			} catch (e) {
-				assert.equal(e.message, 'Invalid Https Url: http://example.com/photo/elephant.png');
+				assert.equal(e.message, 'Invalid or missing https url http://example.com/photo/elephant.png');
 				threw = true;
 			}
 			assert.ok(threw);
@@ -130,7 +130,23 @@ describe('storage.js', () => {
 			try {
 				await getSource(paramsSource, inDirectory)
 			} catch (e) {
-				assert.equal(e.message, 'Invalid or missing local file: file/../../../../evilcode/elephant.jpg')
+				assert.equal(e.message, 'Invalid or missing local file file/../../../../evilcode/elephant.jpg')
+				threw = true;
+			}
+			assert.ok(threw);
+		})
+
+		it('should fail because of indirectory is not /in in unittest mode', async () => {
+			process.env.NUI_UNIT_TEST_MODE = true;
+			const paramsSource = {
+				url: 'file/../../../../evilcode/elephant.jpg'
+			};
+			const inDirectory = '/in';
+			let threw = false;
+			try {
+				await getSource(paramsSource, inDirectory)
+			} catch (e) {
+				assert.equal(e.message, 'Invalid or missing local file file/../../../../evilcode/elephant.jpg')
 				threw = true;
 			}
 			assert.ok(threw);
@@ -146,7 +162,7 @@ describe('storage.js', () => {
 			try {
 				await getSource(paramsSource, inDirectory)
 			} catch (e) {
-				assert.equal(e.message, 'Invalid or missing local file: elephant.jpg')
+				assert.equal(e.message, 'Invalid or missing local file elephant.jpg')
 				threw = true;
 			}
 			assert.ok(threw);
@@ -202,7 +218,7 @@ describe('storage.js', () => {
 			try {
 				await putRendition(rendition);
 			} catch (e) {
-				assert.equal(e.message, 'Invalid Https Url: http://example.com/fakeEarth.jpg');
+				assert.equal(e.message, 'Invalid or missing https url http://example.com/fakeEarth.jpg');
 				assert.ok(e instanceof GenericError);
 				threw = true;
 			}
@@ -226,7 +242,7 @@ describe('storage.js', () => {
 			try {
 				await putRendition(rendition);
 			} catch (e) {
-				assert.equal(e.message, 'Invalid or Missing Url ');
+				assert.equal(e.message, 'Invalid or missing https url ');
 				assert.ok(e instanceof GenericError);
 				threw = true;
 			}
@@ -248,7 +264,7 @@ describe('storage.js', () => {
 			try {
 				await putRendition(rendition);
 			} catch (e) {
-				assert.equal(e.message, 'Invalid or Missing Url ');
+				assert.equal(e.message, 'Invalid or missing https url ');
 				assert.ok(e instanceof GenericError);
 				threw = true;
 			}
@@ -270,7 +286,7 @@ describe('storage.js', () => {
 			try {
 				await putRendition(rendition);
 			} catch (e) {
-				assert.equal(e.message, 'Invalid or Missing Url ../../hello.com');
+				assert.equal(e.message, 'Invalid or missing https url ../../hello.com');
 				assert.ok(e instanceof GenericError);
 				threw = true;
 			}
