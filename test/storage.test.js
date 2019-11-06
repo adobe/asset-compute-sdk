@@ -108,31 +108,45 @@ describe('storage.js', () => {
 		it('should not download a file in unittest mode', async () => {
 			process.env.NUI_UNIT_TEST_MODE = true;
 			const paramsSource = {
-				url: './localFile/elephant.psd'
+				url: 'file.jpg'
 			};
-			const inDirectory = './in';
+			const inDirectory = '/in';
 
-			mockFs({ './localFile/elephant.psd': 'yo' });
+			mockFs({ '/in/file.jpg': 'yo' });
 
 			const source = await getSource(paramsSource, inDirectory)
 
-			assert.equal(source.name, './localFile/elephant.psd'); // in this case source name is actual file path
-			assert.equal(source.path, 'in/localFile/elephant.psd');
+			assert.equal(source.name, 'file.jpg'); // in this case source name is actual file path
+			assert.equal(source.path, '/in/file.jpg');
 		})
 
 		it('should fail because of invalid localfile in unittest mode', async () => {
 			process.env.NUI_UNIT_TEST_MODE = true;
 			const paramsSource = {
-				url: './localFile/../../evilcode/forHacking/elephant.jpg'
+				url: 'file/../../../../evilcode/elephant.jpg'
 			};
-			const inDirectory = './in/fakeSource/filePath';
-
-			mockFs({ './in/fakeSource/filePath': {} });
+			const inDirectory = '/in';
 			let threw = false;
 			try {
 				await getSource(paramsSource, inDirectory)
 			} catch (e) {
-				assert.equal(e.message, 'Invalid or missing local file: ./localFile/../../evilcode/forHacking/elephant.jpg')
+				assert.equal(e.message, 'Invalid or missing local file: file/../../../../evilcode/elephant.jpg')
+				threw = true;
+			}
+			assert.ok(threw);
+		})
+
+		it('should fail because of missing localfile in unittest mode', async () => {
+			process.env.NUI_UNIT_TEST_MODE = true;
+			const paramsSource = {
+				url: 'elephant.jpg'
+			};
+			const inDirectory = '/in';
+			let threw = false;
+			try {
+				await getSource(paramsSource, inDirectory)
+			} catch (e) {
+				assert.equal(e.message, 'Invalid or missing local file: elephant.jpg')
 				threw = true;
 			}
 			assert.ok(threw);
@@ -173,5 +187,94 @@ describe('storage.js', () => {
 
 		})
 
+		it('should fail on upload because of an invalid url', async () => {
+			mockFs({ "./storeFiles/jpg": {
+                "fakeEarth.jpg": "hello world!"
+            } });
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+
+            const rendition = {
+                path: file,
+                target: "http://example.com/fakeEarth.jpg"
+            };
+
+            let threw = false;
+			try {
+				await putRendition(rendition);
+			} catch (e) {
+				assert.equal(e.message, 'Invalid Https Url: http://example.com/fakeEarth.jpg');
+				assert.ok(e instanceof GenericError);
+				threw = true;
+			}
+			assert.ok(threw);
+		})
+
+		it('should fail on upload because of one invalid url for multipart upload', async () => {
+			mockFs({ "./storeFiles/jpg": {
+                "fakeEarth.jpg": "hello world!"
+            } });
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+
+            const rendition = {
+                path: file,
+                target: {
+					urls: ["https://example.com/fakeEarth.jpg", "https://example2.com/fakeEarth.jpg", "http://example.com/fakeEarth.jpg"]
+				}
+            };
+
+            let threw = false;
+			try {
+				await putRendition(rendition);
+			} catch (e) {
+				assert.equal(e.message, 'Invalid or Missing Url ');
+				assert.ok(e instanceof GenericError);
+				threw = true;
+			}
+			assert.ok(threw);
+		})
+
+		it('should fail on upload because of a missing url', async () => {
+			mockFs({ "./storeFiles/jpg": {
+                "fakeEarth.jpg": "hello world!"
+            } });
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+
+            const rendition = {
+                path: file,
+                target: undefined
+            };
+
+            let threw = false;
+			try {
+				await putRendition(rendition);
+			} catch (e) {
+				assert.equal(e.message, 'Invalid or Missing Url ');
+				assert.ok(e instanceof GenericError);
+				threw = true;
+			}
+			assert.ok(threw);
+		})
+
+		it('should fail on upload because of an invalid url for upload', async () => {
+			mockFs({ "./storeFiles/jpg": {
+                "fakeEarth.jpg": "hello world!"
+            } });
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+
+            const rendition = {
+                path: file,
+                target: '../../hello.com'
+            };
+
+            let threw = false;
+			try {
+				await putRendition(rendition);
+			} catch (e) {
+				assert.equal(e.message, 'Invalid or Missing Url ../../hello.com');
+				assert.ok(e instanceof GenericError);
+				threw = true;
+			}
+			assert.ok(threw);
+		})
 	})
 })
