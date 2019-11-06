@@ -37,11 +37,10 @@
     "nock": "^11.6.0",
     "nyc": "^14.1.1",
     "rewire": "^4.0.1",
-    "rimraf": "^3.0.0",
-    "util": "^0.12.1"
+    "rimraf": "^3.0.0"
   },
   "scripts": {
     "pretest": "eslint ./",
-    "test": "nyc --reporter=html --reporter=text ./node_modules/.bin/mocha ./test --recursive --exit"
+    "test": "nyc --reporter=html --reporter=text mocha test --file test/logfile.setup.js --recursive"
   }
 }
