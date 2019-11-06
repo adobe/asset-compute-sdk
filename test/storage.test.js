@@ -138,4 +138,40 @@ describe('storage.js', () => {
 			assert.ok(threw);
 		})
 	})
+
+	describe('putRendition', () => {
+
+		beforeEach(() => {
+			mockFs();
+		})
+
+		afterEach( () => {
+			nock.cleanAll();
+			mockFs.restore();
+			delete process.env.NUI_UNIT_TEST_MODE;
+			delete process.env.NUI_DISABLE_RETRIES;
+		})
+
+		it('should upload simple rendition', async () => {
+			mockFs({ "./storeFiles/jpg": {
+                "fakeEarth.jpg": "hello world!"
+            } });
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+
+            const rendition = {
+                path: file,
+                target: "https://example.com/fakeEarth.jpg"
+            };
+
+            nock("https://example.com")
+                .put("/fakeEarth.jpg", "hello world!")
+                .reply(200)
+
+            assert.ok(fs.existsSync(file));
+            await putRendition(rendition);
+            assert.ok(nock.isDone());
+
+		})
+
+	})
 })
