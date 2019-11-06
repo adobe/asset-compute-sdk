@@ -39,7 +39,7 @@ describe("rendition.js", () => {
     });
     it('verifies constructor works properly for directory with and without trailing slash ', function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
-        let directory = "/";  
+        let directory = "/"; 
         let rendition = new Rendition(instructions, directory, 11);
         assert.strictEqual(rendition.instructions.fmt, "png");
         assert.strictEqual(rendition.directory, "/");
@@ -51,7 +51,7 @@ describe("rendition.js", () => {
         instructions.fmt = "JPEG";
         instructions.target = "file with blanks";
         instructions.name = "idName";
-        directory = "/tmp"; 
+        directory = "/tmp";
         rendition = new Rendition(instructions, directory);
         assert.strictEqual(rendition.instructions.fmt, "JPEG");
         assert.strictEqual(rendition.directory, "/tmp");
@@ -74,7 +74,6 @@ describe("rendition.js", () => {
         const directory = "/";
         await fs.writeFile("/rendition11.png", PNG_CONTENTS);
         const rendition = new Rendition(instructions, directory, 11);
-        assert.strictEqual(rendition.size(), PNG_SIZE);
         const sha1 = await rendition.sha1();
         assert.strictEqual(sha1, 'fe16bfbff4e31fcf726c18fe4051b71ee8c96150');
     });
