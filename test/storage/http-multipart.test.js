@@ -22,12 +22,12 @@
 
 const { RenditionTooLarge } = require('@nui/asset-compute-commons');
 const http =  require('../../lib/storage/http');
+const mockFs = require('mock-fs');
 const fs = require('fs-extra');
 const assert = require('assert')
 const nock = require('nock');
 const rimraf = require('rimraf');
 const util = require('util');
-const expect = require('expect.js');
 
 const removeFiles = util.promisify(rimraf);
 
@@ -54,10 +54,13 @@ it.skip('Unmocked multi part upload with 2 urls', async function() {
 
 describe('http multipart tests', function() {
   beforeEach(async function() {
+    mockFs();
   })
   
   afterEach(async function() {
     nock.cleanAll();
+    mockFs.restore();
+    delete process.env.NUI_DISABLE_RETRIES;
     try {
       await removeFiles("rendition*");
     } catch (err) {
@@ -66,49 +69,60 @@ describe('http multipart tests', function() {
     }
   })
 
-  function _buildMultipartData(minPartSize=0, maxPartSize=-1, urlCount=5, renditionCount=1, addFiles=true) {
-    const renditions = [];
-    const results = {};
-    for (let i = 0; i < renditionCount; i++) {
-      const renditionName = `rendition${i+1}`;
-      if (addFiles) {
-        fs.writeFileSync(renditionName, 'hello multipart uploading world!\n', 'utf8');
-      }
-      const urls = [];
-      for (let u = 0; u < urlCount; u++) {
-        urls.push(`http://unittest/${renditionName}_${u+1}`);
-      }
-      renditions.push({
-        name: renditionName,
-        target: {
-          minPartSize,
-          maxPartSize,
-          urls
-        }
-      });
-      results[renditionName] = true;
+  function _buildMultipartData(minPartSize=0, maxPartSize=-1, urlCount=5, addFiles=true) {
+    const renditionName = `rendition`;
+    const path = "./jpg/rendition.jpg";
+    if (addFiles) {
+      mockFs({ "./jpg": {
+        "rendition.jpg": "hello multipart uploading world!\n"
+      } });
     }
-
+    const urls = [];
+    for (let u = 0; u < urlCount; u++) {
+      urls.push(`http://unittest/${renditionName}_${u+1}`);
+    }
     return {
-      params: {
-        ingestionId: 'unit_test',
-        renditions
-      }, result: {
-        renditions: results,
-        outdir: '.'
-      }
+      path: path,
+      target: {
+        minPartSize,
+        maxPartSize,
+        urls
+      },
+      id: () => {return 12345},
+      size: () => { return 230}
     };
+
   }
 
   it('single upload', async () => {
-    const data = _buildMultipartData(0, 10, 1);
+    const rendition = _buildMultipartData(0, 33, 1);
      nock('http://unittest')
     .matchHeader('content-length', 33)
-    .put('/rendition1_1', 'hello multipart uploading world!\n')
+    .put('/rendition_1', 'hello multipart uploading world!\n')
     .reply(201)
-    data.params.renditions[0].target = 'http://unittest/rendition1_1';
+
     try {
-      await http.upload(data.params, data.result);
+      await http.upload(rendition);
+    } catch (err) {
+        console.log(err);
+        assert(false);
+    }
+    assert(nock.isDone());
+  });
+
+  it('should fail on first attempt then succeed', async () => {
+    const rendition  = _buildMultipartData(0, 33, 1);
+    nock('http://unittest')
+    .matchHeader('content-length', 33)
+    .put('/rendition_1', 'hello multipart uploading world!\n')
+    .replyWithError(503)
+     nock('http://unittest')
+    .matchHeader('content-length', 33)
+    .put('/rendition_1', 'hello multipart uploading world!\n')
+    .reply(201)
+
+    try {
+      await http.upload(rendition);
     } catch (err) {
         console.log(err);
         assert(false);
@@ -117,47 +131,41 @@ describe('http multipart tests', function() {
   });
 
   it('single upload_no_target', async () => {
-    const data = _buildMultipartData(0, 10, 1);
-     nock('http://unittest')
-    .matchHeader('content-length', 33)
-    .put('/rendition1_1', 'hello multipart uploading world!\n')
-    .reply(201)
-    delete data.params.renditions[0].target;
-    data.params.renditions[0].url = 'http://unittest/rendition1_1';
+    const rendition = _buildMultipartData(0, 10, 1);
+    delete rendition.target;
     try {
-      await http.upload(data.params, data.result);
+      await http.upload(rendition);
     } catch (err) {
         console.log(err);
         assert(false);
     }
-    assert(nock.isDone());
   });
 
   it('test multipart upload', async () => {
-    const data = _buildMultipartData(5, 7, 5);
+    const rendition = _buildMultipartData(5, 7, 5);
      nock('http://unittest')
     .matchHeader('content-length',7)
-    .put('/rendition1_1', 'hello m')
+    .put('/rendition_1', 'hello m')
     .reply(201);
     nock('http://unittest')
     .matchHeader('content-length', 7)
-    .put('/rendition1_2', 'ultipar')
+    .put('/rendition_2', 'ultipar')
     .reply(201);
     nock('http://unittest')
     .matchHeader('content-length', 7)
-    .put('/rendition1_3', 't uploa')
+    .put('/rendition_3', 't uploa')
     .reply(201);
     nock('http://unittest')
     .matchHeader('content-length', 7)
-    .put('/rendition1_4', 'ding wo')
+    .put('/rendition_4', 'ding wo')
     .reply(201);
     nock('http://unittest')
     .matchHeader('content-length', 5)
-    .put('/rendition1_5', 'rld!\n')
+    .put('/rendition_5', 'rld!\n')
     .reply(201);
 
     try {
-      await http.upload(data.params, data.result);
+      await http.upload(rendition);
     } catch (err) {
         console.log(err);
         assert(false);
@@ -165,117 +173,72 @@ describe('http multipart tests', function() {
     assert(nock.isDone());
   });
 
-  it('test multiple renditions', async function() {
-    const data = _buildMultipartData(5, 20, 2, 2);
+  it('test renditions with failure', async function() {
+      const rendition = _buildMultipartData(5, 20, 2);
       nock('http://unittest')
         .matchHeader('content-length',17)
-        .put('/rendition1_1', 'hello multipart u')
-        .reply(201);
-      nock('http://unittest')
-        .matchHeader('content-length', 16)
-        .put('/rendition1_2', 'ploading world!\n')
-        .reply(201);
-      nock('http://unittest')
-        .matchHeader('content-length',17)
-        .put('/rendition2_1', 'hello multipart u')
-        .reply(201);
-      nock('http://unittest')
-        .matchHeader('content-length', 16)
-        .put('/rendition2_2', 'ploading world!\n')
-        .reply(201);
-
-    try {
-        await http.upload(data.params, data.result);
-    } catch (err) {
-        console.log(err);
-        assert(false);
-    }
-    assert(nock.isDone());
-  }).timeout(5000);
-
-  it('test multiple renditions with failure', async function() {
-      const data = _buildMultipartData(5, 20, 2, 2);
-      nock('http://unittest')
-        .matchHeader('content-length',17)
-        .put('/rendition1_1', 'hello multipart u')
-        .reply(201);
-      nock('http://unittest')
-        .matchHeader('content-length', 16)
-        .put('/rendition1_2', 'ploading world!\n')
-        .reply(201);
-      nock('http://unittest')
-        .matchHeader('content-length',17)
-        .put('/rendition2_1', 'hello multipart u')
+        .put('/rendition_1', 'hello multipart u')
+        .thrice()
         .reply(500); // invokes retry
       nock('http://unittest')
         .matchHeader('content-length',17)
-        .put('/rendition2_1', 'hello multipart u')
+        .put('/rendition_1', 'hello multipart u')
         .reply(201); // retry succeeds
       nock('http://unittest')
         .matchHeader('content-length', 16)
-        .put('/rendition2_2', 'ploading world!\n')
+        .put('/rendition_2', 'ploading world!\n')
         .reply(201);
-      await http.upload(data.params, data.result);
+      await http.upload(rendition);
       assert(nock.isDone());
   }).timeout(5000);
 
-  it('test multiple renditions with RenditionTooLarge failure', async function() {
-    const data = _buildMultipartData(0, 33, 1, 1);
+  it('test rendition with RenditionTooLarge failure', async function() {
+    process.env.NUI_DISABLE_RETRIES = true;
+    const rendition = _buildMultipartData(0, 33, 1);
       nock('http://unittest')
         .matchHeader('content-length',33)
-        .put('/rendition1_1', 'hello multipart uploading world!\n')
-        .reply(413, 'The request body is too large ');
+        .defaultReplyHeaders({
+          'Content-Type': 'text/plain',
+        })
+        .put('/rendition_1', 'hello multipart uploading world!\n')
+        .reply(413,'The request body is too large to upload');
     let threw = false;
     try {
-        await http.upload(data.params, data.result);
+        await http.upload(rendition);
     } catch (err) {
-      assert(err.name === 'RenditionTooLarge');
+      assert.equal(err.name, 'RenditionTooLarge');
       threw = true;
     }
-    expect(threw).to.be.ok();
+    assert.ok(threw);
   }).timeout(5000);
 
   it('test insufficient urls', async () => {
-    const data = _buildMultipartData(0, 7, 2);
+    const rendition = _buildMultipartData(0, 7, 2);
     let threw = false;
     try {
-      await http.upload(data.params, data.result);
+      await http.upload(rendition);
     }
     catch (e) {
       console.log(e);
       assert(e instanceof RenditionTooLarge);
       threw = true;
     }
-    expect(threw).to.be.ok();
+    assert.ok(threw);
   });
 
   it('test min part size', async () => {
     nock('http://unittest')
       .matchHeader('content-length',20)
-      .put('/rendition1_1', 'hello multipart uplo')
+      .put('/rendition_1', 'hello multipart uplo')
       .reply(201);
     nock('http://unittest')
       .matchHeader('content-length',13)
-      .put('/rendition1_2', 'ading world!\n')
+      .put('/rendition_2', 'ading world!\n')
       .reply(201);
 
-    const data = _buildMultipartData(20, 100);
-    await http.upload(data.params, data.result);
+    const rendition = _buildMultipartData(20, 100);
+    await http.upload(rendition);
     assert(nock.isDone());
-  });
-
-  it('test multipart upload missing file', async () => {
-    const data = _buildMultipartData(0, 10, 5, 1, false);
-    let threw = false;
-    try {
-      await http.upload(data.params, data.result);
-    }
-    catch (err) {
-      assert(err.name === 'GenericError');
-      assert(err.location === 'upload_error');
-      threw = true;
-    }
-    expect(threw).to.be.ok();
   });
 
 });
