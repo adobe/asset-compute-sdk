@@ -25,13 +25,13 @@ const fs = require('fs-extra');
 const mockFs = require('mock-fs');
 const Rendition = require('../lib/rendition.js');
 
+const filePath = "test/files/file.png";
+const PNG_CONTENTS = fs.readFileSync(filePath);
+const PNG_SIZE = fs.statSync(filePath).size;
+
 describe("rendition.js", () => {
-    let PNG_CONTENTS;
-    let PNG_SIZE;
     beforeEach(() => {
-        const filePath = "test/files/file.png";
-        PNG_CONTENTS = fs.readFileSync(filePath);
-        PNG_SIZE = fs.statSync(filePath).size;
+
         mockFs();
     });
     afterEach(() => {
@@ -39,7 +39,7 @@ describe("rendition.js", () => {
     });
     it('verifies constructor works properly for directory with and without trailing slash ', function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
-        let directory = "/"; 
+        let directory = "/";
         let rendition = new Rendition(instructions, directory, 11);
         assert.strictEqual(rendition.instructions.fmt, "png");
         assert.strictEqual(rendition.directory, "/");
@@ -81,7 +81,6 @@ describe("rendition.js", () => {
     it('verifies method id works properly', async function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
-        await fs.writeFile("/rendition11.png", PNG_CONTENTS);
         let rendition = new Rendition(instructions, directory, 11);
         assert.strictEqual(rendition.id(), 11);
 
@@ -94,7 +93,6 @@ describe("rendition.js", () => {
     it('verifies method instructionsForEvent works properly', async function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
-        await fs.writeFile("/rendition11.png", PNG_CONTENTS);
         const rendition = new Rendition(instructions, directory, 11);
         const inst = rendition.instructionsForEvent();
         assert.ok(!inst.target);
