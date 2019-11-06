@@ -33,7 +33,7 @@ const { GenericError, Reason, SourceUnsupportedError } = require('@nui/asset-com
 
 const url = 'http://hostname/testfile.png';
 
-const originalConsoleError = console.error;
+// const originalConsoleError = console.error;
 
 // Dummy Worker function that returns a resolved promise
 function dummyWorkerFn(infile) {
@@ -82,7 +82,7 @@ describe('library error handling and processing tests', function () {
         mockFs();
     });
     afterEach(function() {
-        console.error = originalConsoleError;
+        // console.error = originalConsoleError;
         fs.removeSync('in/');
 
         mockery.deregisterMock(mockJwt);
@@ -110,7 +110,7 @@ describe('library error handling and processing tests', function () {
     });
 
     it("should fail with GenericError because no source url found", function(done) {
-        console.error = function() {}
+        //console.error = function() {};
         const params = {
             source: {},
             renditions: []
@@ -134,7 +134,7 @@ describe('library error handling and processing tests', function () {
             .get("/testfile.png")
             .reply(400);
             
-        console.error = function() {}
+        //console.error = function() {};
         const params = {
             source: "http://fakeurl/testfile.png",
             renditions: []
@@ -155,7 +155,7 @@ describe('library error handling and processing tests', function () {
     })
 
     it("should fail because of a local download error", function(done) { 
-        console.error = function() {}
+        //console.error = function() {};
         const params = {
             source: "fake_testfile.png",
             renditions: []
@@ -176,7 +176,7 @@ describe('library error handling and processing tests', function () {
     });
 
     it("should fail because of a specific worker error (source unsupported)", function(done) { 
-        console.error = function() {}
+        //console.error = function() {};
         const params = {
             source: url,
             renditions: []
@@ -205,7 +205,7 @@ describe('library error handling and processing tests', function () {
     })
 
     it("should fail with GenericError because no source found", function(done) {
-        console.error = function() {}
+        //console.error = function() {};
         const params = {
             renditions: []
         };
@@ -224,7 +224,7 @@ describe('library error handling and processing tests', function () {
     });
 
     it("should fail with upload error", async () => {
-        console.error = function() {};
+        ////console.error = function() {};;
         mockery.enable({
             warnOnUnregistered: false,
             useCleanCache: true
@@ -264,7 +264,7 @@ describe('library error handling and processing tests', function () {
 
     it('test process with cgroup metrics', async () => {
         // to verfiy metrics, add log statements printing out metrics
-        console.error = function() {}
+        //console.error = function() {};
         mockery.enable({
             warnOnUnregistered: false,
             useCleanCache: true

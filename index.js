@@ -17,49 +17,18 @@
 
 'use strict';
 
-const AssetComputeWorker = require('./lib/worker');
+const { worker, batchWorker, bashScriptWorker } = require('./lib/api');
 const { process, forEachRendition, shellScriptWorker } = require('./lib/compat');
-
-function worker(renditionCallback) {
-    if (typeof renditionCallback !== "function") {
-        throw new Error("renditionCallback must be a function");
-    }
-    return function (params) {
-        new AssetComputeWorker(params).compute(renditionCallback);
-    }
-}
-
-function batchWorker(renditionsCallback) {
-    if (typeof renditionsCallback !== "function") {
-        throw new Error("renditionsCallback must be a function");
-    }
-    return function (params) {
-        new AssetComputeWorker(params).computeAllAtOnce(renditionsCallback);
-    }
-}
-
-/*
-
-example code
-
-exports.main = worker(async (source, rendition, outdir) => {
-    // impl
-});
-
-exports.main = batchWorker(async (source, renditions, outdir) => {
-    // impl
-});
-
-*/
 
 // -----------------------< exports >-----------------------------------
 module.exports = {
     worker,
     batchWorker,
+    bashScriptWorker,
 
-    // backwards compatibility
-    process, // for node.js workers
-    forEachRendition, // for node.js workers, on top of process
-    shellScriptWorker // all shellscript workers
+    // exporting for backwards compatibility
+    process,
+    forEachRendition,
+    shellScriptWorker
 }
 

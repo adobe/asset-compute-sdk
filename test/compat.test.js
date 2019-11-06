@@ -20,111 +20,171 @@
 
 'use strict';
 
-const mockFs = require('mock-fs');
+const { forEachRendition, process } = require('../lib/compat');
+
+const testUtil = require('./testutil');
 const fs = require('fs-extra');
 const nock = require('nock');
-const { forEachRendition, process } = require('../index');
-const proc = require('process');
 const assert = require('assert');
 
-describe('forEachRendition', () => {
+describe('compat.js', () => {
     beforeEach(() => {
-        proc.env.__OW_DEADLINE = Date.now() + 2000;
-        proc.env.NUI_DISABLE_RETRIES = "disable";
-        mockFs();
+        testUtil.beforeEach();
     });
 
     afterEach( () => {
-        nock.cleanAll();
-        mockFs.restore();
-    });
-    it('sourceUrl is passed through', () => {
-
-    });
-    it('should create correct directories for source aw url', async () => {
-
-    });
-    it('forEachRendition() invokes callback with correct parameters', async () => {
-        function workerFn(infile, rendition, outdir) {
-            assert.equal(typeof infile, "string");
-            assert.equal(typeof rendition, "object");
-            assert.equal(typeof rendition.name, "string");
-            assert.ok(fs.existsSync(infile));
-            assert.ok(!fs.existsSync(rendition.name));
-            assert.equal(typeof outdir, "string");
-            fs.writeFileSync(`${outdir}/${rendition.name}`, "hello world");
-            return Promise.resolve();
-        }
-        nock('https://example.com')
-            .get('/MySourceFile.jpg')
-            .reply(200, "hello world");
-        nock('https://example.com')
-            .put('/MyRendition.png', 'hello world')
-            .reply(200);
-
-        const params = {
-            source: 'https://example.com/MySourceFile.jpg',
-            renditions: [{
-                fmt: "png",
-                target: "https://example.com/MyRendition.png"
-            }]
-        };
-        await forEachRendition(params, workerFn);
-
-        assert(nock.isDone());
+        testUtil.afterEach();
     });
 
-});
+    describe('forEachRendition()', () => {
 
-describe('process', () => {
-    beforeEach(() => {
-        proc.env.__OW_DEADLINE = Date.now() + 2000;
-        proc.env.NUI_DISABLE_RETRIES = "disable";
-        mockFs();
-    });
+        it("should throw if worker callback is invalid", async () => {
+            try {
+                await forEachRendition({}, "string");
+                assert.fail("no error thrown if callback is a string");
+            } catch (e) {
+            }
+            try {
+                await forEachRendition({});
+                assert.fail("no error thrown if no callback given");
+            } catch (e) {
+            }
+            try {
+                await forEachRendition({}, {});
+                assert.fail("no error thrown if argument is object");
+            } catch (e) {
+            }
+        });
 
-    afterEach( () => {
-        nock.cleanAll();
-        mockFs.restore();
-    });
+        it("should return a function that returns a promise", async () => {
+            const result = forEachRendition(testUtil.simpleParams(), function() {});
+            // check if it's a Promise, from https://stackoverflow.com/a/38339199/2709
+            assert.equal(Promise.resolve(result), result);
 
-    it('process() invokes callback with correct parameters', async () => {
-        function workerFn(infile, renditions, outdir) {
-            try{
+            try {
+                await result;
+            } catch(e) {}
+        });
+
+        it('should download source, invoke worker callback and upload rendition', async () => {
+            function workerFn(infile, rendition, outdir) {
                 assert.equal(typeof infile, "string");
                 assert.ok(fs.existsSync(infile));
+                assert.equal(fs.readFileSync(infile), testUtil.SOURCE_CONTENT);
+
+                assert.equal(typeof rendition, "object");
+                assert.equal(typeof rendition.name, "string");
+                assert.ok(!fs.existsSync(rendition.name));
+
+                assert.equal(typeof outdir, "string");
+                assert.ok(fs.existsSync(outdir));
+                assert.ok(fs.statSync(outdir).isDirectory());
+
+                fs.writeFileSync(`${outdir}/${rendition.name}`, testUtil.RENDITION_CONTENT);
+            }
+
+            await forEachRendition(testUtil.simpleParams(), workerFn);
+
+            assert(nock.isDone());
+        });
+
+        it('should support the disableSourceDownloadSource flag', async () => {
+            function workerFn(infile, rendition, outdir) {
+                assert.equal(typeof infile, "string");
+                // must not download
+                assert.ok(!fs.existsSync(infile));
+
+                assert.equal(typeof rendition, "object");
+                assert.equal(typeof rendition.name, "string");
+                assert.ok(!fs.existsSync(rendition.name));
+
+                assert.equal(typeof outdir, "string");
+                assert.ok(fs.existsSync(outdir));
+                assert.ok(fs.statSync(outdir).isDirectory());
+
+                fs.writeFileSync(`${outdir}/${rendition.name}`, testUtil.RENDITION_CONTENT);
+            }
+
+            await forEachRendition(testUtil.simpleParams({noSourceDownload: true}), { disableSourceDownloadSource: true }, workerFn);
+
+            assert(nock.isDone());
+        });
+
+    });
+
+    describe('process()', () => {
+
+        it("should throw if worker callback is invalid", async () => {
+            try {
+                await process({}, "string");
+                assert.fail("no error thrown if callback is a string");
+            } catch (e) {
+            }
+            try {
+                await process({});
+                assert.fail("no error thrown if no callback given");
+            } catch (e) {
+            }
+            try {
+                await process({}, {});
+                assert.fail("no error thrown if argument is object");
+            } catch (e) {
+            }
+        });
+
+        it("should return a function that returns a promise", async () => {
+            const result = process(testUtil.simpleParams(), function() {});
+            // check if it's a Promise, from https://stackoverflow.com/a/38339199/2709
+            assert.equal(Promise.resolve(result), result);
+
+            await result;
+        });
+
+        it('should download source, invoke worker callback and upload rendition', async () => {
+            function workerFn(infile, renditions, outdir) {
+                assert.equal(typeof infile, "string");
+                assert.ok(fs.existsSync(infile));
+                assert.equal(fs.readFileSync(infile), testUtil.SOURCE_CONTENT);
+
                 assert.ok(Array.isArray(renditions));
                 assert.equal(renditions.length, 1);
                 assert.equal(typeof outdir, "string");
+                assert.ok(fs.existsSync(outdir));
+                assert.ok(fs.statSync(outdir).isDirectory());
 
                 const rendition = renditions[0];
                 assert.equal(typeof rendition, "object");
                 assert.equal(typeof rendition.name, "string");
-                fs.writeFileSync(`${outdir}/${rendition.name}`, "hello world");
-                return Promise.resolve();
-            } catch(e){
-                console.log(e);
-                return Promise.reject(e);
+                fs.writeFileSync(`${outdir}/${rendition.name}`, testUtil.RENDITION_CONTENT);
             }
-        }
 
-        nock('https://example.com')
-            .get('/MySourceFile.jpg')
-            .reply(200, "hello world");
-        nock('https://example.com')
-            .put('/MyRendition.png', 'hello world')
-            .reply(200);
+            await process(testUtil.simpleParams(), workerFn);
 
-        const params = {
-            source: 'https://example.com/MySourceFile.jpg',
-            renditions: [{
-                fmt: "png",
-                target: "https://example.com/MyRendition.png"
-            }]
-        };
-        await process(params, workerFn);
+            assert(nock.isDone());
+        });
 
-        assert(nock.isDone());
+        it('should support the disableSourceDownloadSource flag', async () => {
+            function workerFn(infile, renditions, outdir) {
+                assert.equal(typeof infile, "string");
+                // must not download
+                assert.ok(!fs.existsSync(infile));
+
+                assert.ok(Array.isArray(renditions));
+                assert.equal(renditions.length, 1);
+                assert.equal(typeof outdir, "string");
+                assert.ok(fs.existsSync(outdir));
+                assert.ok(fs.statSync(outdir).isDirectory());
+
+                const rendition = renditions[0];
+                assert.equal(typeof rendition, "object");
+                assert.equal(typeof rendition.name, "string");
+                fs.writeFileSync(`${outdir}/${rendition.name}`, testUtil.RENDITION_CONTENT);
+            }
+
+            await process(testUtil.simpleParams({noSourceDownload: true}), { disableSourceDownloadSource: true }, workerFn);
+
+            assert(nock.isDone());
+        });
     });
 
 });
