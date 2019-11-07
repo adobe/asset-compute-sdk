@@ -46,11 +46,11 @@ function nockGetFile(httpUrl) {
     return nock(`${uri.protocol}//${uri.host}`).get(uri.path);
 }
 
-function nockPutFile(httpUrl, content) {
+function nockPutFile(httpUrl, content, status=200) {
     const uri = url.parse(httpUrl);
     nock(`${uri.protocol}//${uri.host}`)
         .put(uri.path, content)
-        .reply(200);
+        .reply(status);
 }
 
 function simpleParams(options) {
@@ -80,16 +80,20 @@ function simpleParams(options) {
 
 function paramsWithMultipleRenditions(options) {
     if (!options || !options.noGet) {
-        nockGetFile('https://example.com/MySourceFile.jpg').reply(200, SOURCE_CONTENT);
+        const status = (options && options.getStatus) || 200;
+        nockGetFile('https://example.com/MySourceFile.jpg').reply(status, SOURCE_CONTENT);
     }
     if (!options || !options.noPut1) {
-        nockPutFile('https://example.com/MyRendition1.png', RENDITION_CONTENT);
+        const status = (options && options.put1Status) || 200;
+        nockPutFile('https://example.com/MyRendition1.png',RENDITION_CONTENT, status);
     }
     if (!options || !options.noPut2) {
-        nockPutFile('https://example.com/MyRendition2.txt', RENDITION_CONTENT);
+        const status = (options && options.put2Status) || 200;
+        nockPutFile('https://example.com/MyRendition2.txt',RENDITION_CONTENT, status);
     }
     if (!options || !options.noPut3) {
-        nockPutFile('https://example.com/MyRendition3.xml', RENDITION_CONTENT);
+        const status = (options && options.put3Status) || 200;
+        nockPutFile('https://example.com/MyRendition3.xml',RENDITION_CONTENT, status);
     }
 
     return {
