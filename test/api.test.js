@@ -486,6 +486,73 @@ describe("api.js", () => {
             assert(nock.isDone());
         });
 
+        it('verify events with some successful and some failing', async () => {
+            let sourcePath, renditionDir;
+
+            function batchWorkerFn(source, renditions, outDirectory) {
+                assert.equal(typeof source, "object");
+                assert.equal(typeof source.path, "string");
+                assert.ok(fs.existsSync(source.path));
+                assert.equal(fs.readFileSync(source.path), testUtil.SOURCE_CONTENT);
+                sourcePath = source.path;
+
+                assert.ok(Array.isArray(renditions));
+                assert.equal(renditions.length, 3);
+
+                let i = 0;
+                for (const rendition of renditions) {
+                    assert.equal(typeof rendition.path, "string");
+                    assert.equal(typeof rendition.name, "string");
+                    assert.equal(typeof outDirectory, "string");
+                    assert.ok(fs.existsSync(outDirectory));
+                    assert.ok(fs.statSync(outDirectory).isDirectory());
+                    assert.ok(!fs.existsSync(rendition.path));
+                    if (renditionDir !== undefined) {
+                        assert.equal(rendition.directory, renditionDir);
+                    }
+                    renditionDir = rendition.directory;
+
+                    if (i !== 1) {
+                        fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                    }
+                    i++;
+                }
+                return Promise.resolve();
+            }
+
+            const main = batchWorker(batchWorkerFn);
+            await main(testUtil.paramsWithMultipleRenditions());
+
+            let jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
+            console.log(jsonString);
+            let json = JSON.parse(jsonString)
+            assert.strictEqual(json.type, 'rendition_created');
+            assert.strictEqual(json.rendition.fmt, 'png');
+            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
+            assert.strictEqual(json.metadata['repo:size'], 17);
+
+            jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`, 'utf8');
+            console.log(jsonString);
+            json = JSON.parse(jsonString)
+            assert.strictEqual(json.type, 'rendition_failed');
+            assert.strictEqual(json.rendition.fmt, 'txt');
+            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
+            
+            jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event2.json`, 'utf8');
+            console.log(jsonString);
+            json = JSON.parse(jsonString)
+            assert.strictEqual(json.type, 'rendition_created');
+            assert.strictEqual(json.rendition.fmt, 'xml');
+            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
+            assert.strictEqual(json.metadata['repo:size'], 17);
+
+            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event3.json`))
+            // assert(nock.isDone());
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionDir));
+        });
         it('should handle multiple renditions', async () => {
             let sourcePath, renditionDir;
 
@@ -525,7 +592,6 @@ describe("api.js", () => {
             assert.ok(!fs.existsSync(sourcePath));
             assert.ok(!fs.existsSync(renditionDir));
         });
-
         it("should throw an error object if source download fails", async () => {
             const main = batchWorker(function() {});
             try {

@@ -78,11 +78,19 @@ function simpleParams(options) {
     }
 }
 
-function paramsWithMultipleRenditions() {
-    nockGetFile('https://example.com/MySourceFile.jpg').reply(200, SOURCE_CONTENT);
-    nockPutFile('https://example.com/MyRendition1.png', RENDITION_CONTENT);
-    nockPutFile('https://example.com/MyRendition2.txt', RENDITION_CONTENT);
-    nockPutFile('https://example.com/MyRendition3.xml', RENDITION_CONTENT);
+function paramsWithMultipleRenditions(options) {
+    if (!options || !options.noGet) {
+        nockGetFile('https://example.com/MySourceFile.jpg').reply(200, SOURCE_CONTENT);
+    }
+    if (!options || !options.noPut1) {
+        nockPutFile('https://example.com/MyRendition1.png', RENDITION_CONTENT);
+    }
+    if (!options || !options.noPut2) {
+        nockPutFile('https://example.com/MyRendition2.txt', RENDITION_CONTENT);
+    }
+    if (!options || !options.noPut3) {
+        nockPutFile('https://example.com/MyRendition3.xml', RENDITION_CONTENT);
+    }
 
     return {
         source: 'https://example.com/MySourceFile.jpg',
@@ -95,7 +103,12 @@ function paramsWithMultipleRenditions() {
         },{
             fmt: "xml",
             target: "https://example.com/MyRendition3.xml"
-        }]
+            }],
+        requestId: "test-request-id",
+        auth: {
+            orgId: "orgId",
+            accessToken: jsonwebtoken.sign({ client_id: "clientId" }, "key")
+        }
     };
 }
 
