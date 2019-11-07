@@ -23,10 +23,10 @@
 const nock = require('nock');
 const url = require('url');
 const mockFs = require('mock-fs');
-const jsonwebtoken = require('jsonwebtoken');
 
 const SOURCE_CONTENT = "source content";
 const RENDITION_CONTENT = "rendition content";
+const TEST_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJ0ZXN0LWNsaWVudCIsIm5hbWUiOiJKb2huIERvZSIsImlhdCI6MTUxNjIzOTAyMn0.bhi8V5ZiM7gpjWB57QpfxFZMHGUQuTGoA6jIk_2EpFA";
 
 function beforeEach() {
     process.env.__OW_ACTION_NAME = "/namespace/package/test_action";
@@ -73,7 +73,7 @@ function simpleParams(options) {
         requestId: "test-request-id",
         auth: {
             orgId: "orgId",
-            accessToken: jsonwebtoken.sign({ client_id: "clientId" }, "key")
+            accessToken: TEST_TOKEN
         }
     }
 }
@@ -107,7 +107,7 @@ function paramsWithMultipleRenditions(options) {
         requestId: "test-request-id",
         auth: {
             orgId: "orgId",
-            accessToken: jsonwebtoken.sign({ client_id: "clientId" }, "key")
+            accessToken: TEST_TOKEN
         }
     };
 }
