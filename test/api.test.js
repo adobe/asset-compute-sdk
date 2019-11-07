@@ -25,8 +25,8 @@ const { worker, batchWorker, bashScriptWorker } = require('../lib/api');
 const testUtil = require('./testutil');
 const assert = require('assert');
 const fs = require('fs-extra');
+const mockFs = require('mock-fs');
 const nock = require('nock');
-
 /*
 
 example code
@@ -42,13 +42,15 @@ exports.main = batchWorker(async (source, renditions, outdir) => {
 */
 
 describe("api.js", () => {
-
     beforeEach(() => {
         testUtil.beforeEach();
+        process.env.NUI_UNIT_TEST_OUT = '/out';
+        mockFs();
     });
 
-    afterEach( () => {
+    afterEach(() => {
         testUtil.afterEach();
+        mockFs.restore();
     });
 
     describe("worker()", () => {
@@ -116,6 +118,74 @@ describe("api.js", () => {
             assert.ok(!fs.existsSync(renditionPath));
             assert.ok(!fs.existsSync(renditionDir));
         });
+
+        it('rendition_created event should be sent', async () => {
+            let sourcePath, renditionPath, renditionDir;
+
+            function workerFn(source, rendition) {
+                sourcePath = source.path;
+                renditionPath = rendition.path;
+                renditionDir = rendition.directory;
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                return Promise.resolve();
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams();
+            await main(params);
+
+            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
+            const json = JSON.parse(jsonString)
+            assert.strictEqual(json.type, 'rendition_created');
+            assert.strictEqual(json.rendition.fmt, 'png');
+            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
+            assert.strictEqual(json.metadata['repo:size'], 17);
+            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`))
+
+            assert(nock.isDone());
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionPath));
+            assert.ok(!fs.existsSync(renditionDir));
+        });
+
+        it('rendition_failed event with generic error should be sent', async () => {
+            let sourcePath, renditionPath, renditionDir;
+
+            function workerFn(source, rendition) {
+                sourcePath = source.path;
+                renditionPath = rendition.path;
+                renditionDir = rendition.directory;
+                return Promise.reject();
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams({ "noPut": true });
+            await main(params);
+
+            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
+            const json = JSON.parse(jsonString)
+            console.log(json);
+            assert.strictEqual(json.type, 'rendition_failed');
+            assert.strictEqual(json.errorReason, 'GenericError');
+            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
+            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`));
+
+            assert(nock.isDone());
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionPath));
+            assert.ok(!fs.existsSync(renditionDir));
+        });
+
+        // TODO
+        // 1. rendition_failed with unsupported format
+        // 2. rendition failed with unsupported file
+        // 3. rendition failed with download failed
+        // 4. rendition failed with upload failed
+        // 5. some renditions succeed others don't
 
         it('should support the disableSourceDownload flag', async () => {
             function workerFn(source, rendition) {
@@ -196,6 +266,8 @@ describe("api.js", () => {
         // TODO: test result
         //       - redact credentials
         //       - info present
+        // TODO: test logging
+        //       - redact credentials
         // TODO: test events sent
         // TODO: test metrics sent
     });

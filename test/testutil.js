@@ -23,6 +23,7 @@
 const nock = require('nock');
 const url = require('url');
 const mockFs = require('mock-fs');
+const jsonwebtoken = require('jsonwebtoken');
 
 const SOURCE_CONTENT = "source content";
 const RENDITION_CONTENT = "rendition content";
@@ -56,15 +57,22 @@ function simpleParams(options) {
     if (!options || !options.noSourceDownload) {
         nockGetFile('https://example.com/MySourceFile.jpg').reply(200, SOURCE_CONTENT);
     }
-    nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT);
+    if (!options || !options.noPut) {
+        nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT);
+    }
 
     return {
         source: 'https://example.com/MySourceFile.jpg',
         renditions: [{
             fmt: "png",
             target: "https://example.com/MyRendition.png"
-        }]
-    };
+        }],
+        requestId: "test-request-id",
+        auth: {
+            orgId: "orgId",
+            accessToken: jsonwebtoken.sign({ client_id: "clientId" }, "key")
+        }
+    }
 }
 
 function paramsWithMultipleRenditions() {
