@@ -68,6 +68,7 @@ const originalConsole = {
 
 before(function() {
     console.log(`Log output in '${TEST_LOG_FILE}'. To log on stdout, run 'npm test -- -v'.`);
+    console.log();
     process.on('exit', function() {
         console.log(`Log output written to '${TEST_LOG_FILE}'. To log on stdout, run 'npm test -- -v'.`);
         console.log();

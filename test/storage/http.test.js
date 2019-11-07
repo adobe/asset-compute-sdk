@@ -31,28 +31,19 @@ const oldDownloadFileHttpTransfer = http.downloadFile;
 
 describe('http.js', () => {
 
+    beforeEach( () => {
+        mockFs();
+        process.env.__OW_ACTION_NAME = 'test_action';
+    })
+    afterEach( () => {
+        http.downloadFile = oldDownloadFileHttpTransfer;
+        nock.cleanAll();
+        mockFs.restore();
+        delete process.env.__OW_ACTION_NAME;
+        delete process.env.NUI_DISABLE_RETRIES;
+    })
+
     describe('download', () => {
-
-        beforeEach( () => {
-            mockFs();
-        })
-        afterEach( () => {
-            http.downloadFile = oldDownloadFileHttpTransfer;
-            nock.cleanAll();
-            mockFs.restore();
-        })
-
-        it.skip("should download actual jpg file", async () => { // this test is skipped in case internet is down
-            const source = {
-                url: "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg"
-            };
-
-            mockFs({ './storeFiles/jpg': {} });
-
-            const file = './storeFiles/jpg/earth.jpg'
-            await download(source, file);
-            assert.ok(fs.existsSync(file));
-        }).timeout(5000);
 
         it("should download jpg file", async () => { // this test is skipped in case internet is down
             const source = {
@@ -87,7 +78,7 @@ describe('http.js', () => {
             } catch (e) {
                 assert.equal(e.name, 'GenericError');
                 assert.equal(e.message, 'ERRRR. GET \'https://example.com/fakeEarth.jpg\' failed with status 404.');
-                assert.equal(e.location, 'worker-test_download');
+                assert.equal(e.location, 'test_action_download');
             }
             assert.ok(! fs.existsSync(file));
         });
@@ -110,7 +101,7 @@ describe('http.js', () => {
             } catch (e) {
                 assert.equal(e.name, "GenericError");
                 assert.equal(e.message, "GET 'https://example.com/fakeEarth.jpg' failed with status 404");
-                assert.equal(e.location, "worker-test_download");
+                assert.equal(e.location, "test_action_download");
             }
             assert.equal(fs.statSync(file).size, 0) // should error on createReadStream
         });
@@ -136,15 +127,6 @@ describe('http.js', () => {
         });
     })
     describe('upload', () => {
-
-        beforeEach( () => {
-            mockFs();
-        })
-        afterEach( () => {
-            nock.cleanAll();
-            mockFs.restore();
-            process.env.NUI_DISABLE_RETRIES = undefined;
-        })
 
         it("should upload one rendition successfully", async () => {
             mockFs({ "./storeFiles/jpg": {
@@ -188,12 +170,12 @@ describe('http.js', () => {
             } catch (e) {
                 assert.equal(e.name, "GenericError");
                 assert.equal(e.message, "PUT 'https://example.com/fakeEarth.jpg' failed: request to https://example.com/fakeEarth.jpg failed, reason: 504");
-                assert.equal(e.location, "worker-test_upload");
+                assert.equal(e.location, "test_action_upload");
             }
             assert.ok(nock.isDone());
         });
 
-        it.skip("should fail uploading once before succeeding", async () => {
+        it("should fail uploading once before succeeding", async () => {
             mockFs({ "./storeFiles/jpg": {
                 "fakeEarth.jpg": "hello world!"
             } });
@@ -238,7 +220,7 @@ describe('http.js', () => {
             } catch (e) {
                 assert.equal(e.name, "GenericError");
                 assert.equal(e.message, "PUT 'https://example.com/fakeEarth.jpg' failed with status 404");
-                assert.equal(e.location, "worker-test_upload");
+                assert.equal(e.location, "test_action_upload");
             }
             assert.ok(nock.isDone());
         });

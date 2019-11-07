@@ -75,10 +75,9 @@ const mockCgroupMetrics = {
     }
 }
 
-proc.env.__OW_ACTION_NAME = '112/worker-test';
-
-describe('library error handling and processing tests', function () {
+describe.skip('OLD LEGACY library error handling and processing tests', function () {
     beforeEach(() => {
+        proc.env.__OW_ACTION_NAME = '112/worker-test';
         mockFs();
     });
     afterEach(function() {
@@ -89,6 +88,7 @@ describe('library error handling and processing tests', function () {
         mockery.deregisterMock(mockCgroupMetrics);
         mockery.disable();
         mockFs.restore();
+        nock.cleanAll();
     });
     
     it('tests process with 3 parameters', function(done) {
@@ -304,7 +304,10 @@ describe('library error handling and processing tests', function () {
     });
 });
 
-describe('source and rendition name tests', function() {
+describe.skip('OLD LEGACY: source and rendition name tests', function () {
+    afterEach(function () {
+        nock.cleanAll();
+    });
     it('forEachRendition() should have correct rendition name', async () => {
         // Dummy Rendition function that resolves
         function ValidateRenditionNameFn(infile, rendition, outdir) {

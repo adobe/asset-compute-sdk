@@ -196,8 +196,6 @@ describe("api.js", () => {
         // TODO: test result
         //       - redact credentials
         //       - info present
-        // TODO: test logging
-        //       - redact credentials
         // TODO: test events sent
         // TODO: test metrics sent
     });

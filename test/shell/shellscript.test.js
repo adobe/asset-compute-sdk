@@ -145,7 +145,7 @@ describe("shellscript helpers", () => {
     });//*/
 });
 
-describe("shellscript runs", () => {
+describe.skip("shellscript runs", () => {
     it("runs a shellscript", async () => {
         const renditioner = rewire('../../library.js');
         const foreachRenderer = renditioner.__get__("forEachRendition");

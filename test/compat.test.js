@@ -20,7 +20,7 @@
 
 'use strict';
 
-const { forEachRendition, process } = require('../lib/compat');
+const { forEachRendition, process, shellScriptWorker } = require('../lib/compat');
 
 const testUtil = require('./testutil');
 const fs = require('fs-extra');
@@ -28,6 +28,7 @@ const nock = require('nock');
 const assert = require('assert');
 
 describe('compat.js', () => {
+
     beforeEach(() => {
         testUtil.beforeEach();
     });
@@ -187,4 +188,11 @@ describe('compat.js', () => {
         });
     });
 
+    describe("shellScriptWorker()", () => {
+
+        it("should run a shell script", () => {
+            const main = shellScriptWorker();
+            main(testUtil.simpleParams());
+        });
+    });
 });

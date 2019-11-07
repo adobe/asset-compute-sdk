@@ -28,6 +28,7 @@ const SOURCE_CONTENT = "source content";
 const RENDITION_CONTENT = "rendition content";
 
 function beforeEach() {
+    process.env.__OW_ACTION_NAME = "/namespace/package/test_action";
     process.env.NUI_DISABLE_RETRIES = "disable";
     mockFs();
 }
@@ -35,6 +36,8 @@ function beforeEach() {
 function afterEach() {
     nock.cleanAll();
     mockFs.restore();
+    delete process.env.NUI_DISABLE_RETRIES;
+    delete process.env.__OW_ACTION_NAME;
 }
 
 function nockGetFile(httpUrl) {
