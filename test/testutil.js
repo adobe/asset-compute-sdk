@@ -54,6 +54,9 @@ function nockPutFile(httpUrl, content) {
 }
 
 function simpleParams(options) {
+    if (options && options.failDownload) {
+        nockGetFile('https://example.com/MySourceFile.jpg').reply(500);
+    }
     if (!options || !options.noSourceDownload) {
         nockGetFile('https://example.com/MySourceFile.jpg').reply(200, SOURCE_CONTENT);
     }

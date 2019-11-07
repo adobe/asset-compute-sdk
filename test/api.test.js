@@ -27,6 +27,7 @@ const assert = require('assert');
 const fs = require('fs-extra');
 const mockFs = require('mock-fs');
 const nock = require('nock');
+const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@nui/asset-compute-commons');
 /*
 
 example code
@@ -150,7 +151,7 @@ describe("api.js", () => {
             assert.ok(!fs.existsSync(renditionDir));
         });
 
-        it('rendition_failed event with generic error should be sent', async () => {
+        it('rendition_failed event with generic error should be sent due to upload failure', async () => {
             let sourcePath, renditionPath, renditionDir;
 
             function workerFn(source, rendition) {
@@ -180,12 +181,130 @@ describe("api.js", () => {
             assert.ok(!fs.existsSync(renditionDir));
         });
 
+        it('rendition_failed event with unsupported source error should be sent', async () => {
+            let sourcePath, renditionPath, renditionDir;
+
+            function workerFn(source, rendition) {
+                sourcePath = source.path;
+                renditionPath = rendition.path;
+                renditionDir = rendition.directory;
+                return Promise.reject(new SourceUnsupportedError('The source is not supported'));
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams({ "noPut": true });
+            await main(params);
+
+            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
+            const json = JSON.parse(jsonString)
+            console.log(json);
+            assert.strictEqual(json.type, 'rendition_failed');
+            assert.strictEqual(json.errorReason, 'SourceUnsupported');  
+            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
+            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`));
+
+            assert(nock.isDone());
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionPath));
+            assert.ok(!fs.existsSync(renditionDir));
+        });
+
+        it('rendition_failed event with source corrupt error should be sent', async () => {
+            let sourcePath, renditionPath, renditionDir;
+
+            function workerFn(source, rendition) {
+                sourcePath = source.path;
+                renditionPath = rendition.path;
+                renditionDir = rendition.directory;
+                return Promise.reject(new SourceCorruptError('The source file is corrupt'));
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams({ "noPut": true });
+            await main(params);
+
+            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
+            const json = JSON.parse(jsonString)
+            console.log(json);
+            assert.strictEqual(json.type, 'rendition_failed');
+            assert.strictEqual(json.errorReason, 'SourceCorrupt');
+            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
+            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`));
+
+            assert(nock.isDone());
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionPath));
+            assert.ok(!fs.existsSync(renditionDir));
+        });
+        it('rendition_failed event with source format unsupported error should be sent', async () => {
+            let sourcePath, renditionPath, renditionDir;
+
+            function workerFn(source, rendition) {
+                sourcePath = source.path;
+                renditionPath = rendition.path;
+                renditionDir = rendition.directory;
+                return Promise.reject(new SourceFormatUnsupportedError('The source format is not supported'));
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams({ "noPut": true });
+            await main(params);
+
+            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
+            const json = JSON.parse(jsonString)
+            console.log(json);
+            assert.strictEqual(json.type, 'rendition_failed');
+            assert.strictEqual(json.errorReason, 'SourceFormatUnsupported');
+            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
+            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`));
+
+            assert(nock.isDone());
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionPath));
+            assert.ok(!fs.existsSync(renditionDir));
+        });
+
+        it('rendition_failed event with download failure', async () => {
+            let sourcePath, renditionPath, renditionDir;
+
+            function workerFn(source, rendition) {
+                sourcePath = source.path;
+                renditionPath = rendition.path;
+                renditionDir = rendition.directory;
+                return Promise.reject(new SourceFormatUnsupportedError('The source format is not supported'));
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams({ "failDownload": true, "noPut": true });
+
+            try {
+                await main(params);
+            } catch (err) {
+                console.log(err);
+            }
+
+            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
+            const json = JSON.parse(jsonString)
+            console.log(json);
+            assert.strictEqual(json.type, 'rendition_failed');
+            assert.strictEqual(json.errorReason, 'GenericError');
+            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
+            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`));
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionPath));
+            assert.ok(!fs.existsSync(renditionDir));
+        });
+  
         // TODO
-        // 1. rendition_failed with unsupported format
-        // 2. rendition failed with unsupported file
-        // 3. rendition failed with download failed
-        // 4. rendition failed with upload failed
-        // 5. some renditions succeed others don't
+        // 1.  some renditions succeed others don't
 
         it('should support the disableSourceDownload flag', async () => {
             function workerFn(source, rendition) {
