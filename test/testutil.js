@@ -26,7 +26,6 @@ const mockFs = require('mock-fs');
 
 const SOURCE_CONTENT = "source content";
 const RENDITION_CONTENT = "rendition content";
-const TEST_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJ0ZXN0LWNsaWVudCIsIm5hbWUiOiJKb2huIERvZSIsImlhdCI6MTUxNjIzOTAyMn0.bhi8V5ZiM7gpjWB57QpfxFZMHGUQuTGoA6jIk_2EpFA";
 
 function beforeEach() {
     process.env.__OW_ACTION_NAME = "/namespace/package/test_action";
@@ -72,11 +71,7 @@ function simpleParams(options) {
             fmt: "png",
             target: "https://example.com/MyRendition.png"
         }],
-        requestId: "test-request-id",
-        auth: {
-            orgId: "orgId",
-            accessToken: TEST_TOKEN
-        }
+        requestId: "test-request-id"
     }
 }
 
@@ -110,11 +105,7 @@ function paramsWithMultipleRenditions(options) {
             fmt: "xml",
             target: "https://example.com/MyRendition3.xml"
             }],
-        requestId: "test-request-id",
-        auth: {
-            orgId: "orgId",
-            accessToken: TEST_TOKEN
-        }
+        requestId: "test-request-id"
     };
 }
 
