@@ -31,6 +31,7 @@ const TEST_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJ0ZXN
 function beforeEach() {
     process.env.__OW_ACTION_NAME = "/namespace/package/test_action";
     process.env.NUI_DISABLE_RETRIES = "disable";
+    process.env.NUI_UNIT_TEST_OUT = '/out';
     mockFs();
 }
 
@@ -39,6 +40,7 @@ function afterEach() {
     mockFs.restore();
     delete process.env.NUI_DISABLE_RETRIES;
     delete process.env.__OW_ACTION_NAME;
+    delete process.env.NUI_UNIT_TEST_OUT;
 }
 
 function nockGetFile(httpUrl) {

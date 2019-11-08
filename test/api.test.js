@@ -25,7 +25,6 @@ const { worker, batchWorker, bashScriptWorker } = require('../lib/api');
 const testUtil = require('./testutil');
 const assert = require('assert');
 const fs = require('fs-extra');
-const mockFs = require('mock-fs');
 const nock = require('nock');
 const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@nui/asset-compute-commons');
 /*
@@ -45,14 +44,10 @@ exports.main = batchWorker(async (source, renditions, outdir) => {
 describe("api.js", () => {
     beforeEach(() => {
         testUtil.beforeEach();
-        process.env.NUI_UNIT_TEST_OUT = '/out';
-        mockFs();
     });
 
     afterEach(() => {
         testUtil.afterEach();
-        delete process.env.NUI_UNIT_TEST_OUT;
-        mockFs.restore();
     });
 
     describe("worker()", () => {
@@ -122,12 +117,7 @@ describe("api.js", () => {
         });
 
         it('rendition_created event should be sent', async () => {
-            let sourcePath, renditionPath, renditionDir;
-
             function workerFn(source, rendition) {
-                sourcePath = source.path;
-                renditionPath = rendition.path;
-                renditionDir = rendition.directory;
                 fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
                 return Promise.resolve();
             }
@@ -141,15 +131,11 @@ describe("api.js", () => {
             assert.strictEqual(json.type, 'rendition_created');
             assert.strictEqual(json.rendition.fmt, 'png');
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.strictEqual(json.metadata['repo:size'], 17);
-            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`))
+            assert.strictEqual(json.metadata['repo:size'], testUtil.RENDITION_CONTENT.length);
+
+            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
 
             assert(nock.isDone());
-
-            // ensure cleanup
-            assert.ok(!fs.existsSync(sourcePath));
-            assert.ok(!fs.existsSync(renditionPath));
-            assert.ok(!fs.existsSync(renditionDir));
         });
 
         it('rendition_failed event with generic error should be sent due to upload failure', async () => {
@@ -172,8 +158,8 @@ describe("api.js", () => {
             assert.strictEqual(json.type, 'rendition_failed');
             assert.strictEqual(json.errorReason, 'GenericError');
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`));
-
+            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
+            
             assert(nock.isDone());
 
             // ensure cleanup
@@ -202,7 +188,8 @@ describe("api.js", () => {
             assert.strictEqual(json.type, 'rendition_failed');
             assert.strictEqual(json.errorReason, 'SourceUnsupported');  
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`));
+
+            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
 
             assert(nock.isDone());
 
@@ -232,7 +219,7 @@ describe("api.js", () => {
             assert.strictEqual(json.type, 'rendition_failed');
             assert.strictEqual(json.errorReason, 'SourceCorrupt');
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`));
+            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
 
             assert(nock.isDone());
 
@@ -261,7 +248,7 @@ describe("api.js", () => {
             assert.strictEqual(json.type, 'rendition_failed');
             assert.strictEqual(json.errorReason, 'SourceFormatUnsupported');
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`));
+            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
 
             assert(nock.isDone());
 
@@ -282,7 +269,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ "failDownload": true, "noPut": true });
+            const params = testUtil.simpleParams({ failDownload: true, noPut: true });
 
             try {
                 await main(params);
@@ -296,7 +283,7 @@ describe("api.js", () => {
             assert.strictEqual(json.type, 'rendition_failed');
             assert.strictEqual(json.errorReason, 'GenericError');
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`));
+            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -507,7 +494,7 @@ describe("api.js", () => {
             assert.strictEqual(json.type, 'rendition_created');
             assert.strictEqual(json.rendition.fmt, 'png');
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.strictEqual(json.metadata['repo:size'], 17);
+            assert.strictEqual(json.metadata['repo:size'], testUtil.RENDITION_CONTENT.length);
 
             jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`, 'utf8');
             console.log(jsonString);
@@ -522,9 +509,9 @@ describe("api.js", () => {
             assert.strictEqual(json.type, 'rendition_created');
             assert.strictEqual(json.rendition.fmt, 'xml');
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.strictEqual(json.metadata['repo:size'], 17);
+            assert.strictEqual(json.metadata['repo:size'], testUtil.RENDITION_CONTENT.length);
 
-            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event3.json`))
+            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 3);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -543,15 +530,13 @@ describe("api.js", () => {
             const main = batchWorker(batchWorkerFn);
             await main(testUtil.paramsWithMultipleRenditions({ put2Status: 400}));
 
-            const exists = fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`);
-            console.log(exists);
             let jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
             console.log(jsonString);
             let json = JSON.parse(jsonString)
             assert.strictEqual(json.type, 'rendition_created');
             assert.strictEqual(json.rendition.fmt, 'png');
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.strictEqual(json.metadata['repo:size'], 17);
+            assert.strictEqual(json.metadata['repo:size'], testUtil.RENDITION_CONTENT.length);
 
             jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`, 'utf8');
             console.log(jsonString);
@@ -566,9 +551,9 @@ describe("api.js", () => {
             assert.strictEqual(json.type, 'rendition_created');
             assert.strictEqual(json.rendition.fmt, 'xml');
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.strictEqual(json.metadata['repo:size'], 17);
+            assert.strictEqual(json.metadata['repo:size'], testUtil.RENDITION_CONTENT.length);
 
-            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event3.json`))
+            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 3);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -605,8 +590,7 @@ describe("api.js", () => {
             assert.strictEqual(json.type, 'rendition_failed');
             assert.strictEqual(json.rendition.fmt, 'xml');
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-
-            assert.ok(!fs.existsSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event3.json`))
+            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 3);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
