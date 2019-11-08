@@ -24,7 +24,7 @@ const fs = require('fs-extra');
 const assert = require('assert');
 
 const path = require('path');
-const {createDirectories, cleanupDirectories} = require('../lib/prepare');
+const {createDirectories, cleanupDirectories, getFs} = require('../lib/prepare');
 
 describe('prepare tests, filesystem related', () => {
     beforeEach(() => {
@@ -116,7 +116,8 @@ describe('prepare tests, filesystem related', () => {
             in: inDir,
             out: outDir
         };
-        await cleanupDirectories(directories);
+        const res = await cleanupDirectories(directories);
+        assert.equal(res, true);
 
         existence = await fs.exists(baseDir);
         assert.ok(!existence, "base directory still exist");
@@ -151,7 +152,8 @@ describe('prepare tests, filesystem related', () => {
             in: inDir,
             out: outDir
         };
-        await cleanupDirectories(directories);
+        const res = await cleanupDirectories(directories);
+        assert.equal(res, true);
 
         existence = await fs.exists(baseDir);
         assert.ok(!existence, "base directory exists");
@@ -172,7 +174,8 @@ describe('prepare tests, filesystem related', () => {
 
         // make sure directories DO NOT exist
         const directories = {};
-        await cleanupDirectories(directories);
+        const res = await cleanupDirectories(directories);
+        assert.equal(res, true);
 
         let existence = await fs.exists(baseDir);
         assert.ok(!existence, "base directory exists");
@@ -193,7 +196,8 @@ describe('prepare tests, filesystem related', () => {
 
         // make sure directories DO NOT exist
         const directories = null;
-        await cleanupDirectories(directories);
+        const res = await cleanupDirectories(directories);
+        assert.equal(res, true);
 
         let existence = await fs.exists(baseDir);
         assert.ok(!existence, "base directory exists");
@@ -253,7 +257,8 @@ describe('prepare tests, filesystem related', () => {
             in: inDir,
             out: outDir
         };
-        await cleanupDirectories(directories);
+        const res = await cleanupDirectories(directories);
+        assert.equal(res, true);
 
         // items under baseDir should be cleaned
         existence = await fs.exists(moreDirToMove);
@@ -284,4 +289,10 @@ describe('prepare tests, filesystem related', () => {
         // cleanup
         await fs.remove(baseDir);
     });
+
+    /*it('tests for failure', async () => {
+        const res = await cleanupDirectories("");
+        assert.equal(res, false);
+
+    })*/
 });
