@@ -24,7 +24,7 @@ const fs = require('fs-extra');
 const assert = require('assert');
 
 const path = require('path');
-const {createDirectories, cleanupDirectories, getFs} = require('../lib/prepare');
+const {createDirectories, cleanupDirectories} = require('../lib/prepare');
 
 describe('prepare tests, filesystem related', () => {
     beforeEach(() => {
@@ -289,10 +289,4 @@ describe('prepare tests, filesystem related', () => {
         // cleanup
         await fs.remove(baseDir);
     });
-
-    /*it('tests for failure', async () => {
-        const res = await cleanupDirectories("");
-        assert.equal(res, false);
-
-    })*/
 });
