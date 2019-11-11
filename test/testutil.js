@@ -30,6 +30,7 @@ const RENDITION_CONTENT = "rendition content";
 function beforeEach() {
     process.env.__OW_ACTION_NAME = "/namespace/package/test_action";
     process.env.NUI_DISABLE_RETRIES = "disable";
+    process.env.NUI_UNIT_TEST_OUT = '/out';
     mockFs();
 }
 
@@ -38,6 +39,7 @@ function afterEach() {
     mockFs.restore();
     delete process.env.NUI_DISABLE_RETRIES;
     delete process.env.__OW_ACTION_NAME;
+    delete process.env.NUI_UNIT_TEST_OUT;
 }
 
 function nockGetFile(httpUrl) {
@@ -45,33 +47,51 @@ function nockGetFile(httpUrl) {
     return nock(`${uri.protocol}//${uri.host}`).get(uri.path);
 }
 
-function nockPutFile(httpUrl, content) {
+function nockPutFile(httpUrl, content, status=200) {
     const uri = url.parse(httpUrl);
     nock(`${uri.protocol}//${uri.host}`)
         .put(uri.path, content)
-        .reply(200);
+        .reply(status);
 }
 
 function simpleParams(options) {
+    if (options && options.failDownload) {
+        nockGetFile('https://example.com/MySourceFile.jpg').reply(500);
+    }
     if (!options || !options.noSourceDownload) {
         nockGetFile('https://example.com/MySourceFile.jpg').reply(200, SOURCE_CONTENT);
     }
-    nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT);
+    if (!options || !options.noPut) {
+        nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT);
+    }
 
     return {
         source: 'https://example.com/MySourceFile.jpg',
         renditions: [{
             fmt: "png",
             target: "https://example.com/MyRendition.png"
-        }]
-    };
+        }],
+        requestId: "test-request-id"
+    }
 }
 
-function paramsWithMultipleRenditions() {
-    nockGetFile('https://example.com/MySourceFile.jpg').reply(200, SOURCE_CONTENT);
-    nockPutFile('https://example.com/MyRendition1.png', RENDITION_CONTENT);
-    nockPutFile('https://example.com/MyRendition2.txt', RENDITION_CONTENT);
-    nockPutFile('https://example.com/MyRendition3.xml', RENDITION_CONTENT);
+function paramsWithMultipleRenditions(options) {
+    if (!options || !options.noGet) {
+        const status = (options && options.getStatus) || 200;
+        nockGetFile('https://example.com/MySourceFile.jpg').reply(status, SOURCE_CONTENT);
+    }
+    if (!options || !options.noPut1) {
+        const status = (options && options.put1Status) || 200;
+        nockPutFile('https://example.com/MyRendition1.png',RENDITION_CONTENT, status);
+    }
+    if (!options || !options.noPut2) {
+        const status = (options && options.put2Status) || 200;
+        nockPutFile('https://example.com/MyRendition2.txt',RENDITION_CONTENT, status);
+    }
+    if (!options || !options.noPut3) {
+        const status = (options && options.put3Status) || 200;
+        nockPutFile('https://example.com/MyRendition3.xml',RENDITION_CONTENT, status);
+    }
 
     return {
         source: 'https://example.com/MySourceFile.jpg',
@@ -84,7 +104,8 @@ function paramsWithMultipleRenditions() {
         },{
             fmt: "xml",
             target: "https://example.com/MyRendition3.xml"
-        }]
+            }],
+        requestId: "test-request-id"
     };
 }
 
