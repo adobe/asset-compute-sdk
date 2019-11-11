@@ -552,6 +552,53 @@ describe("api.js", () => {
             assert.ok(!fs.existsSync(renditionDir));
         });
 
+        it('verify events with processing failed on second rendition', async () => {
+            let sourcePath, renditionDir;
+
+            function batchWorkerFn(source, renditions) {
+                let i = 0;
+                for (const rendition of renditions) {
+                    if (i !== 1) {
+                        fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                    } else {
+                        return Promise.reject();
+                    }
+                    i++;
+                }
+                return Promise.resolve();
+            }
+
+            const main = batchWorker(batchWorkerFn);
+            await main(testUtil.paramsWithMultipleRenditions());
+
+            let jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
+            console.log(jsonString);
+            let json = JSON.parse(jsonString);
+            assert.strictEqual(json.type, 'rendition_failed');
+            assert.strictEqual(json.rendition.fmt, 'png');
+            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
+
+            jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`, 'utf8');
+            console.log(jsonString);
+            json = JSON.parse(jsonString);
+            assert.strictEqual(json.type, 'rendition_failed');
+            assert.strictEqual(json.rendition.fmt, 'txt');
+            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
+
+            jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event2.json`, 'utf8');
+            console.log(jsonString);
+            json = JSON.parse(jsonString);
+            assert.strictEqual(json.type, 'rendition_failed');
+            assert.strictEqual(json.rendition.fmt, 'xml');
+            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
+
+            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 3);
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionDir));
+        });
+
         it('verify get all rendition failed events on download failure', async () => {
             let sourcePath, renditionDir;
 
