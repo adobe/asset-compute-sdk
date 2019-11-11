@@ -555,17 +555,16 @@ describe("api.js", () => {
         it('verify events with processing failed on second rendition', async () => {
             let sourcePath, renditionDir;
 
-            function batchWorkerFn(source, renditions) {
+            async function batchWorkerFn(source, renditions) {
                 let i = 0;
                 for (const rendition of renditions) {
                     if (i !== 1) {
                         fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
                     } else {
-                        return Promise.reject();
+                        throw new Error('unexpected error occurred in worker')
                     }
                     i++;
                 }
-                return Promise.resolve();
             }
 
             const main = batchWorker(batchWorkerFn);
@@ -575,6 +574,7 @@ describe("api.js", () => {
             console.log(jsonString);
             let json = JSON.parse(jsonString);
             assert.strictEqual(json.type, 'rendition_failed');
+            assert.strictEqual(json.errorReason, 'GenericError');
             assert.strictEqual(json.rendition.fmt, 'png');
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
 
@@ -582,6 +582,7 @@ describe("api.js", () => {
             console.log(jsonString);
             json = JSON.parse(jsonString);
             assert.strictEqual(json.type, 'rendition_failed');
+            assert.strictEqual(json.errorReason, 'GenericError');
             assert.strictEqual(json.rendition.fmt, 'txt');
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
 
@@ -589,6 +590,7 @@ describe("api.js", () => {
             console.log(jsonString);
             json = JSON.parse(jsonString);
             assert.strictEqual(json.type, 'rendition_failed');
+            assert.strictEqual(json.errorReason, 'GenericError');
             assert.strictEqual(json.rendition.fmt, 'xml');
             assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
 
