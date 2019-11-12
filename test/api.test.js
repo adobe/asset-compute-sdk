@@ -138,7 +138,7 @@ describe("api.js", () => {
             assert(nock.isDone());
         });
 
-        it('rendition_failed event with generic error should be sent due to upload failure', async () => {
+        it('rendition_failed event with generic error should be sent due to worker function failure', async () => {
             let sourcePath, renditionPath, renditionDir;
 
             function workerFn(source, rendition) {
@@ -146,6 +146,36 @@ describe("api.js", () => {
                 renditionPath = rendition.path;
                 renditionDir = rendition.directory;
                 return Promise.reject();
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams({ "noPut": true });
+            await main(params);
+
+            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
+            const json = JSON.parse(jsonString);
+            console.log(json);
+            assert.strictEqual(json.type, 'rendition_failed');
+            assert.strictEqual(json.errorReason, 'GenericError');
+            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
+            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
+
+            assert(nock.isDone());
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionPath));
+            assert.ok(!fs.existsSync(renditionDir));
+        });
+
+        it('rendition_failed event with generic error should be sent due to upload failure', async () => {
+            let sourcePath, renditionPath, renditionDir;
+
+            function workerFn(source, rendition) {
+                sourcePath = source.path;
+                renditionPath = rendition.path;
+                renditionDir = rendition.directory;
+                return Promise.resolve();
             }
 
             const main = worker(workerFn);
@@ -364,15 +394,11 @@ describe("api.js", () => {
 
         // TODO: more error tests
         //       - process fails
-        //       - upload fails
-        //       - one out of multiple renditions fails process
-        //       - one out of multiple renditions fails upload
         // TODO: test result
         //       - redact credentials
         //       - info present
         // TODO: test logging
         //       - redact credentials
-        // TODO: test events sent
         // TODO: test metrics sent
     });
 
