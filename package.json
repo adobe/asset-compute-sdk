@@ -21,7 +21,7 @@
     "command-join": "^3.0.0",
     "fs-extra": "^8.1.0",
     "image-size": "^0.8.3",
-    "mime-types": "^2.1.24",
+    "mime-types": "^2.1.25",
     "shell-escape": "^0.2.0",
     "strip-ansi": "^5.2.0",
     "valid-url": "^1.0.9"

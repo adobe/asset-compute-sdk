@@ -50,9 +50,9 @@ describe('http.js', function() {
 
     function _buildMultipartData(minPartSize=0, maxPartSize=-1, urlCount=5, addFiles=true) {
       const renditionName = `rendition`;
-      const path = "./jpg/rendition.jpg";
+      const path = "/jpg/rendition.jpg";
       if (addFiles) {
-        mockFs({ "./jpg": {
+        mockFs({ "/jpg": {
           "rendition.jpg": "hello multipart uploading world!\n"
         } });
       }
@@ -61,6 +61,7 @@ describe('http.js', function() {
         urls.push(`http://unittest/${renditionName}_${u+1}`);
       }
       return {
+        name: `${renditionName}.jpg`,
         path: path,
         target: {
           minPartSize,
@@ -77,6 +78,7 @@ describe('http.js', function() {
       const rendition = _buildMultipartData(0, 33, 1);
       nock('http://unittest')
       .matchHeader('content-length', 33)
+      .matchHeader('content-type', 'image/jpeg')
       .put('/rendition_1', 'hello multipart uploading world!\n')
       .reply(201)
 
@@ -93,10 +95,12 @@ describe('http.js', function() {
       const rendition  = _buildMultipartData(0, 33, 1);
       nock('http://unittest')
       .matchHeader('content-length', 33)
+      .matchHeader('content-type', 'image/jpeg')
       .put('/rendition_1', 'hello multipart uploading world!\n')
       .replyWithError(503)
       nock('http://unittest')
       .matchHeader('content-length', 33)
+      .matchHeader('content-type', 'image/jpeg')
       .put('/rendition_1', 'hello multipart uploading world!\n')
       .reply(201)
 
@@ -124,22 +128,27 @@ describe('http.js', function() {
       const rendition = _buildMultipartData(5, 7, 5);
       nock('http://unittest')
       .matchHeader('content-length',7)
+      .matchHeader('content-type', 'image/jpeg')
       .put('/rendition_1', 'hello m')
       .reply(201);
       nock('http://unittest')
       .matchHeader('content-length', 7)
+      .matchHeader('content-type', 'image/jpeg')
       .put('/rendition_2', 'ultipar')
       .reply(201);
       nock('http://unittest')
       .matchHeader('content-length', 7)
+      .matchHeader('content-type', 'image/jpeg')
       .put('/rendition_3', 't uploa')
       .reply(201);
       nock('http://unittest')
       .matchHeader('content-length', 7)
+      .matchHeader('content-type', 'image/jpeg')
       .put('/rendition_4', 'ding wo')
       .reply(201);
       nock('http://unittest')
       .matchHeader('content-length', 5)
+      .matchHeader('content-type', 'image/jpeg')
       .put('/rendition_5', 'rld!\n')
       .reply(201);
 
@@ -156,15 +165,18 @@ describe('http.js', function() {
         const rendition = _buildMultipartData(5, 20, 2);
         nock('http://unittest')
           .matchHeader('content-length',17)
+          .matchHeader('content-type', 'image/jpeg')
           .put('/rendition_1', 'hello multipart u')
           .thrice()
           .reply(500); // invokes retry
         nock('http://unittest')
           .matchHeader('content-length',17)
+          .matchHeader('content-type', 'image/jpeg')
           .put('/rendition_1', 'hello multipart u')
           .reply(201); // retry succeeds
         nock('http://unittest')
           .matchHeader('content-length', 16)
+          .matchHeader('content-type', 'image/jpeg')
           .put('/rendition_2', 'ploading world!\n')
           .reply(201);
         await http.upload(rendition);
@@ -176,6 +188,7 @@ describe('http.js', function() {
       const rendition = _buildMultipartData(0, 33, 1);
         nock('http://unittest')
           .matchHeader('content-length',33)
+          .matchHeader('content-type', 'image/jpeg')
           .defaultReplyHeaders({
             'Content-Type': 'text/plain',
           })
@@ -208,10 +221,12 @@ describe('http.js', function() {
     it('test min part size', async () => {
       nock('http://unittest')
         .matchHeader('content-length',20)
+        .matchHeader('content-type', 'image/jpeg')
         .put('/rendition_1', 'hello multipart uplo')
         .reply(201);
       nock('http://unittest')
         .matchHeader('content-length',13)
+        .matchHeader('content-type', 'image/jpeg')
         .put('/rendition_2', 'ading world!\n')
         .reply(201);
 
