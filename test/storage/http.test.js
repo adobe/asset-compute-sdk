@@ -21,7 +21,7 @@
 'use strict';
 const mockFs = require("mock-fs");
 const fs = require('fs-extra');
-const {download, upload} = require('../../lib/storage/http');
+const { download, upload } = require('../../lib/storage/http');
 const nock = require('nock');
 const assert = require('assert');
 
@@ -47,21 +47,24 @@ describe('http.js', () => {
 
         it("should download jpg file", async () => { // this test is skipped in case internet is down
             const source = {
-                url: "https://example.com/fakeEarth.jpg"
+                url: "https://example.com/fakeEarth.jpg",
+                name: "fakeEarth.jpg"
             };
 
             mockFs({ './storeFiles/jpg': {} });
 
             nock("https://example.com")
+                .matchHeader('content-type', 'image/jpeg')
                 .get("/fakeEarth.jpg")
                 .reply(200, "ok")
 
-            const file = './storeFiles/jpg/fakeEarth.jpg'
+            const file = './storeFiles/jpg/fakeEarth.jpg';
 
-            await download(source, file);
+            await download( source, file);
             assert.ok(fs.existsSync(file));
             assert.ok(nock.isDone());
         });
+
 
         it("should fail downloading a jpg file mocking @nui/node-httptransfer", async () => { 
             const source = {
@@ -88,11 +91,13 @@ describe('http.js', () => {
 
             assert.ok(! fs.existsSync(file));
             const source = {
-                url: "https://example.com/fakeEarth.jpg"
+                url: "https://example.com/fakeEarth.jpg",
+                name: 'fakeEarth.jpg'
             };
             mockFs({ "./storeFiles/jpg": {} });
 
             nock("https://example.com")
+                .matchHeader('content-type', 'image/jpeg')
                 .get("/fakeEarth.jpg")
                 .reply(404, "error")
 
@@ -136,10 +141,12 @@ describe('http.js', () => {
 
             const rendition = {
                 path: file,
-                target: "https://example.com/fakeEarth.jpg"
+                target: "https://example.com/fakeEarth.jpg",
+                name: 'fakeEarth.jpg'
             };
 
             nock("https://example.com")
+                .matchHeader('content-type', 'image/jpeg')
                 .put("/fakeEarth.jpg", "hello world!")
                 .reply(200)
 
@@ -225,7 +232,7 @@ describe('http.js', () => {
             assert.ok(nock.isDone());
         });
 
-        it("should not fail when trying to update a rendition with no file path bu", async () => {
+        it("should not fail when trying to update a rendition with no file path", async () => {
             mockFs({ "./storeFiles/jpg": {
                 "fakeEarth.jpg": "hello world!"
             } });
@@ -242,7 +249,14 @@ describe('http.js', () => {
 
 
             assert.ok(fs.existsSync(file));
-            await upload(rendition);
+            try {
+                await upload(rendition);
+                assert.fail('Should have failed during upload');
+            } catch (e) {
+                assert.equal(e.name, 'GenericError');
+                assert.equal(e.message, 'rendition 1234 does not have a file path: undefined');
+                assert.equal(e.location, 'test_action_upload');
+            }
             assert.ok( ! nock.isDone());
         });
 
