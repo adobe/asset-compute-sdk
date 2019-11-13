@@ -232,7 +232,7 @@ describe('http.js', () => {
             assert.ok(nock.isDone());
         });
 
-        it("should not fail when trying to update a rendition with no file path bu", async () => {
+        it("should not fail when trying to update a rendition with no file path", async () => {
             mockFs({ "./storeFiles/jpg": {
                 "fakeEarth.jpg": "hello world!"
             } });
@@ -249,7 +249,14 @@ describe('http.js', () => {
 
 
             assert.ok(fs.existsSync(file));
-            await upload(rendition);
+            try {
+                await upload(rendition);
+                assert.fail('Should have failed during upload');
+            } catch (e) {
+                assert.equal(e.name, 'GenericError');
+                assert.equal(e.message, 'rendition 1234 does not have a file path: undefined');
+                assert.equal(e.location, 'test_action_upload');
+            }
             assert.ok( ! nock.isDone());
         });
 
