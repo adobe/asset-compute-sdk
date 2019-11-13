@@ -13,9 +13,9 @@
     "url": "https://git.corp.adobe.com/nui/asset-compute-sdk.git"
   },
   "dependencies": {
-    "@nui/asset-compute-commons": "^1.0.4",
+    "@nui/asset-compute-commons": "^1.1.0",
     "@nui/node-httptransfer": "^1.0.0",
-    "ajv": "5.5.2",
+    "ajv": "6.10.2",
     "cgroup-metrics": "^1.1.2",
     "clone": "^2.1.2",
     "command-join": "^3.0.0",
@@ -23,7 +23,7 @@
     "image-size": "^0.8.3",
     "mime-types": "^2.1.25",
     "shell-escape": "^0.2.0",
-    "strip-ansi": "^5.2.0",
+    "strip-ansi": "^6.0.0",
     "valid-url": "^1.0.9"
   },
   "devDependencies": {
