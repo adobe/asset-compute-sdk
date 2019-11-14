@@ -41,7 +41,7 @@ describe('storage.js', () => {
 		afterEach( () => {
 			nock.cleanAll();
 			mockFs.restore();
-			delete process.env.NUI_UNIT_TEST_MODE;
+			delete process.env.NUI_WORKER_TEST_MODE;
 			delete process.env.NUI_DISABLE_RETRIES;
 		})
 		it('should download simple png and return a new source object', async () => {
@@ -108,8 +108,8 @@ describe('storage.js', () => {
 			assert.ok(threw);
 		})
 
-		it('should not download a file in unittest mode', async () => {
-			process.env.NUI_UNIT_TEST_MODE = true;
+		it('should not download a file in worker test mode', async () => {
+			process.env.NUI_WORKER_TEST_MODE = true;
 			const paramsSource = {
 				url: 'file.jpg'
 			};
@@ -124,7 +124,7 @@ describe('storage.js', () => {
 		})
 
 		it('should fail to download because path ends with /..', async () => {
-			process.env.NUI_UNIT_TEST_MODE = true;
+			process.env.NUI_WORKER_TEST_MODE = true;
 			const paramsSource = {
 				url: 'file.jpg/..'
 			};
@@ -140,8 +140,8 @@ describe('storage.js', () => {
 			assert.ok(threw);
 		})
 
-		it('should fail because of invalid localfile in unittest mode', async () => {
-			process.env.NUI_UNIT_TEST_MODE = true;
+		it('should fail because of invalid localfile in worker test mode', async () => {
+			process.env.NUI_WORKER_TEST_MODE = true;
 			const paramsSource = {
 				url: 'file/../../../../evilcode/elephant.jpg'
 			};
@@ -156,8 +156,8 @@ describe('storage.js', () => {
 			assert.ok(threw);
 		})
 
-		it('should fail because of missing localfile in unittest mode', async () => {
-			process.env.NUI_UNIT_TEST_MODE = true;
+		it('should fail because of missing localfile in worker test mode', async () => {
+			process.env.NUI_WORKER_TEST_MODE = true;
 			const paramsSource = {
 				url: 'elephant.jpg'
 			};
@@ -182,7 +182,7 @@ describe('storage.js', () => {
 		afterEach( () => {
 			nock.cleanAll();
 			mockFs.restore();
-			delete process.env.NUI_UNIT_TEST_MODE;
+			delete process.env.NUI_WORKER_TEST_MODE;
 			delete process.env.NUI_DISABLE_RETRIES;
 		});
 
@@ -298,7 +298,7 @@ describe('storage.js', () => {
 		})
 
 		it('should upload simple rendition (not in test mode)', async () => {
-			delete process.env.NUI_UNIT_TEST_MODE;
+			delete process.env.NUI_WORKER_TEST_MODE;
 
 			mockFs({ "./storeFiles/jpg": {
                 "fakeEarth.jpg": "hello world!"
@@ -320,7 +320,7 @@ describe('storage.js', () => {
 		})
 
 		it('should fail upload simple rendition because of wrong url (not in test mode)', async () => {
-			delete process.env.NUI_UNIT_TEST_MODE;
+			delete process.env.NUI_WORKER_TEST_MODE;
 
 			const file = "./storeFiles/jpg/fakeEarth.jpg";
             const rendition = {
