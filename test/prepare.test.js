@@ -30,7 +30,7 @@ const {createDirectories, cleanupDirectories} = require('../lib/prepare');
 describe('prepare tests, filesystem related', () => {
     beforeEach(() => {
         // we actually want to test that fs behaves as expected
-        //process.env.NUI_WORKER_TEST_MODE = null;
+        //process.env.WORKER_TEST_MODE = null;
         process.env.__OW_ACTION_NAME = 'test_action_fs';
         process.env.__OW_ACTIVATION_ID = 'test_activation_id';
     });
