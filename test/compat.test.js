@@ -20,7 +20,7 @@
 
 'use strict';
 
-const { forEachRendition, process, shellScriptWorker } = require('../lib/compat');
+const { forEachRendition, process } = require('../lib/compat');
 
 const testUtil = require('./testutil');
 const fs = require('fs-extra');
@@ -188,11 +188,4 @@ describe('compat.js', () => {
         });
     });
 
-    describe("shellScriptWorker()", () => {
-
-        it("should run a shell script", () => {
-            const main = shellScriptWorker();
-            main(testUtil.simpleParams());
-        });
-    });
 });

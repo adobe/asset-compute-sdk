@@ -17,18 +17,17 @@
 
 'use strict';
 
-const { worker, batchWorker, bashScriptWorker } = require('./lib/api');
-const { process, forEachRendition, shellScriptWorker } = require('./lib/compat');
+const { worker, batchWorker, shellScriptWorker } = require('./lib/api');
+const { process, forEachRendition } = require('./lib/compat');
 
 // -----------------------< exports >-----------------------------------
 module.exports = {
     worker,
     batchWorker,
-    bashScriptWorker,
+    shellScriptWorker,
 
     // exporting for backwards compatibility
     process,
-    forEachRendition,
-    shellScriptWorker
+    forEachRendition
 }
 

@@ -26,7 +26,7 @@ const assert = require('assert');
 const path = require('path');
 const {createDirectories, cleanupDirectories} = require('../lib/prepare');
 
-describe('prepare tests, filesystem related', () => {
+describe('prepare.js', () => {
     beforeEach(() => {
         // we actually want to test that fs behaves as expected
         //process.env.NUI_UNIT_TEST_MODE = null;
@@ -42,7 +42,7 @@ describe('prepare tests, filesystem related', () => {
         const result = await createDirectories();
 
         const baseDir = path.resolve("work", process.env.__OW_ACTIVATION_ID);
-        
+
         assert.equal(result.base, baseDir);
         assert.equal(result.in, path.resolve(baseDir, "in"));
         assert.equal(result.out, path.resolve(baseDir, "out"));
