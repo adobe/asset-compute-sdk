@@ -104,6 +104,11 @@ describe("api.js (shell)", () => {
         });
 
         it("should throw if shell script is missing", async () => {
+            // ensure there is no worker.sh
+            try {
+                fs.unlinkSync("worker.sh");
+            } catch (ignore) {
+            }
             assert.throws(() => shellScriptWorker(), /Shell script 'worker.sh' not found$/);
         });
 
