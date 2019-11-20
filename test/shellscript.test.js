@@ -49,6 +49,8 @@ describe("api.js (shell)", () => {
         fs.mkdirSync(TEST_DIR, {recursive: true});
         previousWorkingDir = process.cwd();
         process.chdir(TEST_DIR);
+
+        process.env.NUI_UNIT_TEST_OUT = TEST_DIR + "/out";
     });
 
     afterEach( () => {
@@ -58,6 +60,8 @@ describe("api.js (shell)", () => {
         } catch (ignore) {}
 
         testUtil.afterEach();
+
+        delete process.env.NUI_UNIT_TEST_OUT;
     });
 
     describe("shellScriptWorker()", () => {
