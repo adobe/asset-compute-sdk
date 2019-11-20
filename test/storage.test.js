@@ -27,6 +27,9 @@ const assert = require('assert');
 const fs = require('fs-extra');
 const { GenericError } = require('@nui/asset-compute-commons');
 
+const rewire = require('rewire');
+const rewiredStorage = rewire('../lib/storage');
+
 
 describe('storage.js', () => {
 	describe('getSource', () => {
@@ -38,7 +41,7 @@ describe('storage.js', () => {
 		afterEach( () => {
 			nock.cleanAll();
 			mockFs.restore();
-			delete process.env.NUI_UNIT_TEST_MODE;
+			delete process.env.WORKER_TEST_MODE;
 			delete process.env.NUI_DISABLE_RETRIES;
 		})
 		it('should download simple png and return a new source object', async () => {
@@ -105,8 +108,8 @@ describe('storage.js', () => {
 			assert.ok(threw);
 		})
 
-		it('should not download a file in unittest mode', async () => {
-			process.env.NUI_UNIT_TEST_MODE = true;
+		it('should not download a file in worker test mode', async () => {
+			process.env.WORKER_TEST_MODE = true;
 			const paramsSource = {
 				url: 'file.jpg'
 			};
@@ -121,7 +124,7 @@ describe('storage.js', () => {
 		})
 
 		it('should fail to download because path ends with /..', async () => {
-			process.env.NUI_UNIT_TEST_MODE = true;
+			process.env.WORKER_TEST_MODE = true;
 			const paramsSource = {
 				url: 'file.jpg/..'
 			};
@@ -137,8 +140,8 @@ describe('storage.js', () => {
 			assert.ok(threw);
 		})
 
-		it('should fail because of invalid localfile in unittest mode', async () => {
-			process.env.NUI_UNIT_TEST_MODE = true;
+		it('should fail because of invalid localfile in worker test mode', async () => {
+			process.env.WORKER_TEST_MODE = true;
 			const paramsSource = {
 				url: 'file/../../../../evilcode/elephant.jpg'
 			};
@@ -153,8 +156,8 @@ describe('storage.js', () => {
 			assert.ok(threw);
 		})
 
-		it('should fail because of missing localfile in unittest mode', async () => {
-			process.env.NUI_UNIT_TEST_MODE = true;
+		it('should fail because of missing localfile in worker test mode', async () => {
+			process.env.WORKER_TEST_MODE = true;
 			const paramsSource = {
 				url: 'elephant.jpg'
 			};
@@ -168,7 +171,7 @@ describe('storage.js', () => {
 			}
 			assert.ok(threw);
 		})
-	})
+	});
 
 	describe('putRendition', () => {
 
@@ -179,9 +182,9 @@ describe('storage.js', () => {
 		afterEach( () => {
 			nock.cleanAll();
 			mockFs.restore();
-			delete process.env.NUI_UNIT_TEST_MODE;
+			delete process.env.WORKER_TEST_MODE;
 			delete process.env.NUI_DISABLE_RETRIES;
-		})
+		});
 
 		it('should upload simple rendition', async () => {
 			mockFs({ "./storeFiles/jpg": {
@@ -293,5 +296,150 @@ describe('storage.js', () => {
 			}
 			assert.ok(threw);
 		})
-	})
-})
+
+		it('should upload simple rendition (not in test mode)', async () => {
+			delete process.env.WORKER_TEST_MODE;
+
+			mockFs({ "./storeFiles/jpg": {
+                "fakeEarth.jpg": "hello world!"
+            } });
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+
+            const rendition = {
+                path: file,
+                target: "https://example.com/fakeEarth.jpg"
+            };
+
+            nock("https://example.com")
+                .put("/fakeEarth.jpg", "hello world!")
+                .reply(200)
+
+            assert.ok(fs.existsSync(file));
+            await putRendition(rendition);
+            assert.ok(nock.isDone());
+		})
+
+		it('should fail upload simple rendition because of wrong url (not in test mode)', async () => {
+			delete process.env.WORKER_TEST_MODE;
+
+			const file = "./storeFiles/jpg/fakeEarth.jpg";
+            const rendition = {
+                path: file,
+                target: "http://example.com/fakeEarth.jpg"
+            };
+
+			try{
+				await putRendition(rendition);
+			}catch(err){
+				assert.ok(err instanceof GenericError);
+				assert.ok(err.message.includes("Invalid or missing https url"));
+			}
+		})
+	});
+
+	describe('storage.js - Url validation', () => {
+		it("detects wrong string urls", () => {
+			const checkSimpleUrl = rewiredStorage.__get__('checkUrl');
+	
+			let entryParam = "https://www.adobe.com";
+			let result = checkSimpleUrl(entryParam);
+			assert.ok(result);
+	
+			entryParam = "http://www.adobe.com";
+			result = checkSimpleUrl(entryParam);
+			assert.equal(result, false);
+	
+			entryParam = "htp://www.adobe.com";
+			result = checkSimpleUrl(entryParam);
+			assert.equal(result, false);
+	
+			entryParam = "htpp://www.adobe.com";
+			result = checkSimpleUrl(entryParam);
+			assert.equal(result, false);
+	
+			entryParam = "http:/www.adobe.com";
+			result = checkSimpleUrl(entryParam);
+			assert.equal(result, false);
+	
+			entryParam = "http//www.adobe.com";
+			result = checkSimpleUrl(entryParam);
+			assert.equal(result, false);
+	
+			entryParam = "";
+			result = checkSimpleUrl(entryParam);
+			assert.equal(result, false);
+	
+			entryParam = "     ";
+			result = checkSimpleUrl(entryParam);
+			assert.equal(result, false);
+	
+			entryParam = "\n";
+			result = checkSimpleUrl(entryParam);
+			assert.equal(result, false);
+	
+			entryParam = 42;
+			result = checkSimpleUrl(entryParam);
+			assert.equal(result, false);
+	
+			entryParam = {};
+			result = checkSimpleUrl(entryParam);
+			assert.equal(result, false);
+		});
+	
+		it("detects wrong string urls in an array", () => {
+			const checkArrayUrl = rewiredStorage.__get__('checkRenditionUrl');
+	
+			let urls = ["https://example.com/fakeEarth.jpg", "https://example2.com/fakeEarth.jpg", "https://example.com/fakeEarth.jpg"];
+			let result = checkArrayUrl(urls);
+			assert.ok(result);
+	
+			urls = ["http://example.com/fakeEarth.jpg", "https://example2.com/fakeEarth.jpg", "https://example.com/fakeEarth.jpg"];
+			result = checkArrayUrl(urls);
+			assert.equal(result, false);
+	
+			urls = ["https://example.com/fakeEarth.jpg", "http://example2.com/fakeEarth.jpg", "https://example.com/fakeEarth.jpg"];
+			result = checkArrayUrl(urls);
+			assert.equal(result, false);
+	
+			urls = ["https://example.com/fakeEarth.jpg", "https://example2.com/fakeEarth.jpg", "http://example.com/fakeEarth.jpg"];
+			result = checkArrayUrl(urls);
+			assert.equal(result, false);
+	
+			urls = ["http://example.com/fakeEarth.jpg"];
+			result = checkArrayUrl(urls);
+			assert.equal(result, false);
+	
+			urls = ["https://example.com/fakeEarth.jpg", "ftp://example2.com/fakeEarth.jpg", "https://example.com/fakeEarth.jpg"];
+			result = checkArrayUrl(urls);
+			assert.equal(result, false);
+	
+			urls = ["https://example.com/fakeEarth.jpg", "htpp://example2.com/fakeEarth.jpg", "https://example.com/fakeEarth.jpg"];
+			result = checkArrayUrl(urls);
+			assert.equal(result, false);
+	
+			urls = ["https://example.com/fakeEarth.jpg", "htp://example2.com/fakeEarth.jpg", "https://example.com/fakeEarth.jpg"];
+			result = checkArrayUrl(urls);
+			assert.equal(result, false);
+	
+			urls = ["https://example.com/fakeEarth.jpg", 42, "https://example.com/fakeEarth.jpg"];
+			result = checkArrayUrl(urls);
+			assert.equal(result, false);
+	
+			urls = ["https://example.com/fakeEarth.jpg", "", "https://example.com/fakeEarth.jpg"];
+			result = checkArrayUrl(urls);
+			assert.equal(result, false);
+	
+			urls = ["https://example.com/fakeEarth.jpg", "     ", "https://example.com/fakeEarth.jpg"];
+			result = checkArrayUrl(urls);
+			assert.equal(result, false);
+	
+			urls = ["https://example.com/fakeEarth.jpg", null, "https://example.com/fakeEarth.jpg"];
+			result = checkArrayUrl(urls);
+			assert.equal(result, false);
+	
+			urls = [];
+			result = checkArrayUrl(urls);
+			assert.equal(result, false);
+		});
+	});
+});
