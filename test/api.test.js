@@ -20,26 +20,13 @@
 
 'use strict';
 
-const { worker, batchWorker, bashScriptWorker } = require('../lib/api');
+const { worker, batchWorker } = require('../lib/api');
 
 const testUtil = require('./testutil');
 const assert = require('assert');
 const fs = require('fs-extra');
 const nock = require('nock');
 const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@nui/asset-compute-commons');
-/*
-
-example code
-
-exports.main = worker(async (source, rendition, outdir) => {
-    // impl
-});
-
-exports.main = batchWorker(async (source, renditions, outdir) => {
-    // impl
-});
-
-*/
 
 describe("api.js", () => {
     beforeEach(() => {
@@ -709,13 +696,6 @@ describe("api.js", () => {
                 // should have params
                 assert.notStrictEqual(e.params, undefined);
             }
-        });
-    });
-
-    describe("bashScriptWorker()", () => {
-
-        it("should run a shell script", () => {
-            bashScriptWorker();
         });
     });
 });

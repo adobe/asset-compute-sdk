@@ -25,7 +25,7 @@ const sinon = require('sinon');
 
 const {removeTimers} = require('../lib/cleanup');
 
-describe('cleanup tests for timers', () => {
+describe('cleanup.js', () => {
     let clock;
     beforeEach(() => {
         clock = sinon.useFakeTimers();

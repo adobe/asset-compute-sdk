@@ -28,7 +28,7 @@ const { execSync } = require('child_process');
 
 const path = require('path');
 
-describe("shellscript helpers", () => {
+describe.skip("shellscript helpers", () => {
     const testSuccessWorkerPath = path.resolve(__dirname, "../../test/shell/success-worker.sh");
 
     it("verifies shellscript exist", () => {

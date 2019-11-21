@@ -25,7 +25,7 @@ const assert = require('assert');
 const { validateParameters, validateRendition } = require('../lib/validate');
 const { GenericError } = require('@nui/asset-compute-commons');
 
-describe('validation tests', () => {
+describe('validate.js', () => {
     beforeEach(() => {
         process.env.__OW_ACTION_NAME = 'test_action_validation';
     });
