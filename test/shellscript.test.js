@@ -21,18 +21,38 @@
 'use strict';
 
 const { shellScriptWorker } = require('../lib/api');
+const ShellScriptWorker = require("../lib/shell/shellscript");
+const { ClientError } = require('@nui/asset-compute-commons');
 
 const testUtil = require('./testutil');
 const assert = require('assert');
 const mockFs = require('mock-fs');
 const fs = require('fs');
 const nock = require('nock');
+const path = require("path");
+
+const TEST_DIR = "build/tests/shellscript";
 
 function createScript(file, data) {
     fs.writeFileSync(file, data);
 }
 
-const TEST_DIR = "build/tests/shellscript";
+function mockSource(filename="source.jpg") {
+    return {
+        filename,
+        directory: path.resolve("out"),
+        path: path.resolve("out", filename)
+    };
+}
+
+function mockRendition(filename="rendition0.png") {
+    return {
+        id: () => 0,
+        name: filename,
+        directory: path.resolve("out"),
+        path: path.resolve("out", filename)
+    };
+}
 
 describe("api.js (shell)", () => {
 
@@ -50,6 +70,7 @@ describe("api.js (shell)", () => {
         previousWorkingDir = process.cwd();
         process.chdir(TEST_DIR);
 
+        // might want to replace this with nock()ing
         process.env.NUI_UNIT_TEST_OUT = TEST_DIR + "/out";
     });
 
@@ -122,7 +143,149 @@ describe("api.js (shell)", () => {
             assert(nock.isDone());
         });
 
+        it("should handle error.json - GenericError if no type given", async () => {
+            createScript("worker.sh", `
+                echo '{ "message": "failed" }' > $errorfile
+                exit 1
+            `);
+
+            const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
+
+            await assert.rejects(
+                scriptWorker.processWithScript(mockSource(), mockRendition()), {
+                    name: "GenericError",
+                    message: "failed",
+                    location: "test_action_shellScript"
+                }
+            );
+        });
+
+        it("should handle error.json - RenditionFormatUnsupported instanceof ClientError", async () => {
+            createScript("worker.sh", `
+                echo '{ "reason": "RenditionFormatUnsupported", "message": "problem" }' > $errorfile
+                exit 1
+            `);
+
+            const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
+
+            await assert.rejects(
+                scriptWorker.processWithScript(mockSource(), mockRendition()),
+                // check that instanceof works
+                err => err instanceof ClientError
+            );
+        });
+
+        it("should handle error.json - RenditionFormatUnsupported", async () => {
+            createScript("worker.sh", `
+                echo '{ "reason": "RenditionFormatUnsupported", "message": "problem" }' > $errorfile
+                exit 1
+            `);
+
+            const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
+
+            await assert.rejects(
+                scriptWorker.processWithScript(mockSource(), mockRendition()), {
+                    name: "RenditionFormatUnsupportedError",
+                    message: "problem"
+                }
+            );
+        });
+
+        it("should handle error.json - RenditionTooLarge", async () => {
+            createScript("worker.sh", `
+                echo '{ "reason": "RenditionTooLarge", "message": "problem" }' > $errorfile
+                exit 1
+            `);
+
+            const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
+
+            await assert.rejects(
+                scriptWorker.processWithScript(mockSource(), mockRendition()), {
+                    name: "RenditionTooLarge",
+                    message: "problem"
+                }
+            );
+        });
+
+        it("should handle error.json - SourceCorrupt", async () => {
+            createScript("worker.sh", `
+                echo '{ "reason": "SourceCorrupt", "message": "problem" }' > $errorfile
+                exit 1
+            `);
+
+            const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
+
+            await assert.rejects(
+                scriptWorker.processWithScript(mockSource(), mockRendition()), {
+                    name: "SourceCorruptError",
+                    message: "problem"
+                }
+            );
+        });
+
+        it("should handle error.json - SourceFormatUnsupported", async () => {
+            createScript("worker.sh", `
+                echo '{ "reason": "SourceFormatUnsupported", "message": "problem" }' > $errorfile
+                exit 1
+            `);
+
+            const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
+
+            await assert.rejects(
+                scriptWorker.processWithScript(mockSource(), mockRendition()), {
+                    name: "SourceFormatUnsupportedError",
+                    message: "problem"
+                }
+            );
+        });
+
+        it("should handle error.json - SourceUnsupported", async () => {
+            createScript("worker.sh", `
+                echo '{ "reason": "SourceUnsupported", "message": "problem" }' > $errorfile
+                exit 1
+            `);
+
+            const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
+
+            await assert.rejects(
+                scriptWorker.processWithScript(mockSource(), mockRendition()), {
+                    name: "SourceUnsupportedError",
+                    message: "problem"
+                }
+            );
+        });
+
+        it("should handle error.json - malformed json", async () => {
+            createScript("worker.sh", `
+                echo '{ "message": MALFORMED' > $errorfile
+                exit 42
+            `);
+
+            const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
+
+            await assert.rejects(
+                scriptWorker.processWithScript(mockSource(), mockRendition()), {
+                    name: "GenericError",
+                    message: /exit code 42/
+                }
+            );
+        });
+
+        it("should handle error.json - missing json", async () => {
+            createScript("worker.sh", `exit 23`);
+
+            const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
+
+            await assert.rejects(
+                scriptWorker.processWithScript(mockSource(), mockRendition()), {
+                    name: "GenericError",
+                    message: /exit code 23/
+                }
+            );
+        });
+
         // TODO: test env params
+        // TODO: shell escaping, pass rendition.wid = "; cp library rendition.name"
         // TODO: move tests from test/shell/shelscript.test.js
     });
 });
