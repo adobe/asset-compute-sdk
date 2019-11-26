@@ -19,6 +19,7 @@
 
 const { worker, batchWorker, shellScriptWorker } = require('./lib/api');
 const { process, forEachRendition } = require('./lib/compat');
+const commons = require('@nui/asset-compute-commons');
 
 // -----------------------< exports >-----------------------------------
 module.exports = {
@@ -28,6 +29,8 @@ module.exports = {
 
     // exporting for backwards compatibility
     process,
-    forEachRendition
+    forEachRendition,
+
+    ...commons
 }
 
