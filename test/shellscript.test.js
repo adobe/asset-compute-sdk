@@ -57,16 +57,9 @@ function mockRendition(instructions={}, filename="rendition0.png") {
 
 function readEnv(file) {
     const env = envfile.parseFileSync(file);
-    console.log("------------------------------------------------");
     for (const [key, value] of Object.entries(env)) {
         env[key.toLowerCase()] = value;
-
-        const k = key.toLowerCase();
-        if (k.startsWith("rendition") || k.startsWith("file")  || k.startsWith("source")) {
-            console.log(key, "=", value);
-        }
     }
-    console.log("------------------------------------------------");
     return env;
 }
 
