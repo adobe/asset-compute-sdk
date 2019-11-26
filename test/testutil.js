@@ -23,6 +23,7 @@
 const nock = require('nock');
 const url = require('url');
 const mockFs = require('mock-fs');
+const assert = require('assert');
 
 const SOURCE_CONTENT = "source content";
 const RENDITION_CONTENT = "rendition content";
@@ -54,41 +55,41 @@ function nockPutFile(httpUrl, content, status=200) {
         .reply(status);
 }
 
-function simpleParams(options) {
-    if (options && options.failDownload) {
+function simpleParams(options={}) {
+    if (options.failDownload) {
         nockGetFile('https://example.com/MySourceFile.jpg').reply(500);
     }
-    if (!options || !options.noSourceDownload) {
+    if (!options.noSourceDownload) {
         nockGetFile('https://example.com/MySourceFile.jpg').reply(200, SOURCE_CONTENT);
     }
-    if (!options || !options.noPut) {
+    if (!options.noPut) {
         nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT);
     }
 
     return {
         source: 'https://example.com/MySourceFile.jpg',
-        renditions: [{
+        renditions: [Object.assign({
             fmt: "png",
             target: "https://example.com/MyRendition.png"
-        }],
+        }, options.rendition)],
         requestId: "test-request-id"
     }
 }
 
-function paramsWithMultipleRenditions(options) {
-    if (!options || !options.noGet) {
+function paramsWithMultipleRenditions(options={}) {
+    if (!options.noGet) {
         const status = (options && options.getStatus) || 200;
         nockGetFile('https://example.com/MySourceFile.jpg').reply(status, SOURCE_CONTENT);
     }
-    if (!options || !options.noPut1) {
+    if (!options.noPut1) {
         const status = (options && options.put1Status) || 200;
         nockPutFile('https://example.com/MyRendition1.png',RENDITION_CONTENT, status);
     }
-    if (!options || !options.noPut2) {
+    if (!options.noPut2) {
         const status = (options && options.put2Status) || 200;
         nockPutFile('https://example.com/MyRendition2.txt',RENDITION_CONTENT, status);
     }
-    if (!options || !options.noPut3) {
+    if (!options.noPut3) {
         const status = (options && options.put3Status) || 200;
         nockPutFile('https://example.com/MyRendition3.xml',RENDITION_CONTENT, status);
     }
@@ -121,6 +122,11 @@ function paramsWithFailingSourceDownload() {
     };
 }
 
+function assertNockDone(nockScope) {
+    nockScope = nockScope || nock;
+    assert(nockScope.isDone(), "did not make these requests: " + nockScope.pendingMocks());
+}
+
 
 module.exports = {
     SOURCE_CONTENT,
@@ -129,5 +135,6 @@ module.exports = {
     afterEach,
     simpleParams,
     paramsWithMultipleRenditions,
-    paramsWithFailingSourceDownload
+    paramsWithFailingSourceDownload,
+    assertNockDone
 };
