@@ -12,6 +12,7 @@
         "protocol": "inspector",
         "timeout": 30000,
         "stopOnEntry": false,
+        "smartStep": true,
         "skipFiles": [
             "<node_internals>/**"
     ],
