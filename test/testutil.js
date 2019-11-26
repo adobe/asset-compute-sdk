@@ -30,9 +30,9 @@ const SOURCE_CONTENT = "source content";
 const RENDITION_CONTENT = "rendition content";
 
 function beforeEach() {
+    nock.disableNetConnect();
     process.env.__OW_ACTION_NAME = "/namespace/package/test_action";
     process.env.NUI_DISABLE_RETRIES = "disable";
-    process.env.NUI_UNIT_TEST_OUT = '/out';
     mockFs();
 }
 
@@ -41,7 +41,6 @@ function afterEach() {
     mockFs.restore();
     delete process.env.NUI_DISABLE_RETRIES;
     delete process.env.__OW_ACTION_NAME;
-    delete process.env.NUI_UNIT_TEST_OUT;
 }
 
 function nockGetFile(httpUrl) {
@@ -56,22 +55,22 @@ function nockPutFile(httpUrl, content, status=200) {
         .reply(status);
 }
 
-function nockIOEvent(expectedPayload={type: "rendition_created"}) {
-    // TODO: this is only temporary until all usage of NUI_UNIT_TEST_OUT in api.test.js has been replaced with nocking
-    if (process.env.NUI_UNIT_TEST_OUT === undefined) {
-        return nock("https://eg-ingress.adobe.io/")
-            .post("/api/events", body => {
-                const payload = JSON.parse(Buffer.from(body.event, 'base64').toString());
-                // console.log(body);
-                // console.log(payload);
+function nockIOEvent(expectedPayload) {
+    return nock("https://eg-ingress.adobe.io")
+        // .log(console.log)
+        .post("/api/events", body => {
+            const payload = JSON.parse(Buffer.from(body.event, 'base64').toString());
+            // console.log(body);
+            // console.log(payload);
 
-                return body.user_guid === "org"
-                    && body.provider_id === "asset_compute_org_test_client"
-                    && body.event_code === "asset_compute"
-                    && lodash.matches(expectedPayload)(payload);
-            })
-            .reply(200);
-    }
+            return body.user_guid === "org"
+                && body.provider_id === "asset_compute_org_test_client"
+                && body.event_code === "asset_compute"
+                // if no expected payload is set, match any payload
+                // otherwise check for partial match of expected payload
+                && (!expectedPayload || lodash.matches(expectedPayload)(payload));
+        })
+        .reply(200);
 }
 
 const PARAMS_AUTH = {
@@ -107,21 +106,9 @@ function simpleParams(options={}) {
     }
     if (!options.noPut) {
         nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT);
-        nockIOEvent({
-            type: "rendition_created",
-            rendition: {
-                fmt: "png"
-            },
-            source: "https://example.com/MySourceFile.jpg"
-        });
-    } else {
-        nockIOEvent({
-            type: "rendition_failed",
-            rendition: {
-                fmt: "png"
-            },
-            source: "https://example.com/MySourceFile.jpg"
-        });
+    }
+    if (!options.noEventsNock) {
+        nockIOEvent();
     }
 
     return {
@@ -143,68 +130,25 @@ function paramsWithMultipleRenditions(options={}) {
     if (!options.noPut1) {
         const status = (options && options.put1Status) || 200;
         nockPutFile('https://example.com/MyRendition1.png',RENDITION_CONTENT, status);
-        nockIOEvent({
-            type: "rendition_created",
-            rendition: {
-                fmt: "png",
-                name: "MyRendition1.png",
-            },
-            source: "https://example.com/MySourceFile.jpg"
-        });
-    } else {
-        nockIOEvent({
-            type: "rendition_failed",
-            rendition: {
-                fmt: "png",
-                name: "MyRendition1.png",
-            },
-            source: "https://example.com/MySourceFile.jpg"
-        });
+        if (!options.noEventsNock) {
+            nockIOEvent();
+        }
     }
 
     if (!options.noPut2) {
         const status = (options && options.put2Status) || 200;
         nockPutFile('https://example.com/MyRendition2.txt',RENDITION_CONTENT, status);
-        nockIOEvent({
-            type: "rendition_created",
-            rendition: {
-                fmt: "txt",
-                name: "MyRendition2.txt",
-            },
-            source: "https://example.com/MySourceFile.jpg"
-        });
-    } else {
-        nockIOEvent({
-            type: "rendition_failed",
-            rendition: {
-                fmt: "txt",
-                name: "MyRendition2.txt",
-            },
-            source: "https://example.com/MySourceFile.jpg"
-        });
+        if (!options.noEventsNock) {
+            nockIOEvent();
+        }
     }
 
     if (!options.noPut3) {
         const status = (options && options.put3Status) || 200;
         nockPutFile('https://example.com/MyRendition3.xml',RENDITION_CONTENT, status);
-        nockIOEvent({
-            type: "rendition_created",
-            rendition: {
-                fmt: "xml",
-                name: "MyRendition3.xml",
-            },
-            source: "https://example.com/MySourceFile.jpg"
-        });
-    } else {
-        nockIOEvent({
-            type: "rendition_failed",
-            rendition: {
-                fmt: "txt",
-                name: "MyRendition2.txt",
-            },
-            source: "https://example.com/MySourceFile.jpg"
-        });
-
+        if (!options.noEventsNock) {
+            nockIOEvent();
+        }
     }
 
     return {
@@ -227,24 +171,24 @@ function paramsWithMultipleRenditions(options={}) {
     };
 }
 
-function paramsWithFailingSourceDownload() {
-    nockGetFile('https://example.com/MissingSourceFile.jpg').reply(404);
-
-    return {
-        source: 'https://example.com/MissingSourceFile.jpg',
-        renditions: [{
-            fmt: "png",
-            target: "https://example.com/MyRendition.png"
-        }],
-        auth: PARAMS_AUTH
-    };
-}
-
 function assertNockDone(nockScope) {
     nockScope = nockScope || nock;
     assert(nockScope.isDone(), "did not make these requests: " + nockScope.pendingMocks());
 }
 
+async function assertThrowsAndAwait(cb, message) {
+    let thrown = false;
+    try {
+        // eslint-disable-next-line callback-return
+        const promise = cb();
+        await promise;
+    } catch (e) {
+        thrown = true;
+    }
+    if (!thrown) {
+        assert.fail(message);
+    }
+}
 
 module.exports = {
     SOURCE_CONTENT,
@@ -253,6 +197,7 @@ module.exports = {
     afterEach,
     simpleParams,
     paramsWithMultipleRenditions,
-    paramsWithFailingSourceDownload,
-    assertNockDone
+    nockIOEvent,
+    assertNockDone,
+    assertThrowsAndAwait
 };

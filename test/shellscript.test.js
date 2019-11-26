@@ -78,9 +78,6 @@ describe("api.js (shell)", () => {
         fs.mkdirSync(TEST_DIR, {recursive: true});
         previousWorkingDir = process.cwd();
         process.chdir(TEST_DIR);
-
-        // we use nocking in this test class - this delete can be removed once NUI_UNIT_TEST_OUT was removed from testUtil
-        delete process.env.NUI_UNIT_TEST_OUT;
     });
 
     afterEach( () => {

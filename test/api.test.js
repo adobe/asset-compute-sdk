@@ -25,8 +25,14 @@ const { worker, batchWorker } = require('../lib/api');
 const testUtil = require('./testutil');
 const assert = require('assert');
 const fs = require('fs-extra');
-const nock = require('nock');
 const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@nui/asset-compute-commons');
+
+// TODO: test result
+//       - redact credentials
+//       - info present
+// TODO: test logging
+//       - redact credentials
+// TODO: test metrics sent
 
 describe("api.js", () => {
     beforeEach(() => {
@@ -39,22 +45,10 @@ describe("api.js", () => {
 
     describe("worker()", () => {
 
-        it("should throw if worker callback is invalid", () => {
-            try {
-                worker("string");
-                assert.fail("no error thrown if callback is a string");
-            } catch (e) {
-            }
-            try {
-                worker();
-                assert.fail("no error thrown if no callback given");
-            } catch (e) {
-            }
-            try {
-                worker({});
-                assert.fail("no error thrown if argument is object");
-            } catch (e) {
-            }
+        it("should throw if worker callback is invalid", async () => {
+            await testUtil.assertThrowsAndAwait(() => worker(), "no error thrown if no callback given");
+            await testUtil.assertThrowsAndAwait(() => worker("string"), "no error thrown if incorrect callback given");
+            await testUtil.assertThrowsAndAwait(() => worker({}), "no error thrown if incorrect callback given");
         });
 
         it("should return a function that returns a promise", async () => {
@@ -95,7 +89,7 @@ describe("api.js", () => {
             const main = worker(workerFn);
             await main(testUtil.simpleParams());
 
-            assert(nock.isDone());
+            testUtil.assertNockDone();
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -110,19 +104,22 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams();
+            const params = testUtil.simpleParams({noEventsNock: true});
+
+            testUtil.nockIOEvent({
+                type: "rendition_created",
+                rendition: {
+                    fmt: "png"
+                },
+                source: "https://example.com/MySourceFile.jpg",
+                metadata: {
+                    "repo:size": testUtil.RENDITION_CONTENT.length
+                }
+            });
+
             await main(params);
 
-            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
-            const json = JSON.parse(jsonString);
-            assert.strictEqual(json.type, 'rendition_created');
-            assert.strictEqual(json.rendition.fmt, 'png');
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.strictEqual(json.metadata['repo:size'], testUtil.RENDITION_CONTENT.length);
-
-            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
-
-            assert(nock.isDone());
+            testUtil.assertNockDone();
         });
 
         it('rendition_failed event with generic error should be sent due to worker function failure', async () => {
@@ -136,18 +133,20 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ "noPut": true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
+
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "png"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
             await main(params);
 
-            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
-            const json = JSON.parse(jsonString);
-            console.log(json);
-            assert.strictEqual(json.type, 'rendition_failed');
-            assert.strictEqual(json.errorReason, 'GenericError');
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
-
-            assert(nock.isDone());
+            testUtil.assertNockDone();
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -166,18 +165,20 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ "noPut": true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
+
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "png"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
             await main(params);
 
-            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
-            const json = JSON.parse(jsonString);
-            console.log(json);
-            assert.strictEqual(json.type, 'rendition_failed');
-            assert.strictEqual(json.errorReason, 'GenericError');
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
-
-            assert(nock.isDone());
+            testUtil.assertNockDone();
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -196,19 +197,20 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ "noPut": true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
+
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "SourceUnsupported",
+                rendition: {
+                    fmt: "png"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
             await main(params);
 
-            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
-            const json = JSON.parse(jsonString);
-            console.log(json);
-            assert.strictEqual(json.type, 'rendition_failed');
-            assert.strictEqual(json.errorReason, 'SourceUnsupported');  
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-
-            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
-
-            assert(nock.isDone());
+            testUtil.assertNockDone();
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -227,24 +229,27 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ "noPut": true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
+
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "SourceCorrupt",
+                rendition: {
+                    fmt: "png"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
             await main(params);
 
-            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
-            const json = JSON.parse(jsonString);
-            console.log(json);
-            assert.strictEqual(json.type, 'rendition_failed');
-            assert.strictEqual(json.errorReason, 'SourceCorrupt');
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
-
-            assert(nock.isDone());
+            testUtil.assertNockDone();
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
             assert.ok(!fs.existsSync(renditionPath));
             assert.ok(!fs.existsSync(renditionDir));
         });
+
         it('rendition_failed event with source format unsupported error should be sent', async () => {
             let sourcePath, renditionPath, renditionDir;
 
@@ -256,18 +261,20 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ "noPut": true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
+
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "SourceFormatUnsupported",
+                rendition: {
+                    fmt: "png"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
             await main(params);
 
-            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
-            const json = JSON.parse(jsonString);
-            console.log(json);
-            assert.strictEqual(json.type, 'rendition_failed');
-            assert.strictEqual(json.errorReason, 'SourceFormatUnsupported');
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
-
-            assert(nock.isDone());
+            testUtil.assertNockDone();
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -286,21 +293,22 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ failDownload: true, noPut: true });
+            const params = testUtil.simpleParams({ failDownload: true, noPut: true, noEventsNock: true });
+
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "png"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
 
             try {
                 await main(params);
             } catch (err) {
                 console.log(err);
             }
-
-            const jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
-            const json = JSON.parse(jsonString);
-            console.log(json);
-            assert.strictEqual(json.type, 'rendition_failed');
-            assert.strictEqual(json.errorReason, 'GenericError');
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 1);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -330,7 +338,7 @@ describe("api.js", () => {
             const main = worker(workerFn, { disableSourceDownload: true});
             await main(testUtil.simpleParams({noSourceDownload: true}));
 
-            assert(nock.isDone());
+            testUtil.assertNockDone();
         });
 
         it('should handle multiple renditions', async () => {
@@ -359,7 +367,7 @@ describe("api.js", () => {
             const main = worker(workerFn);
             await main(testUtil.paramsWithMultipleRenditions());
 
-            assert(nock.isDone());
+            testUtil.assertNockDone();
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -368,45 +376,27 @@ describe("api.js", () => {
 
         it("should throw an error object if source download fails", async () => {
             const main = worker(function() {});
-            try {
-                await main(testUtil.paramsWithFailingSourceDownload());
-                assert.fail("did not throw");
-            } catch (e) {
-                // should have a message
-                assert.notStrictEqual(e.message, undefined);
-                // should have params
-                assert.notStrictEqual(e.params, undefined);
-            }
+
+            await assert.rejects(
+                main(testUtil.simpleParams({failDownload: true})),
+                (err) => {
+                    // should have a message
+                    assert.notStrictEqual(err.message, undefined);
+                    // should have params
+                    assert.notStrictEqual(err.params, undefined);
+                    return true;
+                }
+            );
         });
 
-        // TODO: more error tests
-        //       - process fails
-        // TODO: test result
-        //       - redact credentials
-        //       - info present
-        // TODO: test logging
-        //       - redact credentials
-        // TODO: test metrics sent
     });
 
     describe("batchWorker()", () => {
 
-        it("should throw if batchWorker callback is invalid", () => {
-            try {
-                batchWorker("string");
-                assert.fail("no error thrown");
-            } catch (e) {
-            }
-            try {
-                batchWorker();
-                assert.fail("no error thrown if no callback given");
-            } catch (e) {
-            }
-            try {
-                batchWorker({});
-                assert.fail("no error thrown if argument is object");
-            } catch (e) {
-            }
+        it("should throw if batchWorker callback is invalid", async () => {
+            await testUtil.assertThrowsAndAwait(() => batchWorker(), "no error thrown if no callback given");
+            await testUtil.assertThrowsAndAwait(() => batchWorker("string"), "no error thrown if incorrect callback given");
+            await testUtil.assertThrowsAndAwait(() => batchWorker({}), "no error thrown if incorrect callback given");
         });
 
         it("should return a function that returns a promise", async () => {
@@ -449,7 +439,7 @@ describe("api.js", () => {
             const main = batchWorker(batchWorkerFn);
             await main(testUtil.simpleParams());
 
-            assert(nock.isDone());
+            testUtil.assertNockDone();
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -481,10 +471,10 @@ describe("api.js", () => {
             const main = batchWorker(batchWorkerFn, { disableSourceDownload: true});
             await main(testUtil.simpleParams({noSourceDownload: true}));
 
-            assert(nock.isDone());
+            testUtil.assertNockDone();
         });
 
-        it('verify events with some successful and some failing during processing', async () => {
+        it('verify events with some successful and some not generated rendtions during processing', async () => {
             let sourcePath, renditionDir;
 
             function batchWorkerFn(source, renditions) {
@@ -498,38 +488,49 @@ describe("api.js", () => {
                 return Promise.resolve();
             }
 
+            testUtil.nockIOEvent({
+                type: "rendition_created",
+                rendition: {
+                    fmt: "png",
+                    name: "MyRendition1.png"
+                },
+                source: "https://example.com/MySourceFile.jpg",
+                metadata: {
+                    "repo:size": testUtil.RENDITION_CONTENT.length
+                }
+            });
+
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "txt",
+                    name: "MyRendition2.txt"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
+            testUtil.nockIOEvent({
+                type: "rendition_created",
+                rendition: {
+                    fmt: "xml",
+                    name: "MyRendition3.xml"
+                },
+                source: "https://example.com/MySourceFile.jpg",
+                metadata: {
+                    "repo:size": testUtil.RENDITION_CONTENT.length
+                }
+            });
+
             const main = batchWorker(batchWorkerFn);
-            await main(testUtil.paramsWithMultipleRenditions());
-
-            let jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
-            console.log(jsonString);
-            let json = JSON.parse(jsonString);
-            assert.strictEqual(json.type, 'rendition_created');
-            assert.strictEqual(json.rendition.fmt, 'png');
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.strictEqual(json.metadata['repo:size'], testUtil.RENDITION_CONTENT.length);
-
-            jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`, 'utf8');
-            console.log(jsonString);
-            json = JSON.parse(jsonString);
-            assert.strictEqual(json.type, 'rendition_failed');
-            assert.strictEqual(json.rendition.fmt, 'txt');
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-
-            jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event2.json`, 'utf8');
-            console.log(jsonString);
-            json = JSON.parse(jsonString);
-            assert.strictEqual(json.type, 'rendition_created');
-            assert.strictEqual(json.rendition.fmt, 'xml');
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-            assert.strictEqual(json.metadata['repo:size'], testUtil.RENDITION_CONTENT.length);
-
-            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 3);
+            await main(testUtil.paramsWithMultipleRenditions({ noPut2: true, noEventsNock: true }));
+            testUtil.assertNockDone();
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
             assert.ok(!fs.existsSync(renditionDir));
         });
+
         it('verify events with some successful and some failing during uploading', async () => {
             let sourcePath, renditionDir;
 
@@ -540,32 +541,43 @@ describe("api.js", () => {
                 return Promise.resolve();
             }
 
+            testUtil.nockIOEvent({
+                type: "rendition_created",
+                rendition: {
+                    fmt: "png",
+                    name: "MyRendition1.png",
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "txt",
+                    name: "MyRendition2.txt"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+            testUtil.nockIOEvent({
+                type: "rendition_created",
+                rendition: {
+                    fmt: "xml",
+                    name: "MyRendition3.xml"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
             const main = batchWorker(batchWorkerFn);
-            await main(testUtil.paramsWithMultipleRenditions({ put2Status: 400}));
+            await main(testUtil.paramsWithMultipleRenditions({ put2Status: 400, noEventsNock: true}));
 
-            let jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
-            console.log(jsonString);
-            let json = JSON.parse(jsonString);
-            assert.strictEqual(json.type, 'rendition_created');
-
-            jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`, 'utf8');
-            console.log(jsonString);
-            json = JSON.parse(jsonString);
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-
-            jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event2.json`, 'utf8');
-            console.log(jsonString);
-            json = JSON.parse(jsonString);
-            assert.strictEqual(json.type, 'rendition_created');
-
-            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 3);
+            testUtil.assertNockDone();
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
             assert.ok(!fs.existsSync(renditionDir));
         });
 
-        it('verify events with processing failed on second rendition', async () => {
+        it('verify all error events with batch processing failing on second rendition', async () => {
             let sourcePath, renditionDir;
 
             async function batchWorkerFn(source, renditions) {
@@ -580,34 +592,43 @@ describe("api.js", () => {
                 }
             }
 
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "png",
+                    name: "MyRendition1.png"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "txt",
+                    name: "MyRendition2.txt"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "xml",
+                    name: "MyRendition3.xml"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
             const main = batchWorker(batchWorkerFn);
-            await main(testUtil.paramsWithMultipleRenditions());
+            await main(testUtil.paramsWithMultipleRenditions({
+                noPut1: true,
+                noPut2: true,
+                noPut3: true,
+                noEventsNock: true
+            }));
 
-            let jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
-            console.log(jsonString);
-            let json = JSON.parse(jsonString);
-            assert.strictEqual(json.type, 'rendition_failed');
-            assert.strictEqual(json.errorReason, 'GenericError');
-            assert.strictEqual(json.rendition.fmt, 'png');
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-
-            jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`, 'utf8');
-            console.log(jsonString);
-            json = JSON.parse(jsonString);
-            assert.strictEqual(json.type, 'rendition_failed');
-            assert.strictEqual(json.errorReason, 'GenericError');
-            assert.strictEqual(json.rendition.fmt, 'txt');
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-
-            jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event2.json`, 'utf8');
-            console.log(jsonString);
-            json = JSON.parse(jsonString);
-            assert.strictEqual(json.type, 'rendition_failed');
-            assert.strictEqual(json.errorReason, 'GenericError');
-            assert.strictEqual(json.rendition.fmt, 'xml');
-            assert.strictEqual(json.source, 'https://example.com/MySourceFile.jpg');
-
-            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 3);
+            testUtil.assertNockDone();
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -621,25 +642,44 @@ describe("api.js", () => {
                 return Promise.resolve();
             }
 
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "png",
+                    name: "MyRendition1.png"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "txt",
+                    name: "MyRendition2.txt"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "xml",
+                    name: "MyRendition3.xml"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
             const main = batchWorker(batchWorkerFn);
-            await main(testUtil.paramsWithMultipleRenditions({ noSourceDownload: true }));
+            await main(testUtil.paramsWithMultipleRenditions({
+                noSourceDownload: true,
+                noPut1: true,
+                noPut2: true,
+                noPut3: true,
+                noEventsNock: true
+            }));
 
-            let jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event0.json`, 'utf8');
-            console.log(jsonString);
-            let json = JSON.parse(jsonString);
-            assert.strictEqual(json.type, 'rendition_failed');
-            
-            jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event1.json`, 'utf8');
-            console.log(jsonString);
-            json = JSON.parse(jsonString);
-            assert.strictEqual(json.type, 'rendition_failed');
-
-            jsonString = fs.readFileSync(`${process.env.NUI_UNIT_TEST_OUT}/events/event2.json`, 'utf8');
-            console.log(jsonString);
-            json = JSON.parse(jsonString);
-            assert.strictEqual(json.type, 'rendition_failed');
-            
-            assert.equal(fs.readdirSync(`${process.env.NUI_UNIT_TEST_OUT}/events`).length, 3);
+            testUtil.assertNockDone();
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -679,23 +719,25 @@ describe("api.js", () => {
             const main = batchWorker(batchWorkerFn);
             await main(testUtil.paramsWithMultipleRenditions());
 
-            assert(nock.isDone());
+            testUtil.assertNockDone();
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
             assert.ok(!fs.existsSync(renditionDir));
         });
+
         it("should throw an error object if source download fails", async () => {
             const main = batchWorker(function() {});
-            try {
-                await main(testUtil.paramsWithFailingSourceDownload());
-                assert.fail("did not throw");
-            } catch (e) {
-                // should have a message
-                assert.notStrictEqual(e.message, undefined);
-                // should have params
-                assert.notStrictEqual(e.params, undefined);
-            }
+            await assert.rejects(
+                main(testUtil.simpleParams({failDownload: true})),
+                (err) => {
+                    // should have a message
+                    assert.notStrictEqual(err.message, undefined);
+                    // should have params
+                    assert.notStrictEqual(err.params, undefined);
+                    return true;
+                }
+            );
         });
     });
 });
