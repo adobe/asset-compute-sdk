@@ -30,6 +30,7 @@
     "envfile": "^4.1.0",
     "expect.js": "^0.3.1",
     "fetch-mock": "^7.7.0",
+    "lodash": "^4.17.15",
     "mocha": "^6.2.2",
     "mock-fs": "^4.10.3",
     "mockery": "^2.1.0",

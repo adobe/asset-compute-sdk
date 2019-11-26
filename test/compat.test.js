@@ -40,21 +40,9 @@ describe('compat.js', () => {
     describe('forEachRendition()', () => {
 
         it("should throw if worker callback is invalid", async () => {
-            try {
-                await forEachRendition({}, "string");
-                assert.fail("no error thrown if callback is a string");
-            } catch (e) {
-            }
-            try {
-                await forEachRendition({});
-                assert.fail("no error thrown if no callback given");
-            } catch (e) {
-            }
-            try {
-                await forEachRendition({}, {});
-                assert.fail("no error thrown if argument is object");
-            } catch (e) {
-            }
+            await testUtil.assertThrowsAndAwait(() => forEachRendition(), "no error thrown if no callback given");
+            await testUtil.assertThrowsAndAwait(() => forEachRendition("string"), "no error thrown if incorrect callback given");
+            await testUtil.assertThrowsAndAwait(() => forEachRendition({}), "no error thrown if incorrect callback given");
         });
 
         it("should return a function that returns a promise", async () => {
@@ -116,21 +104,9 @@ describe('compat.js', () => {
     describe('process()', () => {
 
         it("should throw if worker callback is invalid", async () => {
-            try {
-                await process({}, "string");
-                assert.fail("no error thrown if callback is a string");
-            } catch (e) {
-            }
-            try {
-                await process({});
-                assert.fail("no error thrown if no callback given");
-            } catch (e) {
-            }
-            try {
-                await process({}, {});
-                assert.fail("no error thrown if argument is object");
-            } catch (e) {
-            }
+            await testUtil.assertThrowsAndAwait(() => process(), "no error thrown if no callback given");
+            await testUtil.assertThrowsAndAwait(() => process("string"), "no error thrown if incorrect callback given");
+            await testUtil.assertThrowsAndAwait(() => process({}), "no error thrown if incorrect callback given");
         });
 
         it("should return a function that returns a promise", async () => {

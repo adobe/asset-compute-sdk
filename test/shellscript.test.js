@@ -78,10 +78,6 @@ describe("api.js (shell)", () => {
         fs.mkdirSync(TEST_DIR, {recursive: true});
         previousWorkingDir = process.cwd();
         process.chdir(TEST_DIR);
-
-        // might want to replace this with nock()ing
-        delete process.env.NUI_UNIT_TEST_OUT;
-        process.env.NUI_UNIT_TEST_OUT = TEST_DIR + "/out";
     });
 
     afterEach( () => {
@@ -91,13 +87,11 @@ describe("api.js (shell)", () => {
         } catch (ignore) {}
 
         testUtil.afterEach();
-
-        delete process.env.NUI_UNIT_TEST_OUT;
     });
 
     describe("shellScriptWorker()", () => {
 
-        it("should run a shell script", async () => {
+        it("should run a shell script and handle resulting rendition", async () => {
             createScript("worker.sh", `echo "${testUtil.RENDITION_CONTENT}" > $rendition`);
             const main = shellScriptWorker();
 
@@ -343,8 +337,6 @@ describe("api.js (shell)", () => {
 
             const scriptWorker = new ShellScriptWorker(params);
             await scriptWorker.processWithScript(mockSource(), mockRendition());
-
-            testUtil.assertNockDone();
         });
 
         it("should pass rendition instructions as environment variables to script", async () => {
