@@ -120,7 +120,7 @@ describe("api.js (shell)", () => {
             const main = shellScriptWorker();
 
             try {
-                await main(testUtil.simpleParams({noPut: true}));
+                await main(testUtil.simpleParams({noPut: true, noMetricsNock: true}));
 
             } catch (err) {
                 console.log(err);
@@ -157,7 +157,7 @@ describe("api.js (shell)", () => {
             const main = shellScriptWorker();
 
             try {
-                await main(testUtil.simpleParams({noPut: true}));
+                await main(testUtil.simpleParams({noPut: true, noMetricsNock:true}));
 
             } catch (err) {
                 console.log(err);

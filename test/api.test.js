@@ -133,7 +133,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true, noMetricsNock: true });
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -143,6 +143,11 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
+
+            testUtil.nockNewRelicMetrics('error', {
+                location: "test_action_process"
+            });
+            testUtil.nockNewRelicMetrics('activation');
 
             await main(params);
 
@@ -165,7 +170,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true, noMetricsNock: true });
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -175,6 +180,11 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
+
+            testUtil.nockNewRelicMetrics('error', {
+                location:'test_action_processRendition'
+            });
+            testUtil.nockNewRelicMetrics('activation');
 
             await main(params);
 
@@ -197,7 +207,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true, noMetricsNock:true });
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -207,6 +217,13 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
+
+            testUtil.nockNewRelicMetrics('client_error', {
+                reason: "SourceUnsupported",
+                message: "The source is not supported"
+
+            });
+            testUtil.nockNewRelicMetrics('activation');
 
             await main(params);
 
@@ -229,7 +246,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true, noMetricsNock: true });
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -239,6 +256,13 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
+
+            testUtil.nockNewRelicMetrics('client_error', {
+                reason: "SourceCorrupt",
+                message: "The source file is corrupt"
+
+            });
+            testUtil.nockNewRelicMetrics('activation');
 
             await main(params);
 
@@ -261,7 +285,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true, noMetricsNock: true });
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -271,6 +295,13 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
+
+            testUtil.nockNewRelicMetrics('client_error', {
+                reason: "SourceFormatUnsupported",
+                message: "The source format is not supported"
+
+            });
+            testUtil.nockNewRelicMetrics('activation');
 
             await main(params);
 
@@ -293,7 +324,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ failDownload: true, noPut: true, noEventsNock: true });
+            const params = testUtil.simpleParams({ failDownload: true, noPut: true, noEventsNock: true, noMetricsNock: true });
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -303,6 +334,13 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
+
+            testUtil.nockNewRelicMetrics('error', {
+                location: "test_action_download",
+                message: "GET 'https://example.com/MySourceFile.jpg' failed with status 500",
+
+            });
+            testUtil.nockNewRelicMetrics('activation');
 
             try {
                 await main(params);
