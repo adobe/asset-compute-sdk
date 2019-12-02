@@ -64,7 +64,7 @@ function gunzip(body) {
 }
 
 function nockNewRelicMetrics(expectedEventType, expectedMetrics) {
-    return nock("http://newrelic.com")
+    return nock("https://newrelic.com")
         .matchHeader("x-insert-key", "new-relic-api-key")
         .post("/events", body => {
             const metrics = gunzip(body);
@@ -144,7 +144,7 @@ function simpleParams(options={}) {
         }, options.rendition)],
         requestId: "test-request-id",
         auth: PARAMS_AUTH,
-        newRelicEventsURL: "http://newrelic.com/events",
+        newRelicEventsURL: "https://newrelic.com/events",
         newRelicApiKey: "new-relic-api-key"
     }
 }

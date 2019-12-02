@@ -122,7 +122,13 @@ describe("api.js (shell)", () => {
             const main = shellScriptWorker();
 
             try {
-                await main(testUtil.simpleParams({noPut: true, noMetricsNock: true}));
+                const params = testUtil.simpleParams({noPut: true, noMetricsNock: true});
+                testUtil.nockNewRelicMetrics("error", {
+                    message: "`/usr/bin/env bash -x worker.sh` failed with exit code 42",
+                    location: "test_action_shellScript"
+                });
+                testUtil.nockNewRelicMetrics("activation");
+                await main(params);
 
             } catch (err) {
                 console.log(err);
@@ -159,7 +165,13 @@ describe("api.js (shell)", () => {
             const main = shellScriptWorker();
 
             try {
-                await main(testUtil.simpleParams({noPut: true, noMetricsNock:true}));
+                const params = testUtil.simpleParams({noPut: true, noMetricsNock: true});
+                testUtil.nockNewRelicMetrics("error", {
+                    message: "failed",
+                    location: "test_action_shellScript"
+                });
+                testUtil.nockNewRelicMetrics("activation");
+                await main(params);
 
             } catch (err) {
                 console.log(err);
