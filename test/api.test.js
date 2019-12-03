@@ -87,7 +87,10 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            await main(testUtil.simpleParams());
+            const result = await main(testUtil.simpleParams());
+
+            // validate errors
+            assert.ok(result.renditionErrors === undefined);
 
             testUtil.assertNockDone();
 
@@ -117,7 +120,10 @@ describe("api.js", () => {
                 }
             });
 
-            await main(params);
+            const result = await main(params);
+
+            // validate errors
+            assert.ok(result.renditionErrors === undefined);
 
             testUtil.assertNockDone();
         });
@@ -129,7 +135,7 @@ describe("api.js", () => {
                 sourcePath = source.path;
                 renditionPath = rendition.path;
                 renditionDir = rendition.directory;
-                return Promise.reject();
+                return Promise.reject("failed");
             }
 
             const main = worker(workerFn);
@@ -144,7 +150,12 @@ describe("api.js", () => {
                 source: "https://example.com/MySourceFile.jpg"
             });
 
-            await main(params);
+            const result = await main(params);
+
+            // validate errors
+            assert.ok(result.renditionErrors);
+            assert.equal(result.renditionErrors.length, 1);
+            assert.equal(result.renditionErrors[0], "failed");
 
             testUtil.assertNockDone();
 
@@ -155,6 +166,46 @@ describe("api.js", () => {
         });
 
         it('rendition_failed event with generic error should be sent due to upload failure', async () => {
+            let sourcePath, renditionPath, renditionDir;
+
+            function workerFn(source, rendition) {
+                sourcePath = source.path;
+                renditionPath = rendition.path;
+                renditionDir = rendition.directory;
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                return Promise.resolve();
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams({ failUpload: true, noEventsNock: true });
+
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "png"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
+            const result = await main(params);
+
+            // validate errors
+            assert.ok(result.renditionErrors);
+            assert.equal(result.renditionErrors.length, 1);
+            assert.equal(result.renditionErrors[0].name, "GenericError");
+            assert.equal(result.renditionErrors[0].location, "test_action_upload");
+            assert.ok(result.renditionErrors[0].message.includes("500")); // failUpload above returns 500 error
+
+            testUtil.assertNockDone();
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionPath));
+            assert.ok(!fs.existsSync(renditionDir));
+        });
+
+        it('rendition_failed event with generic error should be sent if no rendition was generated', async () => {
             let sourcePath, renditionPath, renditionDir;
 
             function workerFn(source, rendition) {
@@ -176,7 +227,15 @@ describe("api.js", () => {
                 source: "https://example.com/MySourceFile.jpg"
             });
 
-            await main(params);
+            const result = await main(params);
+
+            // validate errors
+            assert.ok(result.renditionErrors);
+            assert.equal(result.renditionErrors.length, 1);
+            assert.equal(result.renditionErrors[0].name, "GenericError");
+            assert.equal(result.renditionErrors[0].location, "test_action_processRendition");
+            // TODO: fix error handling, currently the message is "GenericError: No rendition generated for 0"
+            // assert.ok(result.renditionErrors[0].message.includes("500")); // failUpload above returns 500 error
 
             testUtil.assertNockDone();
 
@@ -208,7 +267,13 @@ describe("api.js", () => {
                 source: "https://example.com/MySourceFile.jpg"
             });
 
-            await main(params);
+            const result = await main(params);
+
+            // validate errors
+            assert.ok(result.renditionErrors);
+            assert.equal(result.renditionErrors.length, 1);
+            assert.equal(result.renditionErrors[0].name, "SourceUnsupportedError");
+            assert.equal(result.renditionErrors[0].reason, "SourceUnsupported");
 
             testUtil.assertNockDone();
 
@@ -240,7 +305,13 @@ describe("api.js", () => {
                 source: "https://example.com/MySourceFile.jpg"
             });
 
-            await main(params);
+            const result = await main(params);
+
+            // validate errors
+            assert.ok(result.renditionErrors);
+            assert.equal(result.renditionErrors.length, 1);
+            assert.equal(result.renditionErrors[0].name, "SourceCorruptError");
+            assert.equal(result.renditionErrors[0].reason, "SourceCorrupt");
 
             testUtil.assertNockDone();
 
@@ -272,7 +343,13 @@ describe("api.js", () => {
                 source: "https://example.com/MySourceFile.jpg"
             });
 
-            await main(params);
+            const result = await main(params);
+
+            // validate errors
+            assert.ok(result.renditionErrors);
+            assert.equal(result.renditionErrors.length, 1);
+            assert.equal(result.renditionErrors[0].name, "SourceFormatUnsupportedError");
+            assert.equal(result.renditionErrors[0].reason, "SourceFormatUnsupported");
 
             testUtil.assertNockDone();
 
@@ -365,7 +442,10 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            await main(testUtil.paramsWithMultipleRenditions());
+            const result = await main(testUtil.paramsWithMultipleRenditions());
+
+            // validate errors
+            assert.ok(result.renditionErrors === undefined);
 
             testUtil.assertNockDone();
 
@@ -382,8 +462,6 @@ describe("api.js", () => {
                 (err) => {
                     // should have a message
                     assert.notStrictEqual(err.message, undefined);
-                    // should have params
-                    assert.notStrictEqual(err.params, undefined);
                     return true;
                 }
             );
@@ -437,7 +515,10 @@ describe("api.js", () => {
             }
 
             const main = batchWorker(batchWorkerFn);
-            await main(testUtil.simpleParams());
+            const result = await main(testUtil.simpleParams());
+
+            // validate errors
+            assert.ok(result.renditionErrors === undefined);
 
             testUtil.assertNockDone();
 
@@ -523,7 +604,16 @@ describe("api.js", () => {
             });
 
             const main = batchWorker(batchWorkerFn);
-            await main(testUtil.paramsWithMultipleRenditions({ noPut2: true, noEventsNock: true }));
+            const result = await main(testUtil.paramsWithMultipleRenditions({ noPut2: true, noEventsNock: true }));
+
+            // validate errors
+            assert.ok(result.renditionErrors);
+            assert.equal(result.renditionErrors.length, 1);
+            assert.equal(result.renditionErrors[0].name, "GenericError");
+            assert.equal(result.renditionErrors[0].location, "test_action_batchProcessRendition");
+            const msg = result.renditionErrors[0].message;
+            assert.ok(msg.includes("MyRendition2.txt"));
+
             testUtil.assertNockDone();
 
             // ensure cleanup
@@ -568,7 +658,16 @@ describe("api.js", () => {
             });
 
             const main = batchWorker(batchWorkerFn);
-            await main(testUtil.paramsWithMultipleRenditions({ put2Status: 400, noEventsNock: true}));
+            const result = await main(testUtil.paramsWithMultipleRenditions({ put2Status: 400, noEventsNock: true}));
+
+            // validate errors
+            assert.ok(result.renditionErrors);
+            assert.equal(result.renditionErrors.length, 1);
+            assert.equal(result.renditionErrors[0].name, "GenericError");
+            assert.equal(result.renditionErrors[0].location, "test_action_upload");
+            const msg = result.renditionErrors[0].message;
+            assert.ok(msg.includes("MyRendition2.txt"));
+            assert.ok(msg.includes("400")); // put2Status set to fail with 400
 
             testUtil.assertNockDone();
 
@@ -621,12 +720,22 @@ describe("api.js", () => {
             });
 
             const main = batchWorker(batchWorkerFn);
-            await main(testUtil.paramsWithMultipleRenditions({
+            const result = await main(testUtil.paramsWithMultipleRenditions({
                 noPut1: true,
                 noPut2: true,
                 noPut3: true,
                 noEventsNock: true
             }));
+
+            // validate errors
+            assert.ok(result.renditionErrors);
+            assert.equal(result.renditionErrors.length, 3);
+            assert.equal(result.renditionErrors[0].name, "Error");
+            assert.equal(result.renditionErrors[0].message, "unexpected error occurred in worker");
+            assert.equal(result.renditionErrors[1].name, "Error");
+            assert.equal(result.renditionErrors[1].message, "unexpected error occurred in worker");
+            assert.equal(result.renditionErrors[2].name, "Error");
+            assert.equal(result.renditionErrors[2].message, "unexpected error occurred in worker");
 
             testUtil.assertNockDone();
 
@@ -635,7 +744,7 @@ describe("api.js", () => {
             assert.ok(!fs.existsSync(renditionDir));
         });
 
-        it('verify get all rendition failed events on download failure', async () => {
+        it('verify rendition_failed events sent if no rendition was generated for multiple renditions', async () => {
             let sourcePath, renditionDir;
 
             function batchWorkerFn() {
@@ -671,13 +780,23 @@ describe("api.js", () => {
             });
 
             const main = batchWorker(batchWorkerFn);
-            await main(testUtil.paramsWithMultipleRenditions({
+            const result = await main(testUtil.paramsWithMultipleRenditions({
                 noSourceDownload: true,
                 noPut1: true,
                 noPut2: true,
                 noPut3: true,
                 noEventsNock: true
             }));
+
+            // validate errors
+            assert.ok(result.renditionErrors);
+            assert.equal(result.renditionErrors.length, 3);
+            assert.equal(result.renditionErrors[0].name, "GenericError");
+            assert.ok(result.renditionErrors[0].message.includes("MyRendition1.png"));
+            assert.equal(result.renditionErrors[1].name, "GenericError");
+            assert.ok(result.renditionErrors[1].message.includes("MyRendition2.txt"));
+            assert.equal(result.renditionErrors[2].name, "GenericError");
+            assert.ok(result.renditionErrors[2].message.includes("MyRendition3.xml"));
 
             testUtil.assertNockDone();
 
@@ -717,7 +836,10 @@ describe("api.js", () => {
             }
 
             const main = batchWorker(batchWorkerFn);
-            await main(testUtil.paramsWithMultipleRenditions());
+            const result = await main(testUtil.paramsWithMultipleRenditions());
+
+            // validate errors
+            assert.ok(result.renditionErrors === undefined);
 
             testUtil.assertNockDone();
 
@@ -733,8 +855,6 @@ describe("api.js", () => {
                 (err) => {
                     // should have a message
                     assert.notStrictEqual(err.message, undefined);
-                    // should have params
-                    assert.notStrictEqual(err.params, undefined);
                     return true;
                 }
             );
