@@ -529,10 +529,11 @@ describe("api.js", () => {
             });
             const { promisify } = require('util');
             const sleep = promisify(setTimeout);
+            const writeFile = promisify(fs.writeFile);
 
             async function workerFn(source, rendition) {
-                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
-                await sleep(500);
+                await writeFile(rendition.path, testUtil.RENDITION_CONTENT);
+                await sleep(200);
                 return Promise.resolve();
             }
 
