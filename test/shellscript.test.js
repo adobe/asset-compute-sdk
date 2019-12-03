@@ -78,6 +78,7 @@ describe("api.js (shell)", () => {
         fs.mkdirSync(TEST_DIR, {recursive: true});
         previousWorkingDir = process.cwd();
         process.chdir(TEST_DIR);
+        process.env.DISABLE_ACTION_TIMEOUT = true;
     });
 
     afterEach( () => {
@@ -87,6 +88,7 @@ describe("api.js (shell)", () => {
         } catch (ignore) {}
 
         testUtil.afterEach();
+        delete process.env.DISABLE_ACTION_TIMEOUT;
     });
 
     describe("shellScriptWorker()", () => {
@@ -120,7 +122,13 @@ describe("api.js (shell)", () => {
             const main = shellScriptWorker();
 
             try {
-                await main(testUtil.simpleParams({noPut: true}));
+                const params = testUtil.simpleParams({noPut: true, noMetricsNock: true});
+                testUtil.nockNewRelicMetrics("error", {
+                    message: "`/usr/bin/env bash -x worker.sh` failed with exit code 42",
+                    location: "test_action_shellScript"
+                });
+                testUtil.nockNewRelicMetrics("activation");
+                await main(params);
 
             } catch (err) {
                 console.log(err);
@@ -157,7 +165,13 @@ describe("api.js (shell)", () => {
             const main = shellScriptWorker();
 
             try {
-                await main(testUtil.simpleParams({noPut: true}));
+                const params = testUtil.simpleParams({noPut: true, noMetricsNock: true});
+                testUtil.nockNewRelicMetrics("error", {
+                    message: "failed",
+                    location: "test_action_shellScript"
+                });
+                testUtil.nockNewRelicMetrics("activation");
+                await main(params);
 
             } catch (err) {
                 console.log(err);
@@ -171,7 +185,6 @@ describe("api.js (shell)", () => {
                 echo '{ "message": "failed" }' > $errorfile
                 exit 1
             `);
-
             const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
 
             await assert.rejects(
@@ -188,7 +201,6 @@ describe("api.js (shell)", () => {
                 echo '{ "reason": "RenditionFormatUnsupported", "message": "problem" }' > $errorfile
                 exit 1
             `);
-
             const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
 
             await assert.rejects(
@@ -203,7 +215,6 @@ describe("api.js (shell)", () => {
                 echo '{ "reason": "RenditionFormatUnsupported", "message": "problem" }' > $errorfile
                 exit 1
             `);
-
             const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
 
             await assert.rejects(
@@ -219,7 +230,6 @@ describe("api.js (shell)", () => {
                 echo '{ "reason": "RenditionTooLarge", "message": "problem" }' > $errorfile
                 exit 1
             `);
-
             const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
 
             await assert.rejects(
@@ -235,7 +245,6 @@ describe("api.js (shell)", () => {
                 echo '{ "reason": "SourceCorrupt", "message": "problem" }' > $errorfile
                 exit 1
             `);
-
             const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
 
             await assert.rejects(
@@ -251,7 +260,6 @@ describe("api.js (shell)", () => {
                 echo '{ "reason": "SourceFormatUnsupported", "message": "problem" }' > $errorfile
                 exit 1
             `);
-
             const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
 
             await assert.rejects(
@@ -267,7 +275,6 @@ describe("api.js (shell)", () => {
                 echo '{ "reason": "SourceUnsupported", "message": "problem" }' > $errorfile
                 exit 1
             `);
-
             const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
 
             await assert.rejects(
@@ -283,7 +290,6 @@ describe("api.js (shell)", () => {
                 echo '{ "message": MALFORMED' > $errorfile
                 exit 42
             `);
-
             const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
 
             await assert.rejects(
@@ -296,7 +302,6 @@ describe("api.js (shell)", () => {
 
         it("should handle error.json - missing json", async () => {
             createScript("worker.sh", `exit 23`);
-
             const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
 
             await assert.rejects(
@@ -311,7 +316,6 @@ describe("api.js (shell)", () => {
             createScript("worker.sh", `echo "${testUtil.RENDITION_CONTENT}" > $rendition`);
 
             const params = testUtil.simpleParams();
-
             // injection attack on script name
             try {
                 const scriptWorker = new ShellScriptWorker(params, {script: "-c 'exit 66'"});
@@ -331,7 +335,6 @@ describe("api.js (shell)", () => {
             `);
 
             const params = testUtil.simpleParams({noSourceDownload: true, noPut: true});
-
             // injection attack on argument (kind of...)
             params.renditions[0].wid = "; exit 66 #";
 
@@ -357,7 +360,6 @@ describe("api.js (shell)", () => {
                     h: 200
                 }
             };
-
             const scriptWorker = new ShellScriptWorker(testUtil.simpleParams({ rendition }));
             await scriptWorker.processWithScript(mockSource(), mockRendition(rendition));
 
@@ -393,7 +395,6 @@ describe("api.js (shell)", () => {
                 }
             };
             const rend = mockRendition(rendition, '\u001B[4mrendition0.png\u001B[0m');
-
             const scriptWorker = new ShellScriptWorker(testUtil.simpleParams({ rendition }));
             await scriptWorker.processWithScript(source, rend);
 
