@@ -437,7 +437,5 @@ describe("api.js (shell)", () => {
             assert.equal(env.rendition_foobar, "Unicorn");
             assert.equal(env.rendition_crop_x, "Unicorn");
         });
-
-        // TODO: get rid of NUI_UNIT_TEST_MODE, nock events
     });
 });
