@@ -78,7 +78,7 @@ describe("api.js (shell)", () => {
         fs.mkdirSync(TEST_DIR, {recursive: true});
         previousWorkingDir = process.cwd();
         process.chdir(TEST_DIR);
-        process.env.DISABLE_ACTION_TIMEOUT = true;
+        process.env.DISABLE_ACTION_TIMEOUT_METRIC = true;
     });
 
     afterEach( () => {
@@ -88,7 +88,7 @@ describe("api.js (shell)", () => {
         } catch (ignore) {}
 
         testUtil.afterEach();
-        delete process.env.DISABLE_ACTION_TIMEOUT;
+        delete process.env.DISABLE_ACTION_TIMEOUT_METRIC;
     });
 
     describe("shellScriptWorker()", () => {

@@ -26,6 +26,7 @@ const testUtil = require('./testutil');
 const assert = require('assert');
 const fs = require('fs-extra');
 const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@nui/asset-compute-commons');
+const mockFs = require('mock-fs');
 
 // TODO: test result
 //       - redact credentials
@@ -508,6 +509,36 @@ describe("api.js", () => {
 
             const main = batchWorker(batchWorkerFn, { disableSourceDownload: true});
             await main(testUtil.simpleParams({noSourceDownload: true}));
+
+            testUtil.assertNockDone();
+        });
+
+        it('should send metrics - rendition and activation with cgroup metrics', async () => {
+            mockFs({
+                '/sys/fs/cgroup': {
+                    'memory': {
+                        'memory.stat':'cache 2453\nrss 1234\n',
+                        'memory.kmem.usage_in_bytes':'5432',
+                        'memory.limit_in_bytes': '9999'
+                    },
+                    'cpuacct': {
+                        'cpuacct.usage': '1000',
+                        'cpuacct.stat': 'user 2000\nsystem 3000\n'
+                    }
+                }
+            });
+            const { promisify } = require('util');
+            const sleep = promisify(setTimeout);
+
+            async function workerFn(source, rendition) {
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                await sleep(500);
+                return Promise.resolve();
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams();
+            await main(params);
 
             testUtil.assertNockDone();
         });
