@@ -25,6 +25,7 @@ const url = require('url');
 const mockFs = require('mock-fs');
 const assert = require('assert');
 const lodash = require("lodash");
+const zlib = require("zlib");
 
 const SOURCE_CONTENT = "source content";
 const RENDITION_CONTENT = "rendition content";
@@ -54,6 +55,26 @@ function nockPutFile(httpUrl, content, status=200) {
         .put(uri.path, content)
         .reply(status);
 }
+
+function gunzip(body) {
+    body = Buffer.from(body, 'hex');
+    body = zlib.gunzipSync(body).toString();
+    console.log("New Relic received:", JSON.stringify(JSON.parse(body), null, 1));
+    return JSON.parse(body);
+}
+
+function nockNewRelicMetrics(expectedEventType, expectedMetrics) {
+    return nock("https://newrelic.com")
+        .matchHeader("x-insert-key", "new-relic-api-key")
+        .post("/events", body => {
+            const metrics = gunzip(body);
+            return metrics.eventType === expectedEventType
+            && typeof metrics.timestamp === 'number'
+            && (!expectedMetrics || lodash.matches(expectedMetrics)(metrics));
+        })
+        .reply(200, {});
+}
+
 
 function nockIOEvent(expectedPayload) {
     return nock("https://eg-ingress.adobe.io")
@@ -112,6 +133,10 @@ function simpleParams(options={}) {
     if (!options.noEventsNock) {
         nockIOEvent();
     }
+    if (!options.noMetricsNock) {
+        nockNewRelicMetrics("rendition");
+        nockNewRelicMetrics("activation");
+    }
 
     return {
         source: 'https://example.com/MySourceFile.jpg',
@@ -120,7 +145,9 @@ function simpleParams(options={}) {
             target: "https://example.com/MyRendition.png"
         }, options.rendition)],
         requestId: "test-request-id",
-        auth: PARAMS_AUTH
+        auth: PARAMS_AUTH,
+        newRelicEventsURL: "https://newrelic.com/events",
+        newRelicApiKey: "new-relic-api-key"
     }
 }
 
@@ -201,5 +228,6 @@ module.exports = {
     paramsWithMultipleRenditions,
     nockIOEvent,
     assertNockDone,
-    assertThrowsAndAwait
+    assertThrowsAndAwait,
+    nockNewRelicMetrics
 };
