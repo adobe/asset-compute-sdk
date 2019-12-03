@@ -125,7 +125,9 @@ function simpleParams(options={}) {
     if (!options.noSourceDownload) {
         nockGetFile('https://example.com/MySourceFile.jpg').reply(200, SOURCE_CONTENT);
     }
-    if (!options.noPut) {
+    if (options.failUpload) {
+        nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT, 500);
+    } else if (!options.noPut) {
         nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT);
     }
     if (!options.noEventsNock) {

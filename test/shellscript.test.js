@@ -97,7 +97,11 @@ describe("api.js (shell)", () => {
             createScript("worker.sh", `echo "${testUtil.RENDITION_CONTENT}" > $rendition`);
             const main = shellScriptWorker();
 
-            await main(testUtil.simpleParams());
+            const result = await main(testUtil.simpleParams());
+
+            // validate no errors
+            assert.ok(result.renditionErrors === undefined);
+
             testUtil.assertNockDone();
         });
 
@@ -105,7 +109,11 @@ describe("api.js (shell)", () => {
             createScript("my-worker.sh", `echo "${testUtil.RENDITION_CONTENT}" > $rendition`);
             const main = shellScriptWorker("my-worker.sh");
 
-            await main(testUtil.simpleParams());
+            const result = await main(testUtil.simpleParams());
+
+            // validate no errors
+            assert.ok(result.renditionErrors === undefined);
+
             testUtil.assertNockDone();
         });
 
@@ -113,7 +121,11 @@ describe("api.js (shell)", () => {
             createScript("worker.sh", `echo "${testUtil.RENDITION_CONTENT}" > $rendition`);
             const main = shellScriptWorker();
 
-            await main(testUtil.paramsWithMultipleRenditions());
+            const result = await main(testUtil.paramsWithMultipleRenditions());
+
+            // validate no errors
+            assert.ok(result.renditionErrors === undefined);
+
             testUtil.assertNockDone();
         });
 
@@ -128,7 +140,14 @@ describe("api.js (shell)", () => {
                     location: "test_action_shellScript"
                 });
                 testUtil.nockNewRelicMetrics("activation");
-                await main(params);
+
+                const result = await main(params);
+
+                // validate errors
+                assert.ok(result.renditionErrors);
+                assert.equal(result.renditionErrors.length, 1);
+                assert.equal(result.renditionErrors[0].name, "GenericError");
+                assert.equal(result.renditionErrors[0].location, "test_action_shellScript");
 
             } catch (err) {
                 console.log(err);
@@ -152,7 +171,11 @@ describe("api.js (shell)", () => {
 
             const main = shellScriptWorker();
 
-            await main(testUtil.simpleParams());
+            const result = await main(testUtil.simpleParams());
+
+            // validate no errors
+            assert.ok(result.renditionErrors === undefined);
+
             testUtil.assertNockDone();
         });
 
@@ -171,7 +194,15 @@ describe("api.js (shell)", () => {
                     location: "test_action_shellScript"
                 });
                 testUtil.nockNewRelicMetrics("activation");
-                await main(params);
+
+                const result = await main(params);
+
+                // validate errors
+                assert.ok(result.renditionErrors);
+                assert.equal(result.renditionErrors.length, 1);
+                assert.equal(result.renditionErrors[0].name, "GenericError");
+                assert.equal(result.renditionErrors[0].location, "test_action_shellScript");
+                assert.equal(result.renditionErrors[0].message, "failed");
 
             } catch (err) {
                 console.log(err);
@@ -409,7 +440,5 @@ describe("api.js (shell)", () => {
             assert.equal(env.rendition_foobar, "Unicorn");
             assert.equal(env.rendition_crop_x, "Unicorn");
         });
-
-        // TODO: get rid of NUI_UNIT_TEST_MODE, nock events
     });
 });
