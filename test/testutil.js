@@ -81,11 +81,11 @@ function nockIOEvent(expectedPayload) {
         // .log(console.log)
         .post("/api/events", body => {
             const payload = JSON.parse(Buffer.from(body.event, 'base64').toString());
-            // console.log(body);
-            // console.log(payload);
+            console.log(body);
+            console.log(payload);
 
             return body.user_guid === "org"
-                && body.provider_id === "asset_compute_org_test_client"
+                && body.provider_id === "asset_compute_org_client"
                 && body.event_code === "asset_compute"
                 // if no expected payload is set, match any payload
                 // otherwise check for partial match of expected payload
