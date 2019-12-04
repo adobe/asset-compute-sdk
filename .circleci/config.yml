@@ -285,10 +285,13 @@ jobs:
                     cd $workDir/${D}/action
                   fi
                   cat package.json
-                  npm test
+                  npm test || error=true
                   cd $workDir
                 fi
               done
+              if [ $error ]; then
+                exit -1
+              fi
       - *test_results_build
       - *test_results_ac_build
       - *test_logs_ac_bld
