@@ -52,11 +52,32 @@ describe("api.js", () => {
             await testUtil.assertThrowsAndAwait(() => worker({}), "no error thrown if incorrect callback given");
         });
 
-        it("should return a function that returns a promise", async () => {
+        it("should send failure event because of do-nothing-worker", async () => {
             const main = worker(function() {});
             assert.equal(typeof main, "function");
 
             const result = main(testUtil.simpleParams());
+            // check if it's a Promise, from https://stackoverflow.com/a/38339199/2709
+            assert.equal(Promise.resolve(result), result);
+
+            await result;
+        });
+
+        it("should send `timeout` and `error` metrics because of IO event failure", async () => {
+            const main = worker(function() {});
+            assert.equal(typeof main, "function");
+            process.env.__OW_DEADLINE = Date.now() + 300;
+
+            const result = main(testUtil.simpleParams({noEventsNock:true, noMetricsNock:true}));
+            testUtil.nockNewRelicMetrics('timeout');
+            testUtil.nockNewRelicMetrics('error', {
+                message: "Error sending IO event: request to https://eg-ingress.adobe.io/api/events failed, reason: Nock: Disallowed net connect for \"eg-ingress.adobe.io:443/api/events\"",
+                location:"IOEvents"
+            });
+            testUtil.nockNewRelicMetrics('error', {
+                message: "No rendition generated for 0",
+                location: "test_action_processRendition"
+            });
             // check if it's a Promise, from https://stackoverflow.com/a/38339199/2709
             assert.equal(Promise.resolve(result), result);
 
