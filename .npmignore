@@ -6,6 +6,8 @@ test/
 .circleci
 Jenkinsfile
 .eslintrc.js
+.eslintignore
+stryker.conf.js
 
 # npm pack leftovers
 *.tgz

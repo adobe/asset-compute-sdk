@@ -3,3 +3,6 @@
 .nyc_output
 coverage
 node_modules
+.vscode/*
+!.vscode/launch.json
+build/

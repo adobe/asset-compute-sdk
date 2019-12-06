@@ -17,24 +17,17 @@
 
 'use strict';
 
-const {
-    GenericError,
-    ClientError,
-    Reason,
-    RenditionFormatUnsupportedError,
-    SourceFormatUnsupportedError,
-    SourceUnsupportedError,
-    SourceCorruptError,
-    RenditionTooLarge
-} = require('@nui/asset-compute-commons');
+const { worker, batchWorker, shellScriptWorker } = require('./lib/api');
+const { process, forEachRendition } = require('./lib/compat');
 
+// -----------------------< exports >-----------------------------------
 module.exports = {
-    GenericError,
-    ClientError,
-    Reason,
-    RenditionFormatUnsupportedError,
-    SourceFormatUnsupportedError,
-    SourceUnsupportedError,
-    SourceCorruptError,
-    RenditionTooLarge
-};
+    worker,
+    batchWorker,
+    shellScriptWorker,
+
+    // exporting for backwards compatibility
+    process,
+    forEachRendition
+}
+
