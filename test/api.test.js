@@ -655,7 +655,31 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams();
+            const params = testUtil.simpleParams({noMetricsNock:true});
+            testUtil.nockNewRelicMetrics('rendition');
+            testUtil.nockNewRelicMetrics('activation', {
+                "memory_containerUsage_min": 6666,
+                "memory_containerUsage_max": 6666,
+                "memory_containerUsage_mean": 6666,
+                "memory_containerUsage_stdev": 0,
+                "memory_containerUsage_median": 6666,
+                "memory_containerUsage_q1": 6666,
+                "memory_containerUsage_q3": 6666,
+                "memory_containerUsagePercentage_min": 66.66666666666666,
+                "memory_containerUsagePercentage_max": 66.66666666666666,
+                "memory_containerUsagePercentage_mean": 66.66666666666666,
+                "memory_containerUsagePercentage_stdev": 0,
+                "memory_containerUsagePercentage_median": 66.66666666666666,
+                "memory_containerUsagePercentage_q1": 66.66666666666666,
+                "memory_containerUsagePercentage_q3": 66.66666666666666,
+                "cpu_usagePercentage_min": 0,
+                "cpu_usagePercentage_max": 0,
+                "cpu_usagePercentage_mean": 0,
+                "cpu_usagePercentage_stdev": null,
+                "cpu_usagePercentage_median": 0,
+                "cpu_usagePercentage_q1": 0,
+                "cpu_usagePercentage_q3": 0,
+            });
             await main(params);
 
             testUtil.assertNockDone();
