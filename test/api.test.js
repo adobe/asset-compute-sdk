@@ -28,15 +28,9 @@ const fs = require('fs-extra');
 const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@nui/asset-compute-commons');
 const mockFs = require('mock-fs');
 
-// TODO: test result
-//       - redact credentials
-//       - info present
-// TODO: test logging
-//       - redact credentials
-// TODO: test metrics sent
-
 describe("api.js", () => {
-    beforeEach(() => {
+    beforeEach(function() {
+        process.env.__OW_DEADLINE = Date.now() + this.timeout();
         testUtil.beforeEach();
     });
 
@@ -52,32 +46,13 @@ describe("api.js", () => {
             await testUtil.assertThrowsAndAwait(() => worker({}), "no error thrown if incorrect callback given");
         });
 
-        it("should send failure event because of do-nothing-worker", async () => {
+        it("should return a function that returns a promise", async () => {
             const main = worker(function() {});
             assert.equal(typeof main, "function");
+
+            testUtil.nockNewRelicMetrics().persist();
 
             const result = main(testUtil.simpleParams());
-            // check if it's a Promise, from https://stackoverflow.com/a/38339199/2709
-            assert.equal(Promise.resolve(result), result);
-
-            await result;
-        });
-
-        it("should send `timeout` and `error` metrics because of IO event failure", async () => {
-            const main = worker(function() {});
-            assert.equal(typeof main, "function");
-            process.env.__OW_DEADLINE = Date.now() + 300;
-
-            const result = main(testUtil.simpleParams({noEventsNock:true, noMetricsNock:true}));
-            testUtil.nockNewRelicMetrics('timeout');
-            testUtil.nockNewRelicMetrics('error', {
-                message: "Error sending IO event: request to https://eg-ingress.adobe.io/api/events failed, reason: Nock: Disallowed net connect for \"eg-ingress.adobe.io:443/api/events\"",
-                location:"IOEvents"
-            });
-            testUtil.nockNewRelicMetrics('error', {
-                message: "No rendition generated for 0",
-                location: "test_action_processRendition"
-            });
             // check if it's a Promise, from https://stackoverflow.com/a/38339199/2709
             assert.equal(Promise.resolve(result), result);
 
@@ -214,6 +189,12 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
+            testUtil.nockNewRelicMetrics("error", {
+                fmt: "png",
+                location: "test_action_upload",
+                requestId: "test-request-id"
+            });
+            testUtil.nockNewRelicMetrics("activation");
 
             const result = await main(params);
 
@@ -255,7 +236,7 @@ describe("api.js", () => {
             });
 
             testUtil.nockNewRelicMetrics('error', {
-                location:'test_action_processRendition'
+                location:'test_action_process_norendition'
             });
             testUtil.nockNewRelicMetrics('activation');
 
@@ -265,7 +246,7 @@ describe("api.js", () => {
             assert.ok(result.renditionErrors);
             assert.equal(result.renditionErrors.length, 1);
             assert.equal(result.renditionErrors[0].name, "GenericError");
-            assert.equal(result.renditionErrors[0].location, "test_action_processRendition");
+            assert.equal(result.renditionErrors[0].location, "test_action_process_norendition");
             // TODO: fix error handling, currently the message is "GenericError: No rendition generated for 0"
             // assert.ok(result.renditionErrors[0].message.includes("500")); // failUpload above returns 500 error
 
@@ -453,6 +434,38 @@ describe("api.js", () => {
             assert.ok(!fs.existsSync(renditionDir));
         });
 
+        it("should send `timeout` and `error` metrics because of IO event failure", async () => {
+            const main = worker(function(source, rendition) {
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                return Promise.resolve();
+            });
+            assert.equal(typeof main, "function");
+            process.env.__OW_DEADLINE = Date.now() + 300;
+
+            testUtil.nockIOEvent({
+                type: "rendition_created",
+                rendition: {
+                    fmt: "png"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            }, 500).persist(); // persist for retries
+
+            testUtil.nockNewRelicMetrics('timeout');
+            testUtil.nockNewRelicMetrics('error', {
+                message: "Error sending IO event: 500 Internal Server Error",
+                location:"IOEvents"
+            });
+            testUtil.nockNewRelicMetrics('rendition', {
+                requestId: "test-request-id",
+                fmt: "png",
+            });
+            testUtil.nockNewRelicMetrics('activation');
+
+            await main(testUtil.simpleParams({noEventsNock:true, noMetricsNock:true}));
+
+            testUtil.assertNockDone();
+        });
+
         it('should support the disableSourceDownload flag', async () => {
             function workerFn(source, rendition) {
                 assert.equal(typeof source, "object");
@@ -540,6 +553,8 @@ describe("api.js", () => {
         it("should return a function that returns a promise", async () => {
             const main = batchWorker(function() {});
             assert.equal(typeof main, "function");
+
+            testUtil.nockNewRelicMetrics().persist();
 
             const result = main(testUtil.simpleParams());
             // check if it's a Promise, from https://stackoverflow.com/a/38339199/2709
@@ -671,6 +686,7 @@ describe("api.js", () => {
                     "repo:size": testUtil.RENDITION_CONTENT.length
                 }
             });
+            testUtil.nockNewRelicMetrics("rendition");
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -680,6 +696,12 @@ describe("api.js", () => {
                     name: "MyRendition2.txt"
                 },
                 source: "https://example.com/MySourceFile.jpg"
+            });
+            testUtil.nockNewRelicMetrics("error", {
+                location: "test_action_batchProcess_norendition",
+                fmt: "txt",
+                name: "MyRendition2.txt",
+                requestId: "test-request-id"
             });
 
             testUtil.nockIOEvent({
@@ -693,15 +715,17 @@ describe("api.js", () => {
                     "repo:size": testUtil.RENDITION_CONTENT.length
                 }
             });
+            testUtil.nockNewRelicMetrics("rendition");
+            testUtil.nockNewRelicMetrics("activation");
 
             const main = batchWorker(batchWorkerFn);
-            const result = await main(testUtil.paramsWithMultipleRenditions({ noPut2: true, noEventsNock: true }));
+            const result = await main(testUtil.paramsWithMultipleRenditions({ noPut2: true, noEventsNock: true, noMetricsNock: true }));
 
             // validate errors
             assert.ok(result.renditionErrors);
             assert.equal(result.renditionErrors.length, 1);
             assert.equal(result.renditionErrors[0].name, "GenericError");
-            assert.equal(result.renditionErrors[0].location, "test_action_batchProcessRendition");
+            assert.equal(result.renditionErrors[0].location, "test_action_batchProcess_norendition");
             const msg = result.renditionErrors[0].message;
             assert.ok(msg.includes("MyRendition2.txt"));
 
@@ -730,6 +754,7 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
+            testUtil.nockNewRelicMetrics("rendition");
             testUtil.nockIOEvent({
                 type: "rendition_failed",
                 errorReason: "GenericError",
@@ -739,6 +764,14 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
+            testUtil.nockNewRelicMetrics("error", {
+                location: "test_action_upload",
+                fmt: "txt",
+                name: "MyRendition2.txt",
+                renditionName: "MyRendition2.txt",
+                renditionFormat: "txt",
+                requestId: "test-request-id"
+            });
             testUtil.nockIOEvent({
                 type: "rendition_created",
                 rendition: {
@@ -747,9 +780,11 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
+            testUtil.nockNewRelicMetrics("rendition");
+            testUtil.nockNewRelicMetrics("activation");
 
             const main = batchWorker(batchWorkerFn);
-            const result = await main(testUtil.paramsWithMultipleRenditions({ put2Status: 400, noEventsNock: true}));
+            const result = await main(testUtil.paramsWithMultipleRenditions({ put2Status: 400, noEventsNock: true, noMetricsNock: true}));
 
             // validate errors
             assert.ok(result.renditionErrors);
@@ -809,13 +844,19 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
+            testUtil.nockNewRelicMetrics("error", {
+                location: "test_action_batchProcess",
+                requestId: "test-request-id"
+            });
+            testUtil.nockNewRelicMetrics("activation");
 
             const main = batchWorker(batchWorkerFn);
             const result = await main(testUtil.paramsWithMultipleRenditions({
                 noPut1: true,
                 noPut2: true,
                 noPut3: true,
-                noEventsNock: true
+                noEventsNock: true,
+                noMetricsNock: true
             }));
 
             // validate errors
@@ -851,6 +892,11 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
+            testUtil.nockNewRelicMetrics("error", {
+                name: "MyRendition1.png",
+                location: "test_action_batchProcess_norendition",
+                requestId: "test-request-id"
+            });
             testUtil.nockIOEvent({
                 type: "rendition_failed",
                 errorReason: "GenericError",
@@ -859,6 +905,11 @@ describe("api.js", () => {
                     name: "MyRendition2.txt"
                 },
                 source: "https://example.com/MySourceFile.jpg"
+            });
+            testUtil.nockNewRelicMetrics("error", {
+                name: "MyRendition2.txt",
+                location: "test_action_batchProcess_norendition",
+                requestId: "test-request-id"
             });
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -869,6 +920,12 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
+            testUtil.nockNewRelicMetrics("error", {
+                name: "MyRendition3.xml",
+                location: "test_action_batchProcess_norendition",
+                requestId: "test-request-id"
+            });
+            testUtil.nockNewRelicMetrics("activation");
 
             const main = batchWorker(batchWorkerFn);
             const result = await main(testUtil.paramsWithMultipleRenditions({
@@ -876,7 +933,8 @@ describe("api.js", () => {
                 noPut1: true,
                 noPut2: true,
                 noPut3: true,
-                noEventsNock: true
+                noEventsNock: true,
+                noMetricsNock: true
             }));
 
             // validate errors
