@@ -417,7 +417,7 @@ describe("api.js (shell)", () => {
 
             const source = mockSource('\u001B[4msource.jpg\u001B[0m');
             const rendition = {
-                target: '\u001B[4mUnicorn\u001B[0m',
+                target: 'https://example.com/image.jpg',
                 wid: '\u001B[4mUnicorn\u001B[0m',
                 fmt: '\u001B[4mUnicorn\u001B[0m',
                 foobar: '\u001B[4mUnicorn\u001B[0m',
@@ -434,7 +434,7 @@ describe("api.js (shell)", () => {
             assert.equal(env.file, env.source);
             assert.equal(env.errorfile, `${process.cwd()}/out/errors/error.json`);
             assert.equal(env.rendition, `${process.cwd()}/out/rendition0.png`);
-            assert.equal(env.rendition_target, "Unicorn");
+            assert.equal(env.rendition_target, "https://example.com/image.jpg");
             assert.equal(env.rendition_wid, "Unicorn");
             assert.equal(env.rendition_fmt, "Unicorn");
             assert.equal(env.rendition_foobar, "Unicorn");
