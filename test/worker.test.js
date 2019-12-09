@@ -38,8 +38,7 @@ describe("it tries something", () => {
             source: "https://adobe.com",
             renditions: [
                 {
-                    url: "one-url",
-                    target: "one-target"
+                    target: "https://example.com/target.jpg"
                 }
             ]
         }
