@@ -94,7 +94,7 @@ describe("api.js (shell)", () => {
     describe("shellScriptWorker()", () => {
 
         it("should run a shell script and handle resulting rendition", async () => {
-            createScript("worker.sh", `echo "${testUtil.RENDITION_CONTENT}" > $rendition`);
+            createScript("worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition`);
             const main = shellScriptWorker();
 
             const result = await main(testUtil.simpleParams());
@@ -106,7 +106,7 @@ describe("api.js (shell)", () => {
         });
 
         it("should run a shell script with custom name", async () => {
-            createScript("my-worker.sh", `echo "${testUtil.RENDITION_CONTENT}" > $rendition`);
+            createScript("my-worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition`);
             const main = shellScriptWorker("my-worker.sh");
 
             const result = await main(testUtil.simpleParams());
@@ -118,7 +118,7 @@ describe("api.js (shell)", () => {
         });
 
         it("should run a shell script with multiple renditions", async () => {
-            createScript("worker.sh", `echo "${testUtil.RENDITION_CONTENT}" > $rendition`);
+            createScript("worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition`);
             const main = shellScriptWorker();
 
             const result = await main(testUtil.paramsWithMultipleRenditions());
@@ -166,7 +166,7 @@ describe("api.js (shell)", () => {
         });
 
         it("should automatically set execution permissions on shell script", async () => {
-            createScript("worker.sh", `echo "${testUtil.RENDITION_CONTENT}" > $rendition`);
+            createScript("worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition`);
             fs.chmodSync("worker.sh", "000");
 
             const main = shellScriptWorker();

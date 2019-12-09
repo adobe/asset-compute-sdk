@@ -46,7 +46,9 @@ describe('compat.js', () => {
         });
 
         it("should return a function that returns a promise", async () => {
-            const result = forEachRendition(testUtil.simpleParams(), function() {});
+            const result = forEachRendition(testUtil.simpleParams(), function(infile, rendition, outdir) {
+                fs.writeFileSync(`${outdir}/${rendition.name}`, testUtil.RENDITION_CONTENT);
+            });
             // check if it's a Promise, from https://stackoverflow.com/a/38339199/2709
             assert.equal(Promise.resolve(result), result);
 
@@ -110,7 +112,9 @@ describe('compat.js', () => {
         });
 
         it("should return a function that returns a promise", async () => {
-            const result = process(testUtil.simpleParams(), function() {});
+            const result = process(testUtil.simpleParams(), function(infile, renditions, outdir) {
+                fs.writeFileSync(`${outdir}/${renditions[0].name}`, testUtil.RENDITION_CONTENT);
+            });
             // check if it's a Promise, from https://stackoverflow.com/a/38339199/2709
             assert.equal(Promise.resolve(result), result);
 
