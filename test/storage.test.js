@@ -27,10 +27,6 @@ const assert = require('assert');
 const fs = require('fs-extra');
 const { GenericError } = require('@nui/asset-compute-commons');
 
-const rewire = require('rewire');
-const rewiredStorage = rewire('../lib/storage');
-
-
 describe('storage.js', () => {
 	describe('getSource', () => {
 
@@ -85,24 +81,6 @@ describe('storage.js', () => {
 				console.log(e)
 				assert.ok(e instanceof GenericError);
 				assert.equal(e.message, "GET 'https://example.com/photo/elephant.png' failed with status 404");
-				threw = true;
-			}
-			assert.ok(threw);
-		})
-
-		it('should fail because invalid url', async () => {
-			const paramsSource = {
-				url: 'http://example.com/photo/elephant.png'
-			};
-			const inDirectory = './in/fakeSource/filePath';
-
-			mockFs({ './in/fakeSource/filePath': {} });
-
-			let threw = false;
-			try {
-				await getSource(paramsSource, inDirectory)
-			} catch (e) {
-				assert.equal(e.message, 'Invalid or missing https url http://example.com/photo/elephant.png');
 				threw = true;
 			}
 			assert.ok(threw);
@@ -207,96 +185,6 @@ describe('storage.js', () => {
 
 		})
 
-		it('should fail on upload because of an invalid url', async () => {
-			mockFs({ "./storeFiles/jpg": {
-                "fakeEarth.jpg": "hello world!"
-            } });
-            const file = "./storeFiles/jpg/fakeEarth.jpg";
-
-            const rendition = {
-                path: file,
-                target: "http://example.com/fakeEarth.jpg"
-            };
-
-            let threw = false;
-			try {
-				await putRendition(rendition);
-			} catch (e) {
-				assert.equal(e.message, 'Invalid or missing https url http://example.com/fakeEarth.jpg');
-				assert.ok(e instanceof GenericError);
-				threw = true;
-			}
-			assert.ok(threw);
-		})
-
-		it('should fail on upload because of one invalid url for multipart upload', async () => {
-			mockFs({ "./storeFiles/jpg": {
-                "fakeEarth.jpg": "hello world!"
-            } });
-            const file = "./storeFiles/jpg/fakeEarth.jpg";
-
-            const rendition = {
-                path: file,
-                target: {
-					urls: ["https://example.com/fakeEarth.jpg", "https://example2.com/fakeEarth.jpg", "http://example.com/fakeEarth.jpg"]
-				}
-            };
-
-            let threw = false;
-			try {
-				await putRendition(rendition);
-			} catch (e) {
-				assert.equal(e.message, 'Invalid or missing https url ');
-				assert.ok(e instanceof GenericError);
-				threw = true;
-			}
-			assert.ok(threw);
-		})
-
-		it('should fail on upload because of a missing url', async () => {
-			mockFs({ "./storeFiles/jpg": {
-                "fakeEarth.jpg": "hello world!"
-            } });
-            const file = "./storeFiles/jpg/fakeEarth.jpg";
-
-            const rendition = {
-                path: file,
-                target: undefined
-            };
-
-            let threw = false;
-			try {
-				await putRendition(rendition);
-			} catch (e) {
-				assert.equal(e.message, 'Invalid or missing https url ');
-				assert.ok(e instanceof GenericError);
-				threw = true;
-			}
-			assert.ok(threw);
-		})
-
-		it('should fail on upload because of an invalid url for upload', async () => {
-			mockFs({ "./storeFiles/jpg": {
-                "fakeEarth.jpg": "hello world!"
-            } });
-            const file = "./storeFiles/jpg/fakeEarth.jpg";
-
-            const rendition = {
-                path: file,
-                target: '../../hello.com'
-            };
-
-            let threw = false;
-			try {
-				await putRendition(rendition);
-			} catch (e) {
-				assert.equal(e.message, 'Invalid or missing https url ../../hello.com');
-				assert.ok(e instanceof GenericError);
-				threw = true;
-			}
-			assert.ok(threw);
-		})
-
 		it('should upload simple rendition (not in test mode)', async () => {
 			delete process.env.WORKER_TEST_MODE;
 
@@ -318,128 +206,5 @@ describe('storage.js', () => {
             await putRendition(rendition);
             assert.ok(nock.isDone());
 		})
-
-		it('should fail upload simple rendition because of wrong url (not in test mode)', async () => {
-			delete process.env.WORKER_TEST_MODE;
-
-			const file = "./storeFiles/jpg/fakeEarth.jpg";
-            const rendition = {
-                path: file,
-                target: "http://example.com/fakeEarth.jpg"
-            };
-
-			try{
-				await putRendition(rendition);
-			}catch(err){
-				assert.ok(err instanceof GenericError);
-				assert.ok(err.message.includes("Invalid or missing https url"));
-			}
-		})
-	});
-
-	describe('storage.js - Url validation', () => {
-		it("detects wrong string urls", () => {
-			const checkSimpleUrl = rewiredStorage.__get__('checkUrl');
-	
-			let entryParam = "https://www.adobe.com";
-			let result = checkSimpleUrl(entryParam);
-			assert.ok(result);
-	
-			entryParam = "http://www.adobe.com";
-			result = checkSimpleUrl(entryParam);
-			assert.equal(result, false);
-	
-			entryParam = "htp://www.adobe.com";
-			result = checkSimpleUrl(entryParam);
-			assert.equal(result, false);
-	
-			entryParam = "htpp://www.adobe.com";
-			result = checkSimpleUrl(entryParam);
-			assert.equal(result, false);
-	
-			entryParam = "http:/www.adobe.com";
-			result = checkSimpleUrl(entryParam);
-			assert.equal(result, false);
-	
-			entryParam = "http//www.adobe.com";
-			result = checkSimpleUrl(entryParam);
-			assert.equal(result, false);
-	
-			entryParam = "";
-			result = checkSimpleUrl(entryParam);
-			assert.equal(result, false);
-	
-			entryParam = "     ";
-			result = checkSimpleUrl(entryParam);
-			assert.equal(result, false);
-	
-			entryParam = "\n";
-			result = checkSimpleUrl(entryParam);
-			assert.equal(result, false);
-	
-			entryParam = 42;
-			result = checkSimpleUrl(entryParam);
-			assert.equal(result, false);
-	
-			entryParam = {};
-			result = checkSimpleUrl(entryParam);
-			assert.equal(result, false);
-		});
-	
-		it("detects wrong string urls in an array", () => {
-			const checkArrayUrl = rewiredStorage.__get__('checkRenditionUrl');
-	
-			let urls = ["https://example.com/fakeEarth.jpg", "https://example2.com/fakeEarth.jpg", "https://example.com/fakeEarth.jpg"];
-			let result = checkArrayUrl(urls);
-			assert.ok(result);
-	
-			urls = ["http://example.com/fakeEarth.jpg", "https://example2.com/fakeEarth.jpg", "https://example.com/fakeEarth.jpg"];
-			result = checkArrayUrl(urls);
-			assert.equal(result, false);
-	
-			urls = ["https://example.com/fakeEarth.jpg", "http://example2.com/fakeEarth.jpg", "https://example.com/fakeEarth.jpg"];
-			result = checkArrayUrl(urls);
-			assert.equal(result, false);
-	
-			urls = ["https://example.com/fakeEarth.jpg", "https://example2.com/fakeEarth.jpg", "http://example.com/fakeEarth.jpg"];
-			result = checkArrayUrl(urls);
-			assert.equal(result, false);
-	
-			urls = ["http://example.com/fakeEarth.jpg"];
-			result = checkArrayUrl(urls);
-			assert.equal(result, false);
-	
-			urls = ["https://example.com/fakeEarth.jpg", "ftp://example2.com/fakeEarth.jpg", "https://example.com/fakeEarth.jpg"];
-			result = checkArrayUrl(urls);
-			assert.equal(result, false);
-	
-			urls = ["https://example.com/fakeEarth.jpg", "htpp://example2.com/fakeEarth.jpg", "https://example.com/fakeEarth.jpg"];
-			result = checkArrayUrl(urls);
-			assert.equal(result, false);
-	
-			urls = ["https://example.com/fakeEarth.jpg", "htp://example2.com/fakeEarth.jpg", "https://example.com/fakeEarth.jpg"];
-			result = checkArrayUrl(urls);
-			assert.equal(result, false);
-	
-			urls = ["https://example.com/fakeEarth.jpg", 42, "https://example.com/fakeEarth.jpg"];
-			result = checkArrayUrl(urls);
-			assert.equal(result, false);
-	
-			urls = ["https://example.com/fakeEarth.jpg", "", "https://example.com/fakeEarth.jpg"];
-			result = checkArrayUrl(urls);
-			assert.equal(result, false);
-	
-			urls = ["https://example.com/fakeEarth.jpg", "     ", "https://example.com/fakeEarth.jpg"];
-			result = checkArrayUrl(urls);
-			assert.equal(result, false);
-	
-			urls = ["https://example.com/fakeEarth.jpg", null, "https://example.com/fakeEarth.jpg"];
-			result = checkArrayUrl(urls);
-			assert.equal(result, false);
-	
-			urls = [];
-			result = checkArrayUrl(urls);
-			assert.equal(result, false);
-		});
 	});
 });

@@ -32,6 +32,22 @@ const RENDITION_CONTENT = "rendition content";
 
 function beforeEach() {
     nock.disableNetConnect();
+
+    // log custom body depending on io events or new relic for helping with match issues
+    nock.emitter.on('no match', (req, options, body) => {
+        const method = options ? options.method : req.method;
+        const url = options ? (options.url || options.href) : req.href;
+        if (url && body) {
+            if (url.startsWith("https://eg-ingress.adobe.io/api/events")) {
+                body = JSON.parse(body);
+                body.event = parseIoEventPayload(body.event);
+            } else if (url.startsWith("https://newrelic.com/events")) {
+                body = gunzip(body);
+            }
+        }
+        console.error("[nock] Error, no nock match found for:", method, url || options.host, body);
+    });
+
     process.env.__OW_ACTION_NAME = "/namespace/package/test_action";
     process.env.NUI_DISABLE_RETRIES = "disable";
     mockFs();
@@ -59,39 +75,41 @@ function nockPutFile(httpUrl, content, status=200) {
 function gunzip(body) {
     body = Buffer.from(body, 'hex');
     body = zlib.gunzipSync(body).toString();
-    console.log("New Relic received:", JSON.stringify(JSON.parse(body), null, 1));
     return JSON.parse(body);
 }
 
 function nockNewRelicMetrics(expectedEventType, expectedMetrics) {
     return nock("https://newrelic.com")
         .matchHeader("x-insert-key", "new-relic-api-key")
-        .post("/events", body => {
-            const metrics = gunzip(body);
-            return metrics.eventType === expectedEventType
-            && typeof metrics.timestamp === 'number'
-            && (!expectedMetrics || lodash.matches(expectedMetrics)(metrics));
+        .filteringRequestBody(gunzip)
+        .post("/events", metrics => {
+            if (expectedEventType === undefined) {
+                return true
+            }
+            return (metrics.eventType === expectedEventType
+                && typeof metrics.timestamp === 'number'
+                && (!expectedMetrics || lodash.matches(expectedMetrics)(metrics)));
         })
-        .reply(200, {});
+        .reply(200, { uuid: "nock", success: true, type: expectedEventType, matchedMetrics: expectedMetrics });
 }
 
+function parseIoEventPayload(event) {
+    return JSON.parse(Buffer.from(event, 'base64').toString());
+}
 
-function nockIOEvent(expectedPayload) {
+function nockIOEvent(expectedPayload, status=200) {
     return nock("https://eg-ingress.adobe.io")
-        // .log(console.log)
         .post("/api/events", body => {
-            const payload = JSON.parse(Buffer.from(body.event, 'base64').toString());
-            console.log(body);
-            console.log(payload);
+            const payload = parseIoEventPayload(body.event);
 
-            return body.user_guid === "org"
+            return (body.user_guid === "org"
                 && body.provider_id === "asset_compute_org_client"
                 && body.event_code === "asset_compute"
                 // if no expected payload is set, match any payload
                 // otherwise check for partial match of expected payload
-                && (!expectedPayload || lodash.matches(expectedPayload)(payload));
+                && (!expectedPayload || lodash.matches(expectedPayload)(payload)));
         })
-        .reply(200);
+        .reply(status);
 }
 
 const PARAMS_AUTH = {
@@ -121,20 +139,42 @@ const PARAMS_AUTH = {
 function simpleParams(options={}) {
     if (options.failDownload) {
         nockGetFile('https://example.com/MySourceFile.jpg').reply(500);
+
+        if (!options.noMetricsNock) {
+            nockNewRelicMetrics("error", {
+                location: "test_action_download"
+            });
+            nockNewRelicMetrics("error", {
+                location: "test_action_download"
+            });
+        }
     }
     if (!options.noSourceDownload) {
         nockGetFile('https://example.com/MySourceFile.jpg').reply(200, SOURCE_CONTENT);
     }
     if (options.failUpload) {
         nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT, 500);
+
+        if (!options.noMetricsNock) {
+            nockNewRelicMetrics("error", {
+                location: "test_action_upload"
+            });
+        }
     } else if (!options.noPut) {
         nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT);
     }
+
     if (!options.noEventsNock) {
         nockIOEvent();
     }
+
     if (!options.noMetricsNock) {
-        nockNewRelicMetrics("rendition");
+        nockNewRelicMetrics("rendition", {
+            fmt: "png",
+            renditionFormat: "png",
+            size: RENDITION_CONTENT.length,
+            requestId: "test-request-id"
+        });
         nockNewRelicMetrics("activation");
     }
 
@@ -180,8 +220,50 @@ function paramsWithMultipleRenditions(options={}) {
         }
     }
 
+    if (!options.noMetricsNock) {
+        nockNewRelicMetrics("rendition", {
+            name: "MyRendition1.png",
+            fmt: "png",
+            renditionName: "MyRendition1.png",
+            renditionFormat: "png",
+            size: RENDITION_CONTENT.length,
+            sourceName: "MySourceFile.jpg",
+            sourceMimetype: "image/jpeg",
+            sourceSize: 200,
+            requestId: "test-request-id"
+        });
+        nockNewRelicMetrics("rendition", {
+            name: "MyRendition2.txt",
+            fmt: "txt",
+            renditionName: "MyRendition2.txt",
+            renditionFormat: "txt",
+            size: RENDITION_CONTENT.length,
+            sourceName: "MySourceFile.jpg",
+            sourceMimetype: "image/jpeg",
+            sourceSize: 200,
+            requestId: "test-request-id"
+        });
+        nockNewRelicMetrics("rendition", {
+            name: "MyRendition3.xml",
+            fmt: "xml",
+            renditionName: "MyRendition3.xml",
+            renditionFormat: "xml",
+            size: RENDITION_CONTENT.length,
+            sourceName: "MySourceFile.jpg",
+            sourceMimetype: "image/jpeg",
+            sourceSize: 200,
+            requestId: "test-request-id"
+        });
+        nockNewRelicMetrics("activation");
+    }
+
     return {
-        source: 'https://example.com/MySourceFile.jpg',
+        source: {
+            url: 'https://example.com/MySourceFile.jpg',
+            name: "MySourceFile.jpg",
+            mimetype: "image/jpeg",
+            size: 200
+        },
         renditions: [{
             fmt: "png",
             name: "MyRendition1.png",
@@ -196,7 +278,9 @@ function paramsWithMultipleRenditions(options={}) {
             target: "https://example.com/MyRendition3.xml"
             }],
         requestId: "test-request-id",
-        auth: PARAMS_AUTH
+        auth: PARAMS_AUTH,
+        newRelicEventsURL: "https://newrelic.com/events",
+        newRelicApiKey: "new-relic-api-key"
     };
 }
 

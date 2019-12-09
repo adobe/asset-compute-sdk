@@ -22,36 +22,31 @@
 
 const AssetComputeWorker = require('../lib/worker');
 
-const fse = require('fs-extra');
 const process = require('process');
 const assert = require('assert');
-//const {cleanupDirectories} = require('./prepare');
+const sinon = require('sinon');
 
-describe("it tries something", () => {
-    it("just fails", async () => {
-        const sinon = require('sinon');
-    
-        const stub =sinon.stub(fse, 'remove').rejects("reject cleanup");
-        const processSpy =  sinon.stub(process, 'exit').returns(1);
+describe("worker.js", () => {
+    it("should exit process on cleanup failure", async () => {
+
+        const processSpy =  sinon.stub(process, 'exit').withArgs(231).returns(1);
 
         const params = {
             source: "https://adobe.com",
             renditions: [
                 {
-                    url: "one-url",
-                    target: "one-target"
+                    target: "https://example.com/target.jpg"
                 }
             ]
         }
 
         const testWorker = new AssetComputeWorker(params);
         testWorker.directories = {
+            // this forces a cleanup failure as it cannot be deleted
             base: '/dev/null'
         };
         await testWorker.cleanup();
 
-        assert.equal(processSpy.calledOnce, true);
-
-        stub.restore();
+        assert.equal(processSpy.calledOnce, true, "did not call process.exit(231) on cleanup failure");
     });
 });
