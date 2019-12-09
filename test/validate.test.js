@@ -53,6 +53,10 @@ describe('validate.js', () => {
         process.env.__OW_ACTION_NAME = 'test_action_validation';
     });
 
+    afterEach(() => {
+        delete process.env.WORKER_TEST_MODE;
+    });
+
     it('validates a rendition', () => {
         const rendition = {
             target: "https://example.com/image.jpg"
@@ -204,7 +208,6 @@ describe('validate.js', () => {
         validateParameters(params);
 
         assert.equal(params.renditions.length, 1);
-
         assert.deepEqual(params.renditions[0].target, {
             minPartSize: 10485760,
             maxPartSize: 104857600,
@@ -428,4 +431,25 @@ describe('validate.js', () => {
             "GenericError"
         );
     });
+
+    it('allows file paths if WORKER_TEST_MODE env var is set', () => {
+        process.env.WORKER_TEST_MODE = true;
+        const params = {
+            source: "source.jpg",
+            renditions: [
+                {
+                    fmt: "png"
+                },
+                {
+                    fmt: "xml"
+                }
+            ]
+        };
+
+        validateParameters(params);
+        assert.equal(typeof params.source, "object");
+        assert.equal(params.source.url, "source.jpg");
+        assert.equal(params.renditions.length, 2);
+    });
+
 });
