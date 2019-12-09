@@ -65,8 +65,40 @@ describe('http.js', () => {
             assert.ok(nock.isDone());
         });
 
+        it("should download data uri", async() => {
+            const source = {
+                url: "data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D",
+                name: "inlineData.txt"
+            };
 
-        it("should fail downloading a jpg file mocking @nui/node-httptransfer", async () => { 
+            mockFs({ './storeFiles/txt': {} });
+
+            const file = "./storeFiles/txt/inlineData.txt";
+
+            await download(source, file);
+            assert.ok(fs.existsSync(file));
+            assert.ok(nock.isDone());
+        });
+
+        it("should fail download data uri on fs error", async() => {
+            const source = {
+                url: "data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D",
+                name: "inlineData.txt"
+            };
+
+            const file = "./storeFiles/txt/inlineData.txt";
+
+            try {
+                await download(source, file);
+            } catch (e) {
+                assert.equal(e.name, 'GenericError');
+                assert.equal(e.location, 'test_action_download');
+            }
+            assert.ok(!fs.existsSync(file));
+            assert.ok(nock.isDone());
+        });
+
+        it("should fail downloading a jpg file mocking @nui/node-httptransfer", async () => {
             const source = {
                 url: "https://example.com/fakeEarth.jpg"
             };
