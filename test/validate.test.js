@@ -208,7 +208,7 @@ describe('validate.js', () => {
         validateParameters(params);
 
         assert.equal(params.renditions.length, 1);
-        assert.deepEqual(params.renditions[0].target, {
+        assert.deepStrictEqual(params.renditions[0].target, {
             minPartSize: 10485760,
             maxPartSize: 104857600,
             urls: [
