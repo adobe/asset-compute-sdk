@@ -23,12 +23,12 @@ const storageFactory = require('../../lib/storage/storage-factory');
 const assert = require('assert');
 
 describe('storage-factory.js', () => {
-    it("should retrieve data download", () => {
+    it("should retrieve data download function", () => {
         const download = storageFactory.getDownload({ url: 'data:HelloWorld' });
         assert.equal(typeof download, "function");
     });
 
-    it("should retrieve http download", () => {
+    it("should retrieve http download function", () => {
         const download = storageFactory.getDownload({ url: 'http://unittestingthismethod.com' });
         assert.equal(typeof download, "function");
     });

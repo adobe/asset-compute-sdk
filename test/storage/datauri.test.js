@@ -35,7 +35,6 @@ describe('datauri.js', () => {
         nock.cleanAll();
         mockFs.restore();
         delete process.env.__OW_ACTION_NAME;
-        delete process.env.NUI_DISABLE_RETRIES;
     })
 
     it("should download data uri", async() => {
