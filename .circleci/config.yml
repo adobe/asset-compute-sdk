@@ -58,9 +58,9 @@ commands:
     run:
       name: Artifactory credentials setup
       command: |
-        curl --fail -s -u${ARTIFACTORY_USER}:${ARTIFACTORY_TOKEN} https://artifactory.corp.adobe.com/artifactory/api/npm/npm-nui-release-local/auth/nui >> ~/.npmrc
+        curl --fail -v -u${ARTIFACTORY_USER}:${ARTIFACTORY_TOKEN} https://artifactory.corp.adobe.com/artifactory/api/npm/npm-nui-release-local/auth/nui >> ~/.npmrc
         # this was added only for core repo
-        curl --fail -s -u${ARTIFACTORY_USER}:${ARTIFACTORY_TOKEN} https://artifactory.corp.adobe.com/artifactory/api/npm/npm-aem-desktop-release-local/auth/aem-desktop >> ~/.npmrc
+        curl --fail -v -u${ARTIFACTORY_USER}:${ARTIFACTORY_TOKEN} https://artifactory.corp.adobe.com/artifactory/api/npm/npm-aem-desktop-release-local/auth/aem-desktop >> ~/.npmrc
   
 jobs:
   build_runtime:
