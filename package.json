@@ -22,7 +22,6 @@
     "fs-extra": "^8.1.0",
     "image-size": "^0.8.3",
     "mime-types": "^2.1.25",
-    "shell-escape": "^0.2.0",
     "strip-ansi": "^6.0.0",
     "valid-url": "^1.0.9"
   },
