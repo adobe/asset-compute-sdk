@@ -115,20 +115,6 @@ describe('validate.js', () => {
         });
     });
 
-    it('throws when params.source is undefined or null', () => {
-        assertValidateThrows({},
-            "GenericError",
-            "No 'source' in params. Required for asset workers."
-        );
-
-        assertValidateThrows({
-                source: null
-            },
-            "GenericError",
-            "No 'source' in params. Required for asset workers."
-        );
-    });
-
     it('normalizes the source url param', () => {
         const paramsToValidate = {
             source: "https://example.com/image.jpg",

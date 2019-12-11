@@ -21,11 +21,12 @@
 'use strict';
 
 const { forEachRendition, process } = require('../lib/compat');
-
+const proc = require('process');
 const testUtil = require('./testutil');
 const fs = require('fs-extra');
 const nock = require('nock');
 const assert = require('assert');
+const mockFs = require('mock-fs');
 
 describe('compat.js', () => {
 
@@ -81,7 +82,8 @@ describe('compat.js', () => {
 
         it('should support the disableSourceDownloadSource flag', async () => {
             function workerFn(infile, rendition, outdir) {
-                assert.equal(typeof infile, "string");
+                assert.strictEqual(typeof infile, "string");
+                assert.strictEqual(infile, 'https://example.com/MySourceFile.jpg');
                 // must not download
                 assert.ok(!fs.existsSync(infile));
 
@@ -99,6 +101,39 @@ describe('compat.js', () => {
             await forEachRendition(testUtil.simpleParams({noSourceDownload: true}), { disableSourceDownloadSource: true }, workerFn);
 
             assert(nock.isDone());
+        });
+
+        it('should support the disableSourceDownloadSource flag in WORKER_TEST_MODE', async () => {
+            proc.env.WORKER_TEST_MODE = true;
+
+			mockFs({ '/in/file.jpg': 'yo' });
+            function workerFn(infile, rendition, outdir) {
+                assert.strictEqual(typeof infile, "string");
+                assert.strictEqual(infile, '/in/file.jpg');
+                // must not download
+                assert.ok(fs.existsSync(infile));
+
+                assert.equal(typeof rendition, "object");
+                assert.equal(typeof rendition.name, "string");
+                assert.ok(!fs.existsSync(rendition.name));
+
+                assert.equal(typeof outdir, "string");
+                assert.ok(!fs.existsSync(outdir));
+
+                mockFs({ '/out/rendition0.png': testUtil.RENDITION_CONTENT});
+            }
+
+            await forEachRendition({
+                source: 'file.jpg',
+                renditions: [Object.assign({
+                    fmt: "png",
+                    target: "https://example.com/MyRendition.png"
+                })],
+                requestId: "test-request-id",
+            }, { disableSourceDownloadSource: true }, workerFn);
+
+            assert(nock.isDone());
+            delete proc.env.WORKER_TEST_MODE;
         });
 
     });

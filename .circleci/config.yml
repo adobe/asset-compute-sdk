@@ -273,6 +273,10 @@ jobs:
               npm test
               workDir="/home/circleci/appLatest"
               cd $workDir
+              testResultDir="/home/circleci/testResults"
+              mkdir -p "$testResultDir"
+              artifactDir="/home/circleci/testArtifacts"
+              mkdir -p "$artifactDir"
               ls
               for D in *; do
                 if [ -d "${D}" ]; then
@@ -286,12 +290,20 @@ jobs:
                   fi
                   cat package.json
                   npm test || error=true
+                  mkdir "$testResultDir/$D"
+                  cp build/test-results.xml "$testResultDir/$D"
+                  mkdir "$artifactDir/$D"
+                  cp -R build/* "$artifactDir/$D"
                   cd $workDir
                 fi
               done
               if [ $error ]; then
                 exit -1
               fi
+      - store_test_results:
+          path: /home/circleci/testResults
+      - store_artifacts:
+          path: /home/circleci/testArtifacts
       - *test_results_build
       - *test_results_ac_build
       - *test_logs_ac_bld

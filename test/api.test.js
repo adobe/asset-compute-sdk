@@ -470,6 +470,7 @@ describe("api.js", () => {
             function workerFn(source, rendition) {
                 assert.equal(typeof source, "object");
                 assert.equal(typeof source.path, "string");
+                assert.equal(typeof source.url, "string");
                 // must not download
                 assert.ok(!fs.existsSync(source.path));
 
