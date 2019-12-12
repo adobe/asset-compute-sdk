@@ -58,7 +58,25 @@ describe('storage.js', () => {
 			assert.equal(source.name, 'source.png');
 			assert.equal(source.path, 'in/fakeSource/filePath/source.png');
 			assert.ok(nock.isDone());
-		})
+        })
+
+        it('should download data uri and return new source object', async () => {
+            const paramsSource = {
+                url: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D'
+            };
+            const inDirectory = './in/fakeSource/filePath';
+
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(inDirectory));
+
+            const source = await getSource(paramsSource, inDirectory)
+
+            assert.equal(source.name, 'source');
+            assert.equal(source.path, 'in/fakeSource/filePath/source');
+            assert.ok(fs.existsSync(source.path));
+            assert.equal(fs.readFileSync(source.path).toString(), 'Hello, World!');
+            assert.ok(nock.isDone());
+        })
 
 		it('should fail during download', async () => {
 			process.env.NUI_DISABLE_RETRIES = true // disable retries to test upload failure
