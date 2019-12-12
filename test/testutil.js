@@ -137,8 +137,13 @@ const PARAMS_AUTH = {
 };
 
 function simpleParams(options={}) {
+    let SOURCE = 'https://example.com/MySourceFile.jpg';
+    if (options.sourceIsDataUri) {
+        SOURCE = "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=";
+    }
+
     if (options.failDownload) {
-        nockGetFile('https://example.com/MySourceFile.jpg').reply(500);
+        nockGetFile(SOURCE).reply(500);
 
         if (!options.noMetricsNock) {
             nockNewRelicMetrics("error", {
@@ -150,7 +155,7 @@ function simpleParams(options={}) {
         }
     }
     if (!options.noSourceDownload) {
-        nockGetFile('https://example.com/MySourceFile.jpg').reply(200, SOURCE_CONTENT);
+        nockGetFile(SOURCE).reply(200, SOURCE_CONTENT);
     }
     if (options.failUpload) {
         nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT, 500);
@@ -179,7 +184,7 @@ function simpleParams(options={}) {
     }
 
     return {
-        source: 'https://example.com/MySourceFile.jpg',
+        source: SOURCE,
         renditions: [Object.assign({
             fmt: "png",
             target: "https://example.com/MyRendition.png"

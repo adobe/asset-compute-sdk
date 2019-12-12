@@ -133,6 +133,38 @@ describe('validate.js', () => {
         assert.equal(paramsToValidate.source.url, "https://example.com/image.jpg");
     });
 
+    it('validates parameters - source is a data uri', () => {
+        const paramsToValidate = {
+            source: "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=",
+            renditions: [
+                {
+                    target: "https://example.com/target.jpg"
+                },
+                {
+                    target: "https://example.com/target2.jpg"
+                }
+            ]
+        };
+
+        validateParameters(paramsToValidate);
+        assert.equal(typeof paramsToValidate.source, "object");
+        assert.equal(paramsToValidate.source.url, "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=");
+    });
+
+    it('throws if source is an invalid data uri', () => {
+        const paramsToValidate = {
+            source: "data:",
+            renditions: [
+                {
+                    target: "https://example.com/target.jpg"
+                },
+                {
+                    target: "https://example.com/target2.jpg"
+                }
+            ]
+        };
+        assertValidateThrows(paramsToValidate, "SourceCorruptError", "Invalid or missing data url data:");
+    });
     it('verifies renditions is an array (1 element)', () => {
         const paramsToValidate = {
             source: "https://example.com/image.jpg",
