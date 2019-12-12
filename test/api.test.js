@@ -125,6 +125,34 @@ describe("api.js", () => {
             testUtil.assertNockDone();
         });
 
+        it('should send rendition_created event with source as a content fragment (data uri)', async () => {
+            function workerFn(source, rendition) {
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                return Promise.resolve();
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams({noEventsNock: true, sourceIsDataUri: true, noSourceDownload:true});
+
+            testUtil.nockIOEvent({
+                type: "rendition_created",
+                rendition: {
+                    fmt: "png"
+                },
+                source: "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=",
+                metadata: {
+                    "repo:size": testUtil.RENDITION_CONTENT.length
+                }
+            });
+
+            const result = await main(params);
+
+            // validate errors
+            assert.ok(result.renditionErrors === undefined);
+
+            testUtil.assertNockDone();
+        });
+
         it('rendition_failed event with generic error should be sent due to worker function failure', async () => {
             let sourcePath, renditionPath, renditionDir;
 
