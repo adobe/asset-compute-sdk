@@ -163,7 +163,7 @@ describe('validate.js', () => {
                 }
             ]
         };
-        assertValidateThrows(paramsToValidate, "SourceUnsupportedError", "Invalid or missing data url data:");
+        assertValidateThrows(paramsToValidate, "SourceCorruptError", "Invalid or missing data url data:");
     });
     it('verifies renditions is an array (1 element)', () => {
         const paramsToValidate = {
