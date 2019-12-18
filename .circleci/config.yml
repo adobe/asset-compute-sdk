@@ -178,7 +178,7 @@ jobs:
           name: Get dependents, Install and Pack
           command: |
             #default location for checkout is in ~/project
-            #setup - ~/appLatest, ~/ci-dependency-it, ~/appLatest/bridgeDir/app, ~/tgzPacks, # ~/appLatest/tgzPacks
+            #setup - ~/appLatest, ~/ci-dependency-it, ~/appLatest/bridgeDir/app, ~/tgzPacks, ~/test_logs, ~/appLatest/tgzPacks
             cd ~
             # install @nui/cli and nvm, required in for each run
             # allow circleci-user to make global npm installations
