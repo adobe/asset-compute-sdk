@@ -24,7 +24,37 @@ const assert = require('assert');
 const FileTypeChecker = require('../lib/utils/file-type.js');
 
 describe("file-type.js", function (){
-    it.only("just fails", function(){
-        assert.fail();
+    // for local use, to verify file types 
+    /*
+    it.only("returns file type information", async function(){
+        const localPath = << your file path here >> ;
+        const result = await FileTypeChecker.extractTypeFormat(localPath);
+        console.log(result);
+        assert.ok(true);
+    });
+    //*/
+
+    it("returns file type information for png", async function(){
+        const filePath = "test/files/file.png";
+        const result = await FileTypeChecker.extractTypeFormat(filePath);
+        assert.equal(result.ext, "png");
+        assert.equal(result.mime, "image/png");
+    });
+
+    it("returns file type information for png when extension is wrong", async function(){
+        const filePath = "test/files/funky/png-masquerading-as-jpg.jpg";
+        const result = await FileTypeChecker.extractTypeFormat(filePath);
+        assert.equal(result.ext, "png");
+        assert.equal(result.mime, "image/png");
+    });
+
+    it("returns file type information when extension is wrong and file seems corrupt", async function(){
+        // that file cannot be opened by preview, but browsers and VS Code will be able to open it
+        // it may seem corrupt but it isn't. It's the wrong format <-> extension association
+        const filePath = "test/files/funky/file-webp-masquerading-as-png.png";
+        const result = await FileTypeChecker.extractTypeFormat(filePath);
+        console.log(result);
+        assert.equal(result.ext, "webp");
+        assert.equal(result.mime, "image/webp");
     });
 });
