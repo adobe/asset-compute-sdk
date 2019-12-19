@@ -34,11 +34,17 @@ describe("file-type.js", function (){
     });
     //*/
 
-    it("returns file type information for png", async function(){
+    it("returns file type information", async function(){
         const filePath = "test/files/file.png";
         const result = await FileTypeChecker.extractTypeFormat(filePath);
         assert.equal(result.ext, "png");
         assert.equal(result.mime, "image/png");
+    });
+
+    it("returns null if file is too small for the guess", async function(){
+        const filePath = "test/files/funky/1pixel.png";
+        const result = await FileTypeChecker.extractTypeFormat(filePath);
+        assert.equal(result, null);
     });
 
     it("verifies extension", async function(){
