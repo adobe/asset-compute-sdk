@@ -41,6 +41,26 @@ describe("file-type.js", function (){
         assert.equal(result.mime, "image/png");
     });
 
+    it("verifies extension", async function(){
+        let filePath = "test/files/file.png";
+        let result = await FileTypeChecker.verifyTypeFormat(filePath, "png");
+        assert.equal(result, true);
+
+        filePath  = "test/files/funky/png-masquerading-as-jpg.jpg";
+        result = await FileTypeChecker.verifyTypeFormat(filePath, "jpg");
+        assert.equal(result, false);
+    });
+
+    it("verifies mime type", async function(){
+        let filePath = "test/files/file.png";
+        let result = await FileTypeChecker.verifyMimeType(filePath, "image/png");
+        assert.equal(result, true);
+
+        filePath  = "test/files/funky/png-masquerading-as-jpg.jpg";
+        result = await FileTypeChecker.verifyTypeFormat(filePath, "image/jpg");
+        assert.equal(result, false);
+    });
+
     it("returns file type information for png when extension is wrong", async function(){
         const filePath = "test/files/funky/png-masquerading-as-jpg.jpg";
         const result = await FileTypeChecker.extractTypeFormat(filePath);
