@@ -47,6 +47,12 @@ describe("file-type.js", function (){
         assert.equal(result, null);
     });
 
+    it("handles gracefully not being able to guess", async function(){
+        const filePath = "test/files/funky/file.svg";
+        const result = await FileTypeChecker.extractTypeFormat(filePath);
+        assert.equal(result, null);
+    });
+
     it("verifies extension", async function(){
         let filePath = "test/files/file.png";
         let result = await FileTypeChecker.verifyTypeFormat(filePath, "png");
@@ -57,6 +63,12 @@ describe("file-type.js", function (){
         assert.equal(result, false);
     });
 
+    it("handles gracefully not being able to verify an extension", async function(){
+        const filePath = "test/files/funky/file.svg";
+        const result = await FileTypeChecker.verifyTypeFormat(filePath, "svg");
+        assert.equal(result, null);
+    });
+
     it("verifies mime type", async function(){
         let filePath = "test/files/file.png";
         let result = await FileTypeChecker.verifyMimeType(filePath, "image/png");
@@ -65,6 +77,12 @@ describe("file-type.js", function (){
         filePath  = "test/files/funky/png-masquerading-as-jpg.jpg";
         result = await FileTypeChecker.verifyTypeFormat(filePath, "image/jpg");
         assert.equal(result, false);
+    });
+
+    it("handles gracefully not being able to verify a mime ty[e", async function(){
+        const filePath = "test/files/funky/file.svg";
+        const result = await FileTypeChecker.verifyMimeType(filePath, "image/svg");
+        assert.equal(result, null);
     });
 
     it("returns file type information for png when extension is wrong", async function(){
