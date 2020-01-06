@@ -53,6 +53,26 @@ describe("file-type.js", function (){
         assert.equal(result, null);
     });
 
+    it("returns file type information - no checks on size limit", async function(){
+        const filePath = "test/files/file.png";
+        const result = await FileTypeChecker.guessTypeFormat(filePath);
+        assert.equal(result.ext, "png");
+        assert.equal(result.mime, "image/png");
+    });
+
+    it("returns null if file is too small for the guess - no checks on size limit", async function(){
+        const filePath = "test/files/funky/1pixel.png";
+        const result = await FileTypeChecker.guessTypeFormat(filePath);
+        assert.equal(result.ext, "png");
+        assert.equal(result.mime, "image/png");
+    });
+
+    it("handles gracefully not being able to guess - no checks on size limit", async function(){
+        const filePath = "test/files/funky/file.svg";
+        const result = await FileTypeChecker.guessTypeFormat(filePath);
+        assert.equal(result, null);
+    });
+
     it("verifies extension", async function(){
         let filePath = "test/files/file.png";
         let result = await FileTypeChecker.verifyTypeFormat(filePath, "png");
