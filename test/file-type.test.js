@@ -60,7 +60,7 @@ describe("file-type.js", function (){
         assert.equal(result.mime, "image/png");
     });
 
-    it("returns null if file is too small for the guess - no checks on size limit", async function(){
+    it("returns proper format if file is too small for the guess - no checks on size limit", async function(){
         const filePath = "test/files/funky/1pixel.png";
         const result = await FileTypeChecker.guessTypeFormat(filePath);
         assert.equal(result.ext, "png");
@@ -71,6 +71,13 @@ describe("file-type.js", function (){
         const filePath = "test/files/funky/file.svg";
         const result = await FileTypeChecker.guessTypeFormat(filePath);
         assert.equal(result, null);
+    });
+
+    it("returns file type information for hidden png - no checks on size limit", async function(){
+        const filePath = "test/files/funky/png-masquerading-as-jpg.jpg";
+        const result = await FileTypeChecker.guessTypeFormat(filePath);
+        assert.equal(result.ext, "png");
+        assert.equal(result.mime, "image/png");
     });
 
     it("verifies extension", async function(){
@@ -117,7 +124,31 @@ describe("file-type.js", function (){
         // it may seem corrupt but it isn't. It's the wrong format <-> extension association
         const filePath = "test/files/funky/file-webp-masquerading-as-png.png";
         const result = await FileTypeChecker.extractTypeFormat(filePath);
-        console.log(result);
+        assert.equal(result.ext, "webp");
+        assert.equal(result.mime, "image/webp");
+    });
+
+    it("returns file type information when extension is wrong and file seems corrupt without checking min size (normal file)", async function(){
+        // that file cannot be opened by preview, but browsers and VS Code will be able to open it
+        // it may seem corrupt but it isn't. It's the wrong format <-> extension association
+        const filePath = "test/files/funky/file-webp-masquerading-as-png.png";
+        const result = await FileTypeChecker.guessTypeFormat(filePath);
+        assert.equal(result.ext, "webp");
+        assert.equal(result.mime, "image/webp");
+    });
+
+    it("returns file type information when extension is wrong and file seems corrupt without checking min size (small file)", async function(){
+        const filePath = "test/files/funky/1pixel.webp";
+        const result = await FileTypeChecker.guessTypeFormat(filePath);
+        assert.equal(result.ext, "webp");
+        assert.equal(result.mime, "image/webp");
+    });
+
+    it("returns file type information when extension is wrong (masquerade) )without checking min size  (small file)", async function(){
+        // that file cannot be opened by preview, but browsers and VS Code will be able to open it
+        // it may seem corrupt but it isn't. It's the wrong format <-> extension association
+        const filePath = "test/files/funky/1pixel-masquerade.png";
+        const result = await FileTypeChecker.guessTypeFormat(filePath);
         assert.equal(result.ext, "webp");
         assert.equal(result.mime, "image/webp");
     });
