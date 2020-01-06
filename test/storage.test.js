@@ -25,6 +25,7 @@ const mockFs = require('mock-fs');
 const nock = require('nock');
 const assert = require('assert');
 const fs = require('fs-extra');
+const path = require('path');
 const { GenericError } = require('@nui/asset-compute-commons');
 
 describe('storage.js', () => {
@@ -223,6 +224,35 @@ describe('storage.js', () => {
             assert.ok(fs.existsSync(file));
             await putRendition(rendition);
             assert.ok(nock.isDone());
+		})
+
+		it('should copy simple rendition, but not upload (in test mode)', async () => {
+			process.env.WORKER_TEST_MODE = true;
+
+			mockFs({
+				"./storeFiles/jpg": {
+					"fakeEarth.jpg": "hello world!"
+				}
+			});
+			const file = "./storeFiles/jpg/fakeEarth.jpg";
+			const requestedFile = "./storeFiles/jpg/rendition.jpg";
+
+			const rendition = {
+				directory: "./storeFiles/jpg",
+				path: file,
+				target: "https://example.com/fakeEarth.jpg",
+				instructions: { name: path.basename(requestedFile) }
+			};
+
+			nock("https://example.com")
+				.put("/fakeEarth.jpg", "hello world!")
+				.reply(200)
+
+			assert.ok(fs.existsSync(file));
+			await putRendition(rendition);
+			assert.ok(fs.existsSync(file));
+			assert.ok(fs.existsSync(requestedFile));
+			assert.ok(! nock.isDone());
 		})
 	});
 });
