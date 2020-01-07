@@ -20,7 +20,7 @@
     "cgroup-metrics": "^2.0.0",
     "clone": "^2.1.2",
     "data-uri-to-buffer": "^3.0.0",
-    "file-type": "^12.4.2",
+    "file-type": "^13.0.2",
     "fs-extra": "^8.1.0",
     "image-size": "^0.8.3",
     "mime-types": "^2.1.26",
