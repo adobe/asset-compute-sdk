@@ -80,7 +80,7 @@ describe("file-type.js", function (){
         assert.equal(result, false);
     });
 
-    it("handles gracefully not being able to verify a mime ty[e", async function(){
+    it("handles gracefully not being able to verify a mime type", async function(){
         const filePath = "test/files/funky/file.svg";
         const result = await FileTypeChecker.verifyFileMimeType(filePath, "image/svg");
         assert.equal(result, null);
@@ -116,5 +116,19 @@ describe("file-type.js", function (){
         const result = await FileTypeChecker.extractFileTypeFormat(filePath);
         assert.equal(result.ext, "webp");
         assert.equal(result.mime, "image/webp");
+    });
+
+    // list of supported formats: https://github.com/sindresorhus/file-type#supported-file-types
+    it("handles gracefully not being able to verify an extension (unsupported format)", async function(){
+        const filePath = "test/files/funky/1pixel.xcf";
+        const result = await FileTypeChecker.verifyFileTypeFormat(filePath, "xcf");
+        assert.equal(result, null);
+    });
+
+    // list of supported formats: https://github.com/sindresorhus/file-type#supported-file-types
+    it("handles gracefully not being able to verify a mime type (unsupported format)", async function(){
+        const filePath = "test/files/funky/1pixel.xcf";
+        const result = await FileTypeChecker.verifyFileMimeType(filePath, "image/png");
+        assert.equal(result, null);
     });
 });
