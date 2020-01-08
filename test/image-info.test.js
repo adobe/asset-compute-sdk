@@ -25,6 +25,7 @@ const nock = require('nock');
 const fs = require('fs-extra');
 const readChunk = require('read-chunk');
 const ImageInfo = require('../lib/utils/image-info.js');
+const bytesToRead = 10000;
 
 describe("image-info.js", function (){
     afterEach(() => {
@@ -73,7 +74,7 @@ describe("image-info.js", function (){
         nock('https://example.com')
             .get('/file.jpg')
             .reply(200, data);
-        const result = await ImageInfo.getImageInfoFromUrl(url);
+        const result = await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
         assert(nock.isDone());
         assert.equal(result.width, 512);
         assert.equal(result.height, 288);
@@ -82,12 +83,12 @@ describe("image-info.js", function (){
     });
 
     it("return image information for jpeg image from url with orientation", async function () {
-        const data = await readChunk('test/files/fOrientation5.jpg', 0, ImageInfo.bytesSufficient());
+        const data = await readChunk('test/files/fOrientation5.jpg', 0, bytesToRead);
         const url = 'https://example.com/fOrientation5.jpg';
         nock('https://example.com')
             .get('/fOrientation5.jpg')
             .reply(200, data);
-        const result = await ImageInfo.getImageInfoFromUrl(url);
+        const result = await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
         assert(nock.isDone());
         assert.equal(result.width, 1200);
         assert.equal(result.height, 1800);
@@ -96,12 +97,12 @@ describe("image-info.js", function (){
     });
 
     it("return image information for gif image from url", async function () {
-        const data = await readChunk('test/files/file.gif', 0, ImageInfo.bytesSufficient());
+        const data = await readChunk('test/files/file.gif', 0, bytesToRead);
         const url = 'https://example.com/file.gif';
         nock('https://example.com')
             .get('/file.gif')
             .reply(200, data);
-        const result = await ImageInfo.getImageInfoFromUrl(url);
+        const result = await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
         assert(nock.isDone());
         assert.equal(result.width, 512);
         assert.equal(result.height, 288);
@@ -109,12 +110,12 @@ describe("image-info.js", function (){
     });
 
     it("return image information for bmp image from url", async function () {
-        const data = await readChunk('test/files/file.bmp', 0, ImageInfo.bytesSufficient());
+        const data = await readChunk('test/files/file.bmp', 0, bytesToRead);
         const url = 'https://example.com/file.bmp';
         nock('https://example.com')
             .get('/file.bmp')
             .reply(200, data);
-        const result = await ImageInfo.getImageInfoFromUrl(url);
+        const result = await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
         assert(nock.isDone());
         assert.equal(result.width, 512);
         assert.equal(result.height, 288);
@@ -122,12 +123,12 @@ describe("image-info.js", function (){
     });
 
     it("return image information for small png image from url", async function () {
-        const data = await readChunk('test/files/fileSmall.png', 0, ImageInfo.bytesSufficient());
+        const data = await readChunk('test/files/fileSmall.png', 0, bytesToRead);
         const url = 'https://example.com/fileSmall.png';
         nock('https://example.com')
             .get('/fileSmall.png')
             .reply(200, data);
-        const result = await ImageInfo.getImageInfoFromUrl(url);
+        const result = await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
         assert(nock.isDone());
         assert.equal(result.width, 10);
         assert.equal(result.height, 6);
@@ -136,14 +137,14 @@ describe("image-info.js", function (){
 
 
     it("image information for tiff image from url throws", async function () {
-        const data = await readChunk('test/files/file.tif', 0, ImageInfo.bytesSufficient());
+        const data = await readChunk('test/files/file.tif', 0, bytesToRead);
         const url = 'https://example.com/file.tif';
         nock('https://example.com')
             .get('/file.tif')
             .reply(200, data);
         let errThrown = false;
         try {
-            await ImageInfo.getImageInfoFromUrl(url);
+            await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
         } catch (err) {
             errThrown = true;
         }
