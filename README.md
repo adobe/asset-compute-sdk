@@ -1,5 +1,5 @@
 <!--- when a new release happens, the VERSION and URL in the badge have to be manually updated because it's a private registry --->
-[![npm version](https://img.shields.io/badge/%40nui%2Flibrary-2.4.0-blue.svg)](https://artifactory.corp.adobe.com/artifactory/npm-nui-release/@nui/library/-/@nui/library-2.4.0.tgz)
+[![npm version](https://img.shields.io/badge/%40nui%2Flibrary-2.4.1-blue.svg)](https://artifactory.corp.adobe.com/artifactory/npm-nui-release/@nui/library/-/@nui/library-2.4.1.tgz)
 
 # Asset Compute SDK
 
