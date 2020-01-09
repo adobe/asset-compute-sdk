@@ -1,7 +1,7 @@
 {
   "name": "@nui/library",
   "description": "Adobe Asset Compute Worker SDK",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "author": {
     "name": "Adobe Systems Inc."
   },
