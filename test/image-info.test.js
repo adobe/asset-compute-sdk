@@ -2,7 +2,7 @@
  *  ADOBE CONFIDENTIAL
  *  __________________
  *
- *  Copyright 2019 Adobe Systems Incorporated
+ *  Copyright 2020 Adobe Systems Incorporated
  *  All Rights Reserved.
  *
  *  NOTICE:  All information contained herein is, and remains
@@ -54,6 +54,17 @@ describe("image-info.js", function (){
         assert.equal(result.width, 512);
         assert.equal(result.height, 288);
         assert.equal(result.type, 'tiff');
+    });
+
+    it("fails to return image information for nonexistent file", async function () {
+        const filePath = "test/files/NoSuchFile.tif";
+        let errThrown = false;
+        try {
+            ImageInfo.getImageInfoFromFile(filePath);
+        } catch (err) {
+            errThrown = true;
+        }
+        assert.equal(errThrown, true);
     });
 
     it("fails to return image information for non-image", async function () {
