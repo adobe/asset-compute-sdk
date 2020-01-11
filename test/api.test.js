@@ -520,6 +520,23 @@ describe("api.js", () => {
             testUtil.assertNockDone();
         });
 
+        it('should support the sendParams flag', async () => {
+            function workerFn(source, rendition, params) {
+                // check params
+                assert.equal(typeof source, "object");
+                assert.equal(typeof params, "object");
+                assert.equal(typeof params.auth, "object");
+                assert.strictEqual(params.auth, testUtil.PARAMS_AUTH);
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                return Promise.resolve();
+            }
+
+            const main = worker(workerFn, { sendParams: true});
+            await main(testUtil.simpleParams());
+
+            testUtil.assertNockDone();
+        });
+
         it('should handle multiple renditions', async () => {
             let sourcePath, renditionDir;
 
@@ -657,6 +674,51 @@ describe("api.js", () => {
             await main(testUtil.simpleParams({noSourceDownload: true}));
 
             testUtil.assertNockDone();
+        });
+
+        it('should support the sendParams flag', async () => {
+            let sourcePath, renditionPath, renditionDir;
+
+            function batchWorkerFn(source, renditions, outDirectory, params) {
+                assert.equal(typeof source, "object");
+                assert.equal(typeof source.path, "string");
+                assert.ok(fs.existsSync(source.path));
+                assert.equal(fs.readFileSync(source.path), testUtil.SOURCE_CONTENT);
+                sourcePath = source.path;
+
+                // check params
+                assert.equal(typeof params, "object");
+                assert.equal(typeof params.auth, "object");
+                assert.strictEqual(params.auth, testUtil.PARAMS_AUTH);
+
+                assert.ok(Array.isArray(renditions));
+                assert.equal(renditions.length, 1);
+                const rendition = renditions[0];
+                assert.equal(typeof rendition.path, "string");
+                assert.equal(typeof rendition.name, "string");
+                assert.equal(typeof outDirectory, "string");
+                assert.ok(fs.existsSync(outDirectory));
+                assert.ok(fs.statSync(outDirectory).isDirectory());
+                assert.ok(!fs.existsSync(rendition.path));
+                renditionPath = rendition.path;
+                renditionDir = rendition.directory;
+
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                return Promise.resolve();
+            }
+
+            const main = batchWorker(batchWorkerFn, { sendParams: true});
+            const result = await main(testUtil.simpleParams());
+
+            // validate errors
+            assert.ok(result.renditionErrors === undefined);
+
+            testUtil.assertNockDone();
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionPath));
+            assert.ok(!fs.existsSync(renditionDir));
         });
 
         it('should send metrics - rendition and activation with cgroup metrics', async () => {
