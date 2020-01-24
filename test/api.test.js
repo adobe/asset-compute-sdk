@@ -520,7 +520,7 @@ describe("api.js", () => {
             testUtil.assertNockDone();
         });
 
-        it('should support the sendParams flag', async () => {
+        it('should send params to worker', async () => {
             function workerFn(source, rendition, params) {
                 // check params
                 assert.equal(typeof source, "object");
@@ -531,7 +531,7 @@ describe("api.js", () => {
                 return Promise.resolve();
             }
 
-            const main = worker(workerFn, { sendParams: true});
+            const main = worker(workerFn);
             await main(testUtil.simpleParams());
 
             testUtil.assertNockDone();
@@ -676,7 +676,7 @@ describe("api.js", () => {
             testUtil.assertNockDone();
         });
 
-        it('should support the sendParams flag', async () => {
+        it('should send params to worker', async () => {
             let sourcePath, renditionPath, renditionDir;
 
             function batchWorkerFn(source, renditions, outDirectory, params) {
@@ -707,7 +707,7 @@ describe("api.js", () => {
                 return Promise.resolve();
             }
 
-            const main = batchWorker(batchWorkerFn, { sendParams: true});
+            const main = batchWorker(batchWorkerFn);
             const result = await main(testUtil.simpleParams());
 
             // validate errors
