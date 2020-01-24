@@ -318,5 +318,6 @@ module.exports = {
     nockIOEvent,
     assertNockDone,
     assertThrowsAndAwait,
-    nockNewRelicMetrics
+    nockNewRelicMetrics,
+    PARAMS_AUTH
 };
