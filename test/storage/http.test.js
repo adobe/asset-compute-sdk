@@ -176,7 +176,7 @@ describe('http.js', () => {
                 await upload(rendition);
             } catch (e) {
                 assert.equal(e.name, "GenericError");
-                assert.equal(e.message, "PUT 'https://example.com/fakeEarth.jpg' failed: request to https://example.com/fakeEarth.jpg failed, reason: 504");
+                assert.ok(e.message.includes("failed: request to https://example.com/fakeEarth.jpg failed, reason: 504"));
                 assert.equal(e.location, "test_action_upload");
             }
             assert.ok(nock.isDone());
