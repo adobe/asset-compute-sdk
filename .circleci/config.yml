@@ -411,6 +411,7 @@ jobs:
               npm test
               echo "Integration test running against $NUI_URL"
 
+
   release:
     docker:
       - image: circleci/node:12.0.0
@@ -419,7 +420,7 @@ jobs:
       - *ssh_keys
       - *artifactory_login
       - run:
-          name: Echo Release
+          name: Releasing module - npm publish and create git tags
           command: |
             echo "Getting ready to release!!"
             currentVersion="$(git describe --tags)";
@@ -430,10 +431,8 @@ jobs:
             git pull
             ls
             dest="/home/circleci/project/"
-
             cd ~/project/
             # check for "action" folder
-
             if [ -d "action" ]; then
                 cd action
                 dest="/home/circleci/project/action/"
@@ -444,7 +443,7 @@ jobs:
             npm install
             npm install --no-save semantic-release
             npm install --no-save conventional-changelog-eslint
-            npx semantic-release --debug
+            npx semantic-release
             cat package.json
             git status
             newVersion="$(git describe --tags)"
@@ -457,7 +456,7 @@ jobs:
             mkdir -p ~/tmpDir
             echo "export VERSION_CHANGED=$versionChanged" >> ~/tmpDir/env-vars
             cat ~/tmpDir/env-vars
-            #TODO update README.md
+            # update README.md
             # find readme to update
             if [ "$versionChanged" = "true" ]; then
               cd ~/project
@@ -465,7 +464,6 @@ jobs:
               git config --global user.email "nuicid@adobe.com"
               git config --global user.name "nuicid"
               git stash save
-              git checkout "update-badge-readme-$newVersion" 2>/dev/null || git checkout -b "update-badge-readme-$newVersion"
               if [ -e README.md ]; then
                   readme=README.md
               fi
@@ -479,9 +477,8 @@ jobs:
                   git add "$readme"
                   git status
                   git diff
-                  git commit -m "no-release: badge in README.md to $newVersion"
-                  git push origin "update-badge-readme-$newVersion"
-                  curl -X POST -H "Authorization: token $GITHUB_TOKEN" -d "{\"title\":\"no-release: update badge in readme \",\"base\":\"master\", \"head\":\""update-badge-readme-$newVersion"\", \"reviewers\":[\"krmenon\",\"$CIRCLE_USERNAME\"]}" "$GITHUB_API/repos/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/pulls"
+                  git commit -m "[ci skip] badge in README.md to $newVersion"
+                  git push origin master
               fi
             fi
       - persist_to_workspace:
@@ -489,45 +486,7 @@ jobs:
           paths:
             - env-vars
 
-  dependent-version-update:
-    docker:
-      - image: circleci/node:12.0.0
-    steps:
-      - checkout
-      - *ssh_keys
-      - *artifactory_login
-      - attach_workspace:
-          at: tmpDir
-      - run: cat tmpDir/env-vars >> $BASH_ENV
-      - run:
-          name: Create PR for dependent repos to update version
-          command: |
-            #TODO if no-release
-            echo "VERSION_CHANGED -> $VERSION_CHANGED"
-            if [ "$VERSION_CHANGED" = "true" ]; then
-              cd ~
-              mkdir appLatest && cd appLatest && mkdir bridgeDir && cd bridgeDir
-              #~/appLatest/bridgeDir/app
-              git clone git@git.corp.adobe.com:nui/app.git
-              cd app
-              # TODO change-this
-              git checkout testing-cci-release
-              git branch
-              npm install
-              #~/ci-dependency-it
-              cd ~
-              git clone git@git.corp.adobe.com:nui/ci-dependency-it.git
-              cd ci-dependency-it
-              # TODO change-this
-              git checkout new-release
-              git branch
-              npm install
-              node ~/ci-dependency-it/release-app.js "@nui/$CIRCLE_PROJECT_REPONAME" "/home/circleci/" "project/"
-            fi  
-            #cd ~
-            #git clone git@git.corp.adobe.com:nui/infra.git
-            #~/infra/scripts/nui-release.sh
-            
+              
   validate_config:
     working_directory: ~/validate
     docker:
@@ -575,15 +534,9 @@ workflows:
             requires:
               - build_runtime
               - build
-              - dependent-module-tests
-              - integration_tests
             filters:
               branches:
                 only: master
-            context: nui
-        - dependent-version-update:
-            requires:
-              - release
             context: nui
 #        - validate_config:
 #            context: nui
