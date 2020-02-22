@@ -78,19 +78,37 @@ function gunzip(body) {
     return JSON.parse(body);
 }
 
-function nockNewRelicMetrics(expectedEventType, expectedMetrics) {
-    return nock("https://newrelic.com")
-        .matchHeader("x-insert-key", "new-relic-api-key")
-        .filteringRequestBody(gunzip)
-        .post("/events", metrics => {
-            if (expectedEventType === undefined) {
-                return true
-            }
-            return (metrics.eventType === expectedEventType
-                && typeof metrics.timestamp === 'number'
-                && (!expectedMetrics || lodash.matches(expectedMetrics)(metrics)));
-        })
-        .reply(200, { uuid: "nock", success: true, type: expectedEventType, matchedMetrics: expectedMetrics });
+const expectedMetrics = [];
+let metricsNock;
+
+function nockNewRelicMetrics(eventType, metrics) {
+    if (expectedMetrics.length === 0) {
+        metricsNock = nock("https://newrelic.com")
+            .filteringRequestBody(gunzip)
+            .matchHeader("x-insert-key", "new-relic-api-key")
+            .post("/events", array => {
+                if (array.length !== expectedMetrics.length) {
+                    return false;
+                }
+                for (let i = 0; i < array.length; i++) {
+                    const event = array[i];
+                    const expected = expectedMetrics[i];
+                    if (event.eventType !== expected.eventType
+                        || typeof event.timestamp !== 'number'
+                        || (event.eventType === "activation" && typeof event.duration !== 'number')
+                        || (expected && !lodash.matches(expected)(event))) {
+                            return false;
+                        }
+                }
+                return true;
+            })
+            .reply(200, {});
+    }
+    expectedMetrics.push({
+        eventType,
+        ...metrics
+    });
+    return metricsNock;
 }
 
 function parseIoEventPayload(event) {
