@@ -142,7 +142,8 @@ describe('http.js', () => {
             const rendition = {
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",
-                name: 'fakeEarth.jpg'
+                name: 'fakeEarth.jpg',
+                size: () => 1
             };
 
             nock("https://example.com")
@@ -164,7 +165,8 @@ describe('http.js', () => {
 
             const rendition = {
                 path: file,
-                target: "https://example.com/fakeEarth.jpg"
+                target: "https://example.com/fakeEarth.jpg",
+                size: () => 1
             };
 
             nock("https://example.com")
@@ -190,7 +192,8 @@ describe('http.js', () => {
 
             const rendition = {
                 path: file,
-                target: "https://example.com/fakeEarth.jpg"
+                target: "https://example.com/fakeEarth.jpg",
+                size: () => 1
             };
             nock("https://example.com")
                 .put("/fakeEarth.jpg", "hello world!")
@@ -214,7 +217,8 @@ describe('http.js', () => {
 
             const rendition = {
                 path: file,
-                target: "https://example.com/fakeEarth.jpg"
+                target: "https://example.com/fakeEarth.jpg",
+                size: () => 1
             };
 
             nock("https://example.com")
