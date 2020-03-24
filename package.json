@@ -1,7 +1,7 @@
 {
   "name": "@nui/library",
   "description": "Adobe Asset Compute Worker SDK",
-  "version": "9.0.0",
+  "version": "10.0.0",
   "author": {
     "name": "Adobe Systems Inc."
   },
@@ -13,7 +13,7 @@
     "url": "https://git.corp.adobe.com/nui/asset-compute-sdk.git"
   },
   "dependencies": {
-    "@nui/asset-compute-commons": "^4.0.0",
+    "@nui/asset-compute-commons": "^5.0.0",
     "@nui/metrics-sampler": "^1.0.2",
     "@nui/node-httptransfer": "^1.1.2",
     "ajv": "6.12.0",
