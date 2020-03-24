@@ -26,6 +26,7 @@ const mockFs = require('mock-fs');
 const assert = require('assert');
 const lodash = require("lodash");
 const zlib = require("zlib");
+const MetricsTestHelper = require("@nui/openwhisk-newrelic/lib/testhelper");
 
 const SOURCE_CONTENT = "source content";
 const RENDITION_CONTENT = "rendition content";
@@ -51,9 +52,12 @@ function beforeEach() {
     process.env.__OW_ACTION_NAME = "/namespace/package/test_action";
     process.env.NUI_DISABLE_RETRIES = "disable";
     mockFs();
+
+    MetricsTestHelper.beforeEachTest();
 }
 
 function afterEach() {
+    MetricsTestHelper.afterEachTest();
     nock.cleanAll();
     mockFs.restore();
     delete process.env.NUI_DISABLE_RETRIES;
