@@ -42,7 +42,7 @@ function beforeEach() {
             if (url.startsWith("https://eg-ingress.adobe.io/api/events")) {
                 body = JSON.parse(body);
                 body.event = parseIoEventPayload(body.event);
-            } else if (url.startsWith("https://newrelic.com/events")) {
+            } else if (url.startsWith(MetricsTestHelper.MOCK_URL)) {
                 body = gunzip(body);
             }
         }
@@ -62,6 +62,7 @@ function afterEach() {
     mockFs.restore();
     delete process.env.NUI_DISABLE_RETRIES;
     delete process.env.__OW_ACTION_NAME;
+    delete process.env.__OW_DEADLINE;
 }
 
 function nockGetFile(httpUrl) {
@@ -87,10 +88,10 @@ let metricsNock;
 
 function nockNewRelicMetrics(eventType, metrics) {
     if (expectedMetrics.length === 0) {
-        metricsNock = nock("https://newrelic.com")
+        metricsNock = nock(MetricsTestHelper.MOCK_BASE_URL)
             .filteringRequestBody(gunzip)
-            .matchHeader("x-insert-key", "new-relic-api-key")
-            .post("/events", array => {
+            .matchHeader("x-insert-key", MetricsTestHelper.MOCK_API_KEY)
+            .post(MetricsTestHelper.MOCK_URL_PATH, array => {
                 if (array.length !== expectedMetrics.length) {
                     return false;
                 }
@@ -213,8 +214,8 @@ function simpleParams(options={}) {
         }, options.rendition)],
         requestId: "test-request-id",
         auth: PARAMS_AUTH,
-        newRelicEventsURL: "https://newrelic.com/events",
-        newRelicApiKey: "new-relic-api-key"
+        newRelicEventsURL: MetricsTestHelper.MOCK_URL,
+        newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
     }
 }
 
@@ -306,8 +307,8 @@ function paramsWithMultipleRenditions(options={}) {
             }],
         requestId: "test-request-id",
         auth: PARAMS_AUTH,
-        newRelicEventsURL: "https://newrelic.com/events",
-        newRelicApiKey: "new-relic-api-key"
+        newRelicEventsURL: MetricsTestHelper.MOCK_URL,
+        newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
     };
 }
 

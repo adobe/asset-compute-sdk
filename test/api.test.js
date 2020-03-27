@@ -27,6 +27,7 @@ const assert = require('assert');
 const fs = require('fs-extra');
 const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@nui/asset-compute-commons');
 const mockFs = require('mock-fs');
+const MetricsTestHelper = require("@nui/openwhisk-newrelic/lib/testhelper");
 
 describe("api.js", () => {
     beforeEach(function() {
@@ -463,13 +464,7 @@ describe("api.js", () => {
         });
 
         it("should send `timeout` and `error` metrics because of IO event failure", async () => {
-            const main = worker(function(source, rendition) {
-                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
-                return Promise.resolve();
-            });
-            assert.equal(typeof main, "function");
-            process.env.__OW_DEADLINE = Date.now() + 300;
-
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
             testUtil.nockIOEvent({
                 type: "rendition_created",
                 rendition: {
@@ -478,20 +473,30 @@ describe("api.js", () => {
                 source: "https://example.com/MySourceFile.jpg"
             }, 500).persist(); // persist for retries
 
-            testUtil.nockNewRelicMetrics('timeout');
-            testUtil.nockNewRelicMetrics('error', {
-                message: "Error sending IO event: 500 Internal Server Error",
-                location:"IOEvents"
+            const main = worker(function(source, rendition) {
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                return Promise.resolve();
             });
-            testUtil.nockNewRelicMetrics('rendition', {
-                requestId: "test-request-id",
-                fmt: "png",
-            });
-            testUtil.nockNewRelicMetrics('activation');
+            assert.equal(typeof main, "function");
+            process.env.__OW_DEADLINE = Date.now() + 300;
 
             await main(testUtil.simpleParams({noEventsNock:true, noMetricsNock:true}));
 
             testUtil.assertNockDone();
+            await MetricsTestHelper.metricsDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: 'timeout'
+            },{
+                eventType: "error",
+                message: "Error sending IO event: 500 Internal Server Error",
+                location:"IOEvents"
+            },{
+                eventType: "rendition",
+                requestId: "test-request-id",
+                fmt: "png"
+            },{
+                eventType: "activation"
+            }]);
         });
 
         it('should support the disableSourceDownload flag', async () => {
