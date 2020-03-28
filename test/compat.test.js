@@ -27,6 +27,7 @@ const fs = require('fs-extra');
 const nock = require('nock');
 const assert = require('assert');
 const mockFs = require('mock-fs');
+const MetricsTestHelper = require("@nui/openwhisk-newrelic/lib/testhelper");
 
 describe('compat.js', () => {
 
@@ -59,6 +60,8 @@ describe('compat.js', () => {
         });
 
         it('should download source, invoke worker callback and upload rendition', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             function workerFn(infile, rendition, outdir) {
                 assert.equal(typeof infile, "string");
                 assert.ok(fs.existsSync(infile));
@@ -77,10 +80,13 @@ describe('compat.js', () => {
 
             await forEachRendition(testUtil.simpleParams(), workerFn);
 
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             assert(nock.isDone());
         });
 
         it('should support the disableSourceDownloadSource flag', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             function workerFn(infile, rendition, outdir) {
                 assert.strictEqual(typeof infile, "string");
                 assert.strictEqual(infile, 'https://example.com/MySourceFile.jpg');
@@ -100,6 +106,7 @@ describe('compat.js', () => {
 
             await forEachRendition(testUtil.simpleParams({noSourceDownload: true}), { disableSourceDownloadSource: true }, workerFn);
 
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             assert(nock.isDone());
         });
 
@@ -157,6 +164,8 @@ describe('compat.js', () => {
         });
 
         it('should download source, invoke worker callback and upload rendition', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             function workerFn(infile, renditions, outdir) {
                 assert.equal(typeof infile, "string");
                 assert.ok(fs.existsSync(infile));
@@ -176,10 +185,13 @@ describe('compat.js', () => {
 
             await process(testUtil.simpleParams(), workerFn);
 
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             assert(nock.isDone());
         });
 
         it('should support the disableSourceDownloadSource flag', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             function workerFn(infile, renditions, outdir) {
                 assert.equal(typeof infile, "string");
                 // must not download
@@ -199,6 +211,7 @@ describe('compat.js', () => {
 
             await process(testUtil.simpleParams({noSourceDownload: true}), { disableSourceDownloadSource: true }, workerFn);
 
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             assert(nock.isDone());
         });
     });

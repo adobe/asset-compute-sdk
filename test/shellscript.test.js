@@ -29,6 +29,7 @@ const mockFs = require('mock-fs');
 const fs = require('fs');
 const path = require("path");
 const envfile = require("envfile");
+const MetricsTestHelper = require("@nui/openwhisk-newrelic/lib/testhelper");
 
 const TEST_DIR = "build/tests/shellscript";
 
@@ -94,6 +95,8 @@ describe("api.js (shell)", () => {
     describe("shellScriptWorker()", () => {
 
         it("should run a shell script and handle resulting rendition", async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             createScript("worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition`);
             const main = shellScriptWorker();
 
@@ -102,10 +105,13 @@ describe("api.js (shell)", () => {
             // validate no errors
             assert.ok(result.renditionErrors === undefined);
 
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             testUtil.assertNockDone();
         });
 
         it("should run a shell script with custom name", async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             createScript("my-worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition`);
             const main = shellScriptWorker("my-worker.sh");
 
@@ -114,10 +120,13 @@ describe("api.js (shell)", () => {
             // validate no errors
             assert.ok(result.renditionErrors === undefined);
 
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             testUtil.assertNockDone();
         });
 
         it("should run a shell script with multiple renditions", async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             createScript("worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition`);
             const main = shellScriptWorker();
 
@@ -126,20 +135,18 @@ describe("api.js (shell)", () => {
             // validate no errors
             assert.ok(result.renditionErrors === undefined);
 
+            await testUtil.assertParamsWithMultipleRenditions(receivedMetrics);
             testUtil.assertNockDone();
         });
 
         it("should catch a failing shell script", async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             createScript("worker.sh", `exit 42`);
             const main = shellScriptWorker();
 
             try {
-                const params = testUtil.simpleParams({noPut: true, noMetricsNock: true});
-                testUtil.nockNewRelicMetrics("error", {
-                    message: "`/usr/bin/env bash -x worker.sh` failed with exit code 42",
-                    location: "test_action_shellScript"
-                });
-                testUtil.nockNewRelicMetrics("activation");
+                const params = testUtil.simpleParams({noPut: true});
 
                 const result = await main(params);
 
@@ -153,6 +160,15 @@ describe("api.js (shell)", () => {
                 console.log(err);
                 assert.fail("should not pass a failure through");
             }
+
+            await MetricsTestHelper.metricsDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "error",
+                message: "`/usr/bin/env bash -x worker.sh` failed with exit code 42",
+                location: "test_action_shellScript"
+            },{
+                eventType: "activation",
+            }]);
             testUtil.assertNockDone();
         });
 
@@ -166,6 +182,8 @@ describe("api.js (shell)", () => {
         });
 
         it("should automatically set execution permissions on shell script", async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             createScript("worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition`);
             fs.chmodSync("worker.sh", "000");
 
@@ -176,10 +194,13 @@ describe("api.js (shell)", () => {
             // validate no errors
             assert.ok(result.renditionErrors === undefined);
 
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             testUtil.assertNockDone();
         });
 
         it("should handle error.json - but not throw error in shellScriptWorker()", async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             createScript("worker.sh", `
                 echo '{ "message": "failed" }' > $errorfile
                 exit 1
@@ -188,12 +209,7 @@ describe("api.js (shell)", () => {
             const main = shellScriptWorker();
 
             try {
-                const params = testUtil.simpleParams({noPut: true, noMetricsNock: true});
-                testUtil.nockNewRelicMetrics("error", {
-                    message: "failed",
-                    location: "test_action_shellScript"
-                });
-                testUtil.nockNewRelicMetrics("activation");
+                const params = testUtil.simpleParams({noPut: true});
 
                 const result = await main(params);
 
@@ -208,6 +224,15 @@ describe("api.js (shell)", () => {
                 console.log(err);
                 assert.fail("should not pass a failure through");
             }
+
+            await MetricsTestHelper.metricsDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "error",
+                message: "failed",
+                location: "test_action_shellScript"
+        },{
+                eventType: "activation",
+            }]);
             testUtil.assertNockDone();
         });
 
