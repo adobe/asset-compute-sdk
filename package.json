@@ -13,10 +13,10 @@
     "url": "https://git.corp.adobe.com/nui/asset-compute-sdk.git"
   },
   "dependencies": {
-    "@nui/asset-compute-commons": "^5.0.0",
+    "@nui/asset-compute-commons": "^6.0.0",
     "@nui/metrics-sampler": "^1.0.2",
-    "@nui/node-httptransfer": "^5.0.0",
     "@nui/node-fetch-retry": "^1.0.1",
+    "@nui/node-httptransfer": "^5.0.0",
     "ajv": "6.12.0",
     "cgroup-metrics": "^2.0.0",
     "clone": "^2.1.2",
