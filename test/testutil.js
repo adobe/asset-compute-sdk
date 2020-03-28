@@ -25,7 +25,6 @@ const url = require('url');
 const mockFs = require('mock-fs');
 const assert = require('assert');
 const lodash = require("lodash");
-const zlib = require("zlib");
 const MetricsTestHelper = require("@nui/openwhisk-newrelic/lib/testhelper");
 
 const SOURCE_CONTENT = "source content";
@@ -42,8 +41,6 @@ function beforeEach() {
             if (url.startsWith("https://eg-ingress.adobe.io/api/events")) {
                 body = JSON.parse(body);
                 body.event = parseIoEventPayload(body.event);
-            } else if (url.startsWith(MetricsTestHelper.MOCK_URL)) {
-                body = gunzip(body);
             }
         }
         console.error("[nock] Error, no nock match found for:", method, url || options.host, body);
@@ -75,45 +72,6 @@ function nockPutFile(httpUrl, content, status=200) {
     nock(`${uri.protocol}//${uri.host}`)
         .put(uri.path, content)
         .reply(status);
-}
-
-function gunzip(body) {
-    body = Buffer.from(body, 'hex');
-    body = zlib.gunzipSync(body).toString();
-    return JSON.parse(body);
-}
-
-const expectedMetrics = [];
-let metricsNock;
-
-function nockNewRelicMetrics(eventType, metrics) {
-    if (expectedMetrics.length === 0) {
-        metricsNock = nock(MetricsTestHelper.MOCK_BASE_URL)
-            .filteringRequestBody(gunzip)
-            .matchHeader("x-insert-key", MetricsTestHelper.MOCK_API_KEY)
-            .post(MetricsTestHelper.MOCK_URL_PATH, array => {
-                if (array.length !== expectedMetrics.length) {
-                    return false;
-                }
-                for (let i = 0; i < array.length; i++) {
-                    const event = array[i];
-                    const expected = expectedMetrics[i];
-                    if (event.eventType !== expected.eventType
-                        || typeof event.timestamp !== 'number'
-                        || (event.eventType === "activation" && typeof event.duration !== 'number')
-                        || (expected && !lodash.matches(expected)(event))) {
-                            return false;
-                        }
-                }
-                return true;
-            })
-            .reply(200, {});
-    }
-    expectedMetrics.push({
-        eventType,
-        ...metrics
-    });
-    return metricsNock;
 }
 
 function parseIoEventPayload(event) {
@@ -167,43 +125,18 @@ function simpleParams(options={}) {
 
     if (options.failDownload) {
         nockGetFile(SOURCE).reply(500);
-
-        if (!options.noMetricsNock) {
-            nockNewRelicMetrics("error", {
-                location: "test_action_download"
-            });
-            nockNewRelicMetrics("error", {
-                location: "test_action_download"
-            });
-        }
     }
     if (!options.noSourceDownload) {
         nockGetFile(SOURCE).reply(200, SOURCE_CONTENT);
     }
     if (options.failUpload) {
         nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT, 500);
-
-        if (!options.noMetricsNock) {
-            nockNewRelicMetrics("error", {
-                location: "test_action_upload"
-            });
-        }
     } else if (!options.noPut) {
         nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT);
     }
 
     if (!options.noEventsNock) {
         nockIOEvent();
-    }
-
-    if (!options.noMetricsNock) {
-        nockNewRelicMetrics("rendition", {
-            fmt: "png",
-            renditionFormat: "png",
-            size: RENDITION_CONTENT.length,
-            requestId: "test-request-id"
-        });
-        nockNewRelicMetrics("activation");
     }
 
     return {
@@ -217,6 +150,34 @@ function simpleParams(options={}) {
         newRelicEventsURL: MetricsTestHelper.MOCK_URL,
         newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
     }
+}
+
+async function assertSimpleParamsMetrics(receivedMetrics, options={}) {
+    await MetricsTestHelper.metricsDone();
+
+    if (options.failDownload) {
+        MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+            eventType: "error",
+            location: "test_action_download"
+        }]);
+    }
+    if (options.failUpload) {
+        MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+            eventType: "error",
+            location: "test_action_upload"
+        }]);
+    }
+
+    MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+        eventType: "rendition",
+        fmt: "png",
+        renditionFormat: "png",
+        size: RENDITION_CONTENT.length,
+        requestId: "test-request-id"
+    }]);
+    MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+        eventType: "activation",
+    }]);
 }
 
 function paramsWithMultipleRenditions(options={}) {
@@ -248,43 +209,6 @@ function paramsWithMultipleRenditions(options={}) {
         }
     }
 
-    if (!options.noMetricsNock) {
-        nockNewRelicMetrics("rendition", {
-            name: "MyRendition1.png",
-            fmt: "png",
-            renditionName: "MyRendition1.png",
-            renditionFormat: "png",
-            size: RENDITION_CONTENT.length,
-            sourceName: "MySourceFile.jpg",
-            sourceMimetype: "image/jpeg",
-            sourceSize: 200,
-            requestId: "test-request-id"
-        });
-        nockNewRelicMetrics("rendition", {
-            name: "MyRendition2.txt",
-            fmt: "txt",
-            renditionName: "MyRendition2.txt",
-            renditionFormat: "txt",
-            size: RENDITION_CONTENT.length,
-            sourceName: "MySourceFile.jpg",
-            sourceMimetype: "image/jpeg",
-            sourceSize: 200,
-            requestId: "test-request-id"
-        });
-        nockNewRelicMetrics("rendition", {
-            name: "MyRendition3.xml",
-            fmt: "xml",
-            renditionName: "MyRendition3.xml",
-            renditionFormat: "xml",
-            size: RENDITION_CONTENT.length,
-            sourceName: "MySourceFile.jpg",
-            sourceMimetype: "image/jpeg",
-            sourceSize: 200,
-            requestId: "test-request-id"
-        });
-        nockNewRelicMetrics("activation");
-    }
-
     return {
         source: {
             url: 'https://example.com/MySourceFile.jpg',
@@ -310,6 +234,47 @@ function paramsWithMultipleRenditions(options={}) {
         newRelicEventsURL: MetricsTestHelper.MOCK_URL,
         newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
     };
+}
+
+async function assertParamsWithMultipleRenditions(receivedMetrics) {
+    await MetricsTestHelper.metricsDone();
+
+    MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+        eventType: "rendition",
+        name: "MyRendition1.png",
+        fmt: "png",
+        renditionName: "MyRendition1.png",
+        renditionFormat: "png",
+        size: RENDITION_CONTENT.length,
+        sourceName: "MySourceFile.jpg",
+        sourceMimetype: "image/jpeg",
+        sourceSize: 200,
+        requestId: "test-request-id"
+    },{
+        eventType: "rendition",
+        name: "MyRendition2.txt",
+        fmt: "txt",
+        renditionName: "MyRendition2.txt",
+        renditionFormat: "txt",
+        size: RENDITION_CONTENT.length,
+        sourceName: "MySourceFile.jpg",
+        sourceMimetype: "image/jpeg",
+        sourceSize: 200,
+        requestId: "test-request-id"
+    },{
+        eventType: "rendition",
+        name: "MyRendition3.xml",
+        fmt: "xml",
+        renditionName: "MyRendition3.xml",
+        renditionFormat: "xml",
+        size: RENDITION_CONTENT.length,
+        sourceName: "MySourceFile.jpg",
+        sourceMimetype: "image/jpeg",
+        sourceSize: 200,
+        requestId: "test-request-id"
+    },{
+        eventType: "activation"
+    }]);
 }
 
 function assertNockDone(nockScope) {
@@ -341,6 +306,7 @@ module.exports = {
     nockIOEvent,
     assertNockDone,
     assertThrowsAndAwait,
-    nockNewRelicMetrics,
-    PARAMS_AUTH
+    PARAMS_AUTH,
+    assertSimpleParamsMetrics,
+    assertParamsWithMultipleRenditions
 };

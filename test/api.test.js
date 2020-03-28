@@ -51,7 +51,7 @@ describe("api.js", () => {
             const main = worker(function() {});
             assert.equal(typeof main, "function");
 
-            testUtil.nockNewRelicMetrics().persist();
+            MetricsTestHelper.mockNewRelic();
 
             const result = main(testUtil.simpleParams());
             // check if it's a Promise, from https://stackoverflow.com/a/38339199/2709
@@ -61,6 +61,8 @@ describe("api.js", () => {
         });
 
         it('should download source, invoke worker callback and upload rendition', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionPath, renditionDir;
 
             function workerFn(source, rendition) {
@@ -91,6 +93,7 @@ describe("api.js", () => {
             assert.ok(result.renditionErrors === undefined);
 
             testUtil.assertNockDone();
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -99,6 +102,8 @@ describe("api.js", () => {
         });
 
         it('rendition_created event should be sent', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             function workerFn(source, rendition) {
                 fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
                 return Promise.resolve();
@@ -124,9 +129,12 @@ describe("api.js", () => {
             assert.ok(result.renditionErrors === undefined);
 
             testUtil.assertNockDone();
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics, {noEventsNock: true});
         });
 
         it('should send rendition_created event with source as a content fragment (data uri)', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             function workerFn(source, rendition) {
                 fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
                 return Promise.resolve();
@@ -151,10 +159,13 @@ describe("api.js", () => {
             // validate errors
             assert.ok(result.renditionErrors === undefined);
 
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             testUtil.assertNockDone();
         });
 
         it('rendition_failed event with generic error should be sent due to worker function failure', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionPath, renditionDir;
 
             function workerFn(source, rendition) {
@@ -165,7 +176,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true, noMetricsNock: true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -176,11 +187,6 @@ describe("api.js", () => {
                 source: "https://example.com/MySourceFile.jpg"
             });
 
-            testUtil.nockNewRelicMetrics('error', {
-                location: "test_action_process"
-            });
-            testUtil.nockNewRelicMetrics('activation');
-
             const result = await main(params);
 
             // validate errors
@@ -188,7 +194,15 @@ describe("api.js", () => {
             assert.equal(result.renditionErrors.length, 1);
             assert.equal(result.renditionErrors[0], "failed");
 
+            await MetricsTestHelper.metricsDone();
             testUtil.assertNockDone();
+
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "error",
+                location: "test_action_process"
+            },{
+                eventType: "activation"
+            }]);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -197,6 +211,8 @@ describe("api.js", () => {
         });
 
         it('rendition_failed event with generic error should be sent due to upload failure', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionPath, renditionDir;
 
             function workerFn(source, rendition) {
@@ -208,7 +224,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ failUpload: true, noEventsNock: true, noMetricsNock: true });
+            const params = testUtil.simpleParams({ failUpload: true, noEventsNock: true });
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -218,12 +234,6 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
-            testUtil.nockNewRelicMetrics("error", {
-                fmt: "png",
-                location: "test_action_upload",
-                requestId: "test-request-id"
-            });
-            testUtil.nockNewRelicMetrics("activation");
 
             const result = await main(params);
 
@@ -234,7 +244,17 @@ describe("api.js", () => {
             assert.equal(result.renditionErrors[0].location, "test_action_upload");
             assert.ok(result.renditionErrors[0].message.includes("500")); // failUpload above returns 500 error
 
+            await MetricsTestHelper.metricsDone();
             testUtil.assertNockDone();
+
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "error",
+                fmt: "png",
+                location: "test_action_upload",
+                requestId: "test-request-id"
+            },{
+                eventType: "activation"
+            }]);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -243,6 +263,8 @@ describe("api.js", () => {
         });
 
         it('rendition_failed event with generic error should be sent if no rendition was generated', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionPath, renditionDir;
 
             function workerFn(source, rendition) {
@@ -253,7 +275,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true, noMetricsNock: true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -263,11 +285,6 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
-
-            testUtil.nockNewRelicMetrics('error', {
-                location:'test_action_process_norendition'
-            });
-            testUtil.nockNewRelicMetrics('activation');
 
             const result = await main(params);
 
@@ -279,7 +296,15 @@ describe("api.js", () => {
             // TODO: fix error handling, currently the message is "GenericError: No rendition generated for 0"
             // assert.ok(result.renditionErrors[0].message.includes("500")); // failUpload above returns 500 error
 
+            await MetricsTestHelper.metricsDone();
             testUtil.assertNockDone();
+
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "error",
+                location:'test_action_process_norendition'
+            },{
+                eventType: "activation"
+            }]);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -288,6 +313,8 @@ describe("api.js", () => {
         });
 
         it('rendition_failed event with unsupported source error should be sent', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionPath, renditionDir;
 
             function workerFn(source, rendition) {
@@ -298,7 +325,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true, noMetricsNock:true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -309,13 +336,6 @@ describe("api.js", () => {
                 source: "https://example.com/MySourceFile.jpg"
             });
 
-            testUtil.nockNewRelicMetrics('client_error', {
-                reason: "SourceUnsupported",
-                message: "The source is not supported"
-
-            });
-            testUtil.nockNewRelicMetrics('activation');
-
             const result = await main(params);
 
             // validate errors
@@ -324,7 +344,16 @@ describe("api.js", () => {
             assert.equal(result.renditionErrors[0].name, "SourceUnsupportedError");
             assert.equal(result.renditionErrors[0].reason, "SourceUnsupported");
 
+            await MetricsTestHelper.metricsDone();
             testUtil.assertNockDone();
+
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "client_error",
+                reason: "SourceUnsupported",
+                message: "The source is not supported"
+            },{
+                eventType: "activation"
+            }]);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -333,6 +362,8 @@ describe("api.js", () => {
         });
 
         it('rendition_failed event with source corrupt error should be sent', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionPath, renditionDir;
 
             function workerFn(source, rendition) {
@@ -343,7 +374,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true, noMetricsNock: true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -354,13 +385,6 @@ describe("api.js", () => {
                 source: "https://example.com/MySourceFile.jpg"
             });
 
-            testUtil.nockNewRelicMetrics('client_error', {
-                reason: "SourceCorrupt",
-                message: "The source file is corrupt"
-
-            });
-            testUtil.nockNewRelicMetrics('activation');
-
             const result = await main(params);
 
             // validate errors
@@ -369,7 +393,16 @@ describe("api.js", () => {
             assert.equal(result.renditionErrors[0].name, "SourceCorruptError");
             assert.equal(result.renditionErrors[0].reason, "SourceCorrupt");
 
+            await MetricsTestHelper.metricsDone();
             testUtil.assertNockDone();
+
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "client_error",
+                reason: "SourceCorrupt",
+                message: "The source file is corrupt"
+            },{
+                eventType: "activation"
+            }]);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -378,6 +411,8 @@ describe("api.js", () => {
         });
 
         it('rendition_failed event with source format unsupported error should be sent', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionPath, renditionDir;
 
             function workerFn(source, rendition) {
@@ -388,7 +423,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true, noMetricsNock: true });
+            const params = testUtil.simpleParams({ noPut: true, noEventsNock: true });
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -399,13 +434,6 @@ describe("api.js", () => {
                 source: "https://example.com/MySourceFile.jpg"
             });
 
-            testUtil.nockNewRelicMetrics('client_error', {
-                reason: "SourceFormatUnsupported",
-                message: "The source format is not supported"
-
-            });
-            testUtil.nockNewRelicMetrics('activation');
-
             const result = await main(params);
 
             // validate errors
@@ -414,7 +442,16 @@ describe("api.js", () => {
             assert.equal(result.renditionErrors[0].name, "SourceFormatUnsupportedError");
             assert.equal(result.renditionErrors[0].reason, "SourceFormatUnsupported");
 
+            await MetricsTestHelper.metricsDone();
             testUtil.assertNockDone();
+
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "client_error",
+                reason: "SourceFormatUnsupported",
+                message: "The source format is not supported"
+            },{
+                eventType: "activation"
+            }]);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -423,6 +460,8 @@ describe("api.js", () => {
         });
 
         it('rendition_failed event with download failure', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionPath, renditionDir;
 
             function workerFn(source, rendition) {
@@ -433,7 +472,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({ failDownload: true, noPut: true, noEventsNock: true, noMetricsNock: true });
+            const params = testUtil.simpleParams({ failDownload: true, noPut: true, noEventsNock: true });
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -444,18 +483,20 @@ describe("api.js", () => {
                 source: "https://example.com/MySourceFile.jpg"
             });
 
-            testUtil.nockNewRelicMetrics('error', {
-                location: "test_action_download",
-                message: "GET 'https://example.com/MySourceFile.jpg' failed with status 500",
-
-            });
-            testUtil.nockNewRelicMetrics('activation');
-
             try {
                 await main(params);
             } catch (err) {
                 console.log(err);
             }
+
+            await MetricsTestHelper.metricsDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "error",
+                location: "test_action_download",
+                message: "GET 'https://example.com/MySourceFile.jpg' failed with status 500",
+            },{
+                eventType: "activation"
+            }]);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -480,7 +521,7 @@ describe("api.js", () => {
             assert.equal(typeof main, "function");
             process.env.__OW_DEADLINE = Date.now() + 300;
 
-            await main(testUtil.simpleParams({noEventsNock:true, noMetricsNock:true}));
+            await main(testUtil.simpleParams({noEventsNock:true}));
 
             testUtil.assertNockDone();
             await MetricsTestHelper.metricsDone();
@@ -500,6 +541,8 @@ describe("api.js", () => {
         });
 
         it('should support the disableSourceDownload flag', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             function workerFn(source, rendition) {
                 assert.equal(typeof source, "object");
                 assert.equal(typeof source.path, "string");
@@ -522,10 +565,13 @@ describe("api.js", () => {
             const main = worker(workerFn, { disableSourceDownload: true});
             await main(testUtil.simpleParams({noSourceDownload: true}));
 
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             testUtil.assertNockDone();
         });
 
         it('should send params to worker', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             function workerFn(source, rendition, params) {
                 // check params
                 assert.equal(typeof source, "object");
@@ -539,10 +585,13 @@ describe("api.js", () => {
             const main = worker(workerFn);
             await main(testUtil.simpleParams());
 
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             testUtil.assertNockDone();
         });
 
         it('should handle multiple renditions', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionDir;
 
             function workerFn(source, rendition) {
@@ -572,6 +621,7 @@ describe("api.js", () => {
             assert.ok(result.renditionErrors === undefined);
 
             testUtil.assertNockDone();
+            await testUtil.assertParamsWithMultipleRenditions(receivedMetrics);
 
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
@@ -579,6 +629,8 @@ describe("api.js", () => {
         });
 
         it("should throw an error object if source download fails", async () => {
+            MetricsTestHelper.mockNewRelic();
+
             const main = worker(function() {});
 
             await assert.rejects(
@@ -605,7 +657,7 @@ describe("api.js", () => {
             const main = batchWorker(function() {});
             assert.equal(typeof main, "function");
 
-            testUtil.nockNewRelicMetrics().persist();
+            MetricsTestHelper.mockNewRelic();
 
             const result = main(testUtil.simpleParams());
             // check if it's a Promise, from https://stackoverflow.com/a/38339199/2709
@@ -615,6 +667,8 @@ describe("api.js", () => {
         });
 
         it('should download source, invoke worker callback and upload rendition', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionPath, renditionDir;
 
             function batchWorkerFn(source, renditions, outDirectory) {
@@ -646,6 +700,7 @@ describe("api.js", () => {
             // validate errors
             assert.ok(result.renditionErrors === undefined);
 
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             testUtil.assertNockDone();
 
             // ensure cleanup
@@ -655,6 +710,8 @@ describe("api.js", () => {
         });
 
         it('should support the disableSourceDownload flag', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             function batchWorkerFn(source, renditions, outDirectory) {
                 assert.equal(typeof source, "object");
                 assert.equal(typeof source.path, "string");
@@ -678,10 +735,13 @@ describe("api.js", () => {
             const main = batchWorker(batchWorkerFn, { disableSourceDownload: true});
             await main(testUtil.simpleParams({noSourceDownload: true}));
 
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             testUtil.assertNockDone();
         });
 
         it('should send params to worker', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionPath, renditionDir;
 
             function batchWorkerFn(source, renditions, outDirectory, params) {
@@ -718,6 +778,7 @@ describe("api.js", () => {
             // validate errors
             assert.ok(result.renditionErrors === undefined);
 
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             testUtil.assertNockDone();
 
             // ensure cleanup
@@ -727,6 +788,7 @@ describe("api.js", () => {
         });
 
         it('should send metrics - rendition and activation with cgroup metrics', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
             mockFs({
                 '/sys/fs/cgroup': {
                     'memory': {
@@ -751,9 +813,16 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({noMetricsNock:true});
-            testUtil.nockNewRelicMetrics('rendition');
-            testUtil.nockNewRelicMetrics('activation', {
+            const params = testUtil.simpleParams();
+            await main(params);
+
+            await MetricsTestHelper.metricsDone();
+            testUtil.assertNockDone();
+
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "rendition",
+            },{
+                eventType: "activation",
                 "memory_containerUsage_min": 6666,
                 "memory_containerUsage_max": 6666,
                 "memory_containerUsage_mean": 6666,
@@ -774,14 +843,13 @@ describe("api.js", () => {
                 "cpu_usagePercentage_stdev": null,
                 "cpu_usagePercentage_median": 0,
                 "cpu_usagePercentage_q1": 0,
-                "cpu_usagePercentage_q3": 0,
-            });
-            await main(params);
-
-            testUtil.assertNockDone();
+                "cpu_usagePercentage_q3": 0
+            }]);
         });
 
         it('verify events with some successful and some not generated rendtions during processing', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionDir;
 
             function batchWorkerFn(source, renditions) {
@@ -806,7 +874,6 @@ describe("api.js", () => {
                     "repo:size": testUtil.RENDITION_CONTENT.length
                 }
             });
-            testUtil.nockNewRelicMetrics("rendition");
 
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -816,12 +883,6 @@ describe("api.js", () => {
                     name: "MyRendition2.txt"
                 },
                 source: "https://example.com/MySourceFile.jpg"
-            });
-            testUtil.nockNewRelicMetrics("error", {
-                location: "test_action_batchProcess_norendition",
-                fmt: "txt",
-                name: "MyRendition2.txt",
-                requestId: "test-request-id"
             });
 
             testUtil.nockIOEvent({
@@ -835,11 +896,9 @@ describe("api.js", () => {
                     "repo:size": testUtil.RENDITION_CONTENT.length
                 }
             });
-            testUtil.nockNewRelicMetrics("rendition");
-            testUtil.nockNewRelicMetrics("activation");
 
             const main = batchWorker(batchWorkerFn);
-            const result = await main(testUtil.paramsWithMultipleRenditions({ noPut2: true, noEventsNock: true, noMetricsNock: true }));
+            const result = await main(testUtil.paramsWithMultipleRenditions({ noPut2: true, noEventsNock: true }));
 
             // validate errors
             assert.ok(result.renditionErrors);
@@ -849,6 +908,21 @@ describe("api.js", () => {
             const msg = result.renditionErrors[0].message;
             assert.ok(msg.includes("MyRendition2.txt"));
 
+            await MetricsTestHelper.metricsDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "rendition"
+            },{
+                eventType: "error",
+                location: "test_action_batchProcess_norendition",
+                fmt: "txt",
+                name: "MyRendition2.txt",
+                requestId: "test-request-id"
+            },{
+                eventType: "rendition",
+            },{
+                eventType: "activation",
+            }]);
+
             testUtil.assertNockDone();
 
             // ensure cleanup
@@ -857,6 +931,8 @@ describe("api.js", () => {
         });
 
         it('verify events with some successful and some failing during uploading', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionDir;
 
             function batchWorkerFn(source, renditions) {
@@ -874,7 +950,6 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
-            testUtil.nockNewRelicMetrics("rendition");
             testUtil.nockIOEvent({
                 type: "rendition_failed",
                 errorReason: "GenericError",
@@ -884,14 +959,6 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
-            testUtil.nockNewRelicMetrics("error", {
-                location: "test_action_upload",
-                fmt: "txt",
-                name: "MyRendition2.txt",
-                renditionName: "MyRendition2.txt",
-                renditionFormat: "txt",
-                requestId: "test-request-id"
-            });
             testUtil.nockIOEvent({
                 type: "rendition_created",
                 rendition: {
@@ -900,11 +967,9 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
-            testUtil.nockNewRelicMetrics("rendition");
-            testUtil.nockNewRelicMetrics("activation");
 
             const main = batchWorker(batchWorkerFn);
-            const result = await main(testUtil.paramsWithMultipleRenditions({ put2Status: 400, noEventsNock: true, noMetricsNock: true}));
+            const result = await main(testUtil.paramsWithMultipleRenditions({ put2Status: 400, noEventsNock: true}));
 
             // validate errors
             assert.ok(result.renditionErrors);
@@ -915,6 +980,23 @@ describe("api.js", () => {
             assert.ok(msg.includes("MyRendition2.txt"));
             assert.ok(msg.includes("400")); // put2Status set to fail with 400
 
+            await MetricsTestHelper.metricsDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "rendition"
+            },{
+                eventType: "error",
+                location: "test_action_upload",
+                fmt: "txt",
+                name: "MyRendition2.txt",
+                renditionName: "MyRendition2.txt",
+                renditionFormat: "txt",
+                requestId: "test-request-id"
+            },{
+                eventType: "rendition",
+            },{
+                eventType: "activation",
+            }]);
+
             testUtil.assertNockDone();
 
             // ensure cleanup
@@ -923,6 +1005,8 @@ describe("api.js", () => {
         });
 
         it('verify all error events with batch processing failing on second rendition', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionDir;
 
             async function batchWorkerFn(source, renditions) {
@@ -964,19 +1048,13 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
-            testUtil.nockNewRelicMetrics("error", {
-                location: "test_action_batchProcess",
-                requestId: "test-request-id"
-            });
-            testUtil.nockNewRelicMetrics("activation");
 
             const main = batchWorker(batchWorkerFn);
             const result = await main(testUtil.paramsWithMultipleRenditions({
                 noPut1: true,
                 noPut2: true,
                 noPut3: true,
-                noEventsNock: true,
-                noMetricsNock: true
+                noEventsNock: true
             }));
 
             // validate errors
@@ -989,6 +1067,15 @@ describe("api.js", () => {
             assert.equal(result.renditionErrors[2].name, "Error");
             assert.equal(result.renditionErrors[2].message, "unexpected error occurred in worker");
 
+            await MetricsTestHelper.metricsDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "error",
+                location: "test_action_batchProcess",
+                requestId: "test-request-id"
+            },{
+                eventType: "activation",
+            }]);
+
             testUtil.assertNockDone();
 
             // ensure cleanup
@@ -997,6 +1084,8 @@ describe("api.js", () => {
         });
 
         it('verify rendition_failed events sent if no rendition was generated for multiple renditions', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionDir;
 
             function batchWorkerFn() {
@@ -1012,11 +1101,6 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
-            testUtil.nockNewRelicMetrics("error", {
-                name: "MyRendition1.png",
-                location: "test_action_batchProcess_norendition",
-                requestId: "test-request-id"
-            });
             testUtil.nockIOEvent({
                 type: "rendition_failed",
                 errorReason: "GenericError",
@@ -1025,11 +1109,6 @@ describe("api.js", () => {
                     name: "MyRendition2.txt"
                 },
                 source: "https://example.com/MySourceFile.jpg"
-            });
-            testUtil.nockNewRelicMetrics("error", {
-                name: "MyRendition2.txt",
-                location: "test_action_batchProcess_norendition",
-                requestId: "test-request-id"
             });
             testUtil.nockIOEvent({
                 type: "rendition_failed",
@@ -1040,12 +1119,6 @@ describe("api.js", () => {
                 },
                 source: "https://example.com/MySourceFile.jpg"
             });
-            testUtil.nockNewRelicMetrics("error", {
-                name: "MyRendition3.xml",
-                location: "test_action_batchProcess_norendition",
-                requestId: "test-request-id"
-            });
-            testUtil.nockNewRelicMetrics("activation");
 
             const main = batchWorker(batchWorkerFn);
             const result = await main(testUtil.paramsWithMultipleRenditions({
@@ -1053,8 +1126,7 @@ describe("api.js", () => {
                 noPut1: true,
                 noPut2: true,
                 noPut3: true,
-                noEventsNock: true,
-                noMetricsNock: true
+                noEventsNock: true
             }));
 
             // validate errors
@@ -1067,6 +1139,25 @@ describe("api.js", () => {
             assert.equal(result.renditionErrors[2].name, "GenericError");
             assert.ok(result.renditionErrors[2].message.includes("MyRendition3.xml"));
 
+            await MetricsTestHelper.metricsDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "error",
+                name: "MyRendition1.png",
+                location: "test_action_batchProcess_norendition",
+                requestId: "test-request-id"
+            },{
+                eventType: "error",
+                name: "MyRendition2.txt",
+                location: "test_action_batchProcess_norendition",
+                requestId: "test-request-id"
+            },{
+                eventType: "error",
+                name: "MyRendition3.xml",
+                location: "test_action_batchProcess_norendition",
+                requestId: "test-request-id"
+            },{
+                eventType: "activation",
+            }]);
             testUtil.assertNockDone();
 
             // ensure cleanup
@@ -1075,6 +1166,8 @@ describe("api.js", () => {
         });
 
         it('should handle multiple renditions', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
             let sourcePath, renditionDir;
 
             function batchWorkerFn(source, renditions, outDirectory) {
@@ -1110,6 +1203,7 @@ describe("api.js", () => {
             // validate errors
             assert.ok(result.renditionErrors === undefined);
 
+            await testUtil.assertParamsWithMultipleRenditions(receivedMetrics);
             testUtil.assertNockDone();
 
             // ensure cleanup
@@ -1118,6 +1212,8 @@ describe("api.js", () => {
         });
 
         it("should throw an error object if source download fails", async () => {
+            MetricsTestHelper.mockNewRelic();
+
             const main = batchWorker(function() {});
             await assert.rejects(
                 main(testUtil.simpleParams({failDownload: true})),
