@@ -7,4 +7,4 @@
 
 This shared library is used by all Nui workers and takes care of common things like asset download & rendition upload.
 
-_This will be open sourced as it will be part of the Nui SDK to build custom workers_
+_This will be open sourced as it will be part of the Nui SDK to build custom workers._
