@@ -30,7 +30,7 @@ const util = require('util');
 
 const removeFiles = util.promisify(rimraf);
 
-describe('http.js', function() {
+describe('http.js (multipart)', function() {
   describe('http multipart upload', function() {
     beforeEach(async function() {
       mockFs();
