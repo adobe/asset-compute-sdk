@@ -49,7 +49,7 @@ function beforeEach() {
     process.env.__OW_ACTION_NAME = "/namespace/package/test_action";
     process.env.NUI_DISABLE_RETRIES = "disable";
 
-    // http instrumentation has timeouts that can get in the way and we don't need it for any of the tests
+    // http instrumentation has timeouts that can get in the way and we do not need it for any of the tests
     process.env.OPENWHISK_NEWRELIC_DISABLE_ALL_INSTRUMENTATION = true;
 
     mockFs();
