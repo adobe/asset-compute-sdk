@@ -28,6 +28,7 @@ const fs = require('fs-extra');
 const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@nui/asset-compute-commons');
 const mockFs = require('mock-fs');
 const MetricsTestHelper = require("@nui/openwhisk-newrelic/lib/testhelper");
+const mockRequire = require("mock-require");
 
 describe("api.js", () => {
     beforeEach(function() {
@@ -645,6 +646,118 @@ describe("api.js", () => {
             );
         });
 
+    });
+
+    describe("web action (custom workers)", function() {
+
+        // TODO: add more negative tests
+        // TODO: add test for activationIds in io events
+        it('should invoke itself asynchronously if invoked as web action', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
+            const ACTIVATION_ID = "1234567890";
+
+            const invokedActions = [];
+
+            // mock openwhisk
+            mockFs.restore();
+            mockRequire("openwhisk", () => ({
+                actions: {
+                    invoke: (args) => {
+                        args.activationId = ACTIVATION_ID;
+                        invokedActions.push(args);
+                        return {
+                            activationId: ACTIVATION_ID
+                        };
+                    }
+                }
+            }));
+            mockRequire.reRequire('../lib/webaction');
+            const { worker } = mockRequire.reRequire('../lib/api');
+
+            // invoke worker with web action
+            const REQUEST_ID = "test-request-id";
+            const params = {
+                source: {
+                    url: "https://example.com/MySourceFile.jpg",
+                    name: "MySourceFile.jpg",
+                    mimetype: "image/jpeg",
+                    size: 200
+                },
+                renditions: [{
+                    fmt: "png",
+                    target: "https://example.com/MyRendition.png"
+                }],
+                userData: {
+                    key: "value"
+                },
+                newRelicEventsURL: MetricsTestHelper.MOCK_URL,
+                newRelicApiKey: MetricsTestHelper.MOCK_API_KEY,
+                times: {
+                    gatewayToProcessDuration: 1.2
+                }
+            };
+            // https://github.com/apache/openwhisk/blob/master/docs/webactions.md
+            params.__ow_method = "post";
+            params.__ow_headers = {
+                // must be parsed in the worker
+                "authorization": `Bearer ${testUtil.PARAMS_AUTH.accessToken}`,
+                "x-gw-ims-org-id": testUtil.PARAMS_AUTH.orgId,
+                "x-gw-ims-org-name": testUtil.PARAMS_AUTH.orgName,
+                "x-app-name": testUtil.PARAMS_AUTH.appName,
+                "x-request-id": REQUEST_ID,
+                "Content-Type": "application/json"
+            };
+
+            const main = worker(() => {
+                assert.fail("worker function should not be invoked");
+            });
+            const result = await main(params);
+
+            // check correct async action invocation was done
+            assert.strictEqual(invokedActions.length, 1);
+            const invocation = invokedActions[0];
+            assert.strictEqual(invocation.name, "/namespace/package/test_action");
+            assert(!invocation.blocking); // must be async
+            assert(!invocation.result);
+            assert.strictEqual(invocation.activationId, ACTIVATION_ID);
+            assert.strictEqual(typeof invocation.params, "object");
+            assert.strictEqual(invocation.params.requestId, REQUEST_ID);
+            assert.strictEqual(typeof invocation.params.auth, "object");
+            assert.strictEqual(invocation.params.auth.accessToken, testUtil.PARAMS_AUTH.accessToken);
+            assert.strictEqual(invocation.params.auth.orgId, testUtil.PARAMS_AUTH.orgId);
+            assert.strictEqual(invocation.params.auth.orgName, testUtil.PARAMS_AUTH.orgName);
+            assert.strictEqual(invocation.params.auth.clientId, testUtil.PARAMS_AUTH.clientId);
+            assert.strictEqual(invocation.params.auth.appName, testUtil.PARAMS_AUTH.appName);
+            assert.strictEqual(invocation.params.source, params.source);
+            assert.strictEqual(invocation.params.renditions, params.renditions);
+            assert.strictEqual(invocation.params.userData, params.userData);
+            assert.strictEqual(invocation.params.newRelicEventsURL, params.newRelicEventsURL);
+            assert.strictEqual(invocation.params.newRelicApiKey, params.newRelicApiKey);
+            assert.strictEqual(invocation.params.times, params.times);
+            assert.strictEqual(invocation.params.customWorker, true);
+
+            // check web action result is correct
+            assert.strictEqual(result.statusCode, 200);
+            assert.strictEqual(typeof result.body, "object");
+            assert.strictEqual(result.body.activationId, ACTIVATION_ID);
+
+            // check metrics
+            await MetricsTestHelper.metricsDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "activation",
+                sourceName: "MySourceFile.jpg",
+                sourceMimetype: "image/jpeg",
+                sourceSize: 200,
+                orgId: testUtil.PARAMS_AUTH.orgId,
+                orgName: testUtil.PARAMS_AUTH.orgName,
+                clientId: testUtil.PARAMS_AUTH.clientId,
+                appName: testUtil.PARAMS_AUTH.appName,
+                requestId: "test-request-id",
+                actionName: "test_action",
+                namespace: "namespace"
+            }]);
+        });
     });
 
     describe("batchWorker()", () => {

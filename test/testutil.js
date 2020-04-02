@@ -46,6 +46,7 @@ function beforeEach() {
         console.error("[nock] Error, no nock match found for:", method, url || options.host, body);
     });
 
+    process.env.__OW_NAMESPACE = "namespace";
     process.env.__OW_ACTION_NAME = "/namespace/package/test_action";
     process.env.NUI_DISABLE_RETRIES = "disable";
 
@@ -88,7 +89,7 @@ function nockIOEvent(expectedPayload, status=200) {
             const payload = parseIoEventPayload(body.event);
 
             return (body.user_guid === "org"
-                && body.provider_id === "asset_compute_org_client"
+                && body.provider_id === "asset_compute_org_test_client"
                 && body.event_code === "asset_compute"
                 // if no expected payload is set, match any payload
                 // otherwise check for partial match of expected payload
@@ -99,6 +100,8 @@ function nockIOEvent(expectedPayload, status=200) {
 
 const PARAMS_AUTH = {
     orgId: "org",
+    orgName: "My Org",
+    appName: "My integration",
     // simple custom dummy access token that can be parsed as jwt
     // header:
     // {
@@ -118,7 +121,7 @@ const PARAMS_AUTH = {
     //   "type": "access_token"
     // }
     accessToken: "eyJhbGciOiJIUzI1NiIsIng1dSI6Imltcy5jZXIifQ.eyJpZCI6IjEzODQzNzEwNjAyMTQtZWQ4MjFiNDAtNThiNi00ZDViLTlkMDAtMWFiMmI5YWI1NjU2Iiwic2NvcGUiOiJBZG9iZUlELG9wZW5pZCIsImMiOiJNZS9iVkhJbklMcjNXZkdTOGF0VUFRPT0iLCJhcyI6Imltcy1uYTEiLCJjcmVhdGVkX2F0IjoiMTM4NDM3MTA2MDIxNCIsImV4cGlyZXNfaW4iOiI4NjQwMDAwMCIsInVzZXJfaWQiOiI3RjhGNUExMTRBMDE3MTNEOTkyMEZBQUVAQWRvYmVJRCIsImNsaWVudF9pZCI6InRlc3RfY2xpZW50IiwidHlwZSI6ImFjY2Vzc190b2tlbiJ9.yrvQEvXacgbDsq5fkWyWqLf45F5NYLsUVGegFUbZChU",
-    clientId: "client"
+    clientId: "test_client"
 };
 
 function simpleParams(options={}) {
