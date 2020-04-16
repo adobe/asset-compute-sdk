@@ -8,3 +8,9 @@
 This shared library is used by all Nui workers and takes care of common things like asset download & rendition upload.
 
 _This will be open sourced as it will be part of the Nui SDK to build custom workers._
+
+### Contributing
+Contributions are welcomed! Read the [Contributing Guide](./.github/CONTRIBUTING.md) for more information.
+
+### Licensing
+This project is licensed under the Apache V2 License. See [LICENSE](LICENSE) for more information.
