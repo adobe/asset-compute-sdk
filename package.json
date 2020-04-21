@@ -16,7 +16,7 @@
     "@nui/asset-compute-commons": "^11.0.0",
     "@nui/metrics-sampler": "^1.0.2",
     "@nui/node-fetch-retry": "^7.0.0",
-    "@nui/node-httptransfer": "^5.0.0",
+    "@nui/node-httptransfer": "^6.0.0",
     "ajv": "6.12.0",
     "cgroup-metrics": "^2.0.0",
     "clone": "^2.1.2",
