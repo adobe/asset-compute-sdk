@@ -499,8 +499,7 @@ describe("api.js", () => {
         });
 
         it("should send `timeout` and `error` metrics because of IO event failure", async () => {
-            // applicable with 5.0.0 version of node-fetch-retry. until then higher test timeout.
-            process.env.DEFAULT_MAX_MS_TO_TRY = 3000;
+            process.env.NODE_FETCH_RETRY_MAX_RETRY = 100;
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
             testUtil.nockIOEvent({
                 type: "rendition_created",
@@ -534,8 +533,7 @@ describe("api.js", () => {
             },{
                 eventType: "activation"
             }]);
-            //this long timeout should be removed once new version of node-fetch-retry
-        }).timeout(60000);
+        });
 
         it('should support the disableSourceDownload flag', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
