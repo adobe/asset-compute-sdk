@@ -22,7 +22,7 @@ const assert = require('assert');
 const fs = require('fs-extra');
 const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@nui/asset-compute-commons');
 const mockFs = require('mock-fs');
-const MetricsTestHelper = require("@nui/openwhisk-newrelic/lib/testhelper");
+const { MetricsTestHelper } = require("@nui/asset-compute-commons");
 
 describe("api.js", () => {
     beforeEach(function() {

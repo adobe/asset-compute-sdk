@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@adobe/node-fetch-retry": "^1.0.1",
-    "@nui/asset-compute-commons": "^11.0.0",
+    "@nui/asset-compute-commons": "^13.0.0",
     "@nui/metrics-sampler": "^1.0.2",
     "@nui/node-httptransfer": "^6.0.0",
     "ajv": "6.12.0",

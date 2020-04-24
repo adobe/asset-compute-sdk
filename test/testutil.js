@@ -20,13 +20,13 @@ const url = require('url');
 const mockFs = require('mock-fs');
 const assert = require('assert');
 const lodash = require("lodash");
-const MetricsTestHelper = require("@nui/openwhisk-newrelic/lib/testhelper");
+const { MetricsTestHelper } = require("@nui/asset-compute-commons");
 
 const SOURCE_CONTENT = "source content";
 const RENDITION_CONTENT = "rendition content";
 
 function beforeEach() {
-    nock.disableNetConnect();
+    nock.cleanAll();
 
     // log custom body depending on io events or new relic for helping with match issues
     nock.emitter.on('no match', (req, options, body) => {
@@ -36,9 +36,9 @@ function beforeEach() {
             if (url.startsWith("https://eg-ingress.adobe.io/api/events")) {
                 body = JSON.parse(body);
                 body.event = parseIoEventPayload(body.event);
+                console.error("[nock] Error, no nock match found for:", method, url || options.host, body);
             }
         }
-        console.error("[nock] Error, no nock match found for:", method, url || options.host, body);
     });
 
     process.env.__OW_NAMESPACE = "namespace";

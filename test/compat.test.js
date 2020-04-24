@@ -22,7 +22,7 @@ const fs = require('fs-extra');
 const nock = require('nock');
 const assert = require('assert');
 const mockFs = require('mock-fs');
-const MetricsTestHelper = require("@nui/openwhisk-newrelic/lib/testhelper");
+const { MetricsTestHelper } = require("@nui/asset-compute-commons");
 
 describe('compat.js', () => {
 

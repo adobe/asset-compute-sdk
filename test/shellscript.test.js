@@ -24,7 +24,7 @@ const mockFs = require('mock-fs');
 const fs = require('fs');
 const path = require("path");
 const envfile = require("envfile");
-const MetricsTestHelper = require("@nui/openwhisk-newrelic/lib/testhelper");
+const { MetricsTestHelper } = require("@nui/asset-compute-commons");
 
 const TEST_DIR = "build/tests/shellscript";
 
