@@ -20,7 +20,7 @@ const { download, upload } = require('../../lib/storage/http');
 const nock = require('nock');
 const assert = require('assert');
 
-const http = require('@nui/node-httptransfer');
+const http = require('@adobe/httptransfer');
 
 const oldDownloadFileHttpTransfer = http.downloadFile;
 
@@ -61,7 +61,7 @@ describe('http.js', () => {
         });
 
 
-        it("should fail downloading a jpg file mocking @nui/node-httptransfer", async () => { 
+        it("should fail downloading a jpg file mocking @adobe/httptransfer", async () => { 
             const source = {
                 url: "https://example.com/fakeEarth.jpg"
             };
