@@ -126,6 +126,8 @@ Object containing the following attributes:
 ##### **`params`**
 original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asset-processing))
 
+_Note: This argument is usually not needed, as a callback should take its information from the `rendition.instructions` which are the specific rendition parameters from the request._
+
 #### Examples
 
 At the bare minimum, the rendition callback function must write something to the `rendition.path`.
