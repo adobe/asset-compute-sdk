@@ -95,7 +95,7 @@ Object containing the following attributes:
 | Name | Type | Description | Example |
 |------|------|-------------|---------|
 | `url` | `string` | URL pointing to the source binary. | `"http://example.com/image.jpg"` |
-| `path`| `string` |  Path to local copy of source file | `"tmp/image.jpg"` |
+| `path`| `string` |  Absolute path to local copy of source file | `"/tmp/image.jpg"` |
 | `name` | `string` | File name. File extension in the name might be used if no mime type can be detected. Takes precedence over filename in URL path or filename in content-disposition header of the binary resource. Defaults to "file". | `"image.jpg"` |
 ##### **`rendition`**
 Object containing the following attributes:
