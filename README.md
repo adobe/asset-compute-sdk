@@ -9,19 +9,19 @@
     - [ShellScript worker](#shellscript-worker)
   - [API details](#api-details)
     - [`renditionCallback` function for `worker` (required)](#renditioncallback-function-for-worker-required)
-      - [Parameters:](#parameters)
-      - [**`source`**:](#source)
-      - [**`rendition`**:](#rendition)
-      - [**`params`**:](#params)
-      - [renditionCallback for `worker` Examples:](#renditioncallback-for-worker-examples)
+      - [Parameters](#parameters)
+        - [**`source`**](#source)
+        - [**`rendition`**](#rendition)
+        - [**`params`**](#params)
+      - [Examples](#examples-1)
     - [`renditionCallback` function for `batchWorker` (required)](#renditioncallback-function-for-batchworker-required)
-      - [Parameters:](#parameters-1)
-      - [**`source`**:](#source-1)
-      - [**`renditions`**:](#renditions)
-      - [**`outdir`**:](#outdir)
-      - [**`params`**:](#params-1)
-      - [`renditionCallback` for `batchWorker` example:](#renditioncallback-for-batchworker-example)
-      - [Worker Options (optional)](#worker-options-optional)
+      - [Parameters](#parameters-1)
+        - [**`source`**](#source-1)
+        - [**`renditions`**](#renditions)
+        - [**`outdir`**](#outdir)
+        - [**`params`**](#params-1)
+      - [Examples](#examples-2)
+    - [Worker Options (optional)](#worker-options-optional)
     - [Contributing](#contributing)
     - [Licensing](#licensing)
 
@@ -87,18 +87,18 @@ The `worker` and `batchWorker` take two parameters: `renditonCallback` and `opti
 ### `renditionCallback` function for `worker` (required)
 The `renditionCallback` function is where you can put your custom worker logic. For example, if you would like to call an external API, you can make fetch requests to that API inside your `renditionCallback` function.
 
-#### Parameters:
+#### Parameters
 The parameters for the rendition callback function are: `source`, `rendition`, and `params`
-#### **`source`**:
-source Object containing the following attributes:
+##### **`source`**
+Object containing the following attributes:
 
 | Name | Type | Description | Example |
 |------|------|-------------|---------|
 | `url` | `string` | URL pointing to the source binary. | `"http://example.com/image.jpg"` |
 | `path`| `string` |  Path to local copy of source file | `"tmp/image.jpg"` |
 | `name` | `string` | File name. File extension in the name might be used if no mime type can be detected. Takes precedence over filename in URL path or filename in content-disposition header of the binary resource. Defaults to "file". | `"image.jpg"` |
-#### **`rendition`**: 
-rendition Object containing the following attributes:
+##### **`rendition`**
+Object containing the following attributes:
 
 | Name | Type | Description |
 |------|------|-------------|
@@ -113,10 +113,10 @@ rendition Object containing the following attributes:
 | `sha1` | `function` | provides the rendition sha1 (does not take any parameters) |
 | `id` | `function` | provides the an id used to identify a rendition (does not take any parameters) |
 
-#### **`params`**:
+##### **`params`**
 original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asset-processing))
 
-#### renditionCallback for `worker` Examples:
+#### Examples
 
 At the bare minimum, the rendition callback function must write something to the `rendition.path`.
 
@@ -137,18 +137,18 @@ async function renditionCallback(source, rendition) => {
 
 The `renditionCallback` for `batchWorker` has slightly different parameters.
 
-#### Parameters:
+#### Parameters
 The parameters for the rendition callback function are: `source`, `renditions`, `outdir`, and `params`
-#### **`source`**:
+##### **`source`**
 Source is the exact same as for `renditionCallback` in `worker`
-#### **`renditions`**:
+##### **`renditions`**
 Renditions are an array of renditions. Each rendition has the same structure as for `renditionCallback` in `worker`
-#### **`outdir`**:
+##### **`outdir`**
 directory to put renditions produced in batch workers
-#### **`params`**:
+##### **`params`**
 `params` is the exact same as for `renditionCallback` in `worker`
 
-#### `renditionCallback` for `batchWorker` example:
+#### Examples
 
 At the bare minimum, the rendition callback function must write something to the `rendition.path`.
 
@@ -167,7 +167,7 @@ async function renditionCallback(source, renditions, outdir, params) => {
 }
 ```
 
-#### Worker Options (optional)
+### Worker Options (optional)
 Optional parameters to pass into workers
 - disableSourceDownload: Boolean used to disable the source download (defaults to false)
 - disableRenditionUpload: Boolean used to disable the rendition upload (defaults to false)
