@@ -96,7 +96,7 @@ await main(params);
 
 ## API details
 
-The `worker` and `batchWorker` take two parameters: `renditonCallback` and `options` as described below.
+The `worker` and `batchWorker` take two parameters: `renditionCallback` and `options` as described below.
 
 ### `renditionCallback` function for `worker` (required)
 The `renditionCallback` function is where you can put your custom worker logic. For example, if you would like to call an external API, you can make fetch requests to that API inside your `renditionCallback` function.
@@ -122,10 +122,6 @@ Object containing the following attributes:
 | `path` | `string` | Absolute path to store rendition locally (must put rendition here in order to be uploaded to cloud storage) |
 | `index` | `number` | number used to identify a rendition |
 | `target` | `string` or `object` | URL to which the generated rendition should be uploaded or multipart pre-signed URL upload information for the generated rendition |
-| `metadata` | `object` | stores rendition metadata |
-| `size` | `function` | provides the rendition size (does not take any parameters) |
-| `sha1` | `function` | provides the rendition sha1 (does not take any parameters) |
-| `id` | `function` | provides the an id used to identify a rendition (does not take any parameters) |
 
 ##### **`params`**
 original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asset-processing))
