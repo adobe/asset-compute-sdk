@@ -9,13 +9,13 @@
     - [Batch processing javascript worker](#batch-processing-javascript-worker)
     - [ShellScript worker](#shellscript-worker)
   - [API details](#api-details)
-    - [`renditionCallback` function for `worker` (required)](#renditioncallback-function-for-worker-required)
+    - [Rendition Callback for `worker` (required)](#rendition-callback-for-worker-required)
       - [Parameters](#parameters)
         - [**`source`**](#source)
         - [**`rendition`**](#rendition)
         - [**`params`**](#params)
       - [Examples](#examples-1)
-    - [`renditionCallback` function for `batchWorker` (required)](#renditioncallback-function-for-batchworker-required)
+    - [Rendition Callback for `batchWorker` (required)](#rendition-callback-for-batchworker-required)
       - [Parameters](#parameters-1)
         - [**`source`**](#source-1)
         - [**`renditions`**](#renditions)
@@ -98,8 +98,10 @@ await main(params);
 
 The `worker` and `batchWorker` take two parameters: `renditionCallback` and `options` as described below.
 
-### `renditionCallback` function for `worker` (required)
-The `renditionCallback` function is where you can put your custom worker logic. For example, if you would like to call an external API, you can make fetch requests to that API inside your `renditionCallback` function.
+### Rendition Callback for `worker` (required)
+The `renditionCallback` function is where you put your custom worker code. The basic expectation of this function is to look at parameters from `rendition.instructions` and convert it into a rendition, then write this rendition to `rendition.path`.
+
+Producing the rendition may involve external libraries or APIs. These steps should also be accomplished inside your `renditionCallback` function.
 
 #### Parameters
 The parameters for the rendition callback function are: `source`, `rendition`, and `params`
@@ -145,9 +147,12 @@ async function renditionCallback(source, rendition) => {
 }
 ```
 
-### `renditionCallback` function for `batchWorker` (required)
+### Rendition Callback for `batchWorker` (required)
 
-The `renditionCallback` for `batchWorker` has slightly different parameters.
+The `renditionCallback` function in `batchWorker` is where you put your custom worker code. It works similarly to the `renditionCallback` function in `worker` with slightly different parameters. The main difference is it only gets called once per worker (instead of for each rendition).
+
+The basic expectation of this function is to go through each of the `renditions` and using the rendition's `instructions` convert the it into a rendition, then write this rendition to it's corresponding `rendition.path`.
+
 
 #### Parameters
 The parameters for the rendition callback function are: `source`, `renditions`, `outdir`, and `params`
