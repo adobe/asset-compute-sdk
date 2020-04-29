@@ -21,7 +21,7 @@
 
 # Adobe Asset Compute SDK
 
-This shared library is used by all Asset Compute workers and takes care of common functions like asset download & rendition upload.
+Adobe Asset Compute SDK library a shared library used by all Asset Compute workers and takes care of common functions like asset download & rendition upload.
 
 ## Installation
 
@@ -76,7 +76,7 @@ await main(params);
 
 ## API details
 
-The `worker` and `batchWorker` take in two parameters: `renditonCallback` and `options` as described below.
+The `worker` and `batchWorker` take two parameters: `renditonCallback` and `options` as described below.
 
 ### Rendition callback function (required)
 The `renditionCallback` function is where you can put your custom worker logic. For example, if you would like to call an external API, you can make fetch requests to that API inside your `renditionCallback` function.
