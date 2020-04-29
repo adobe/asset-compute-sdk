@@ -8,13 +8,19 @@
     - [Batch processing javascript worker](#batch-processing-javascript-worker)
     - [ShellScript worker](#shellscript-worker)
   - [API details](#api-details)
-    - [Rendition callback function (required)](#rendition-callback-function-required)
+    - [`renditionCallback` function for `worker` (required)](#renditioncallback-function-for-worker-required)
       - [Parameters:](#parameters)
       - [**`source`**:](#source)
       - [**`rendition`**:](#rendition)
-      - [**`outdir`**:](#outdir)
       - [**`params`**:](#params)
-      - [renditionCallback Examples:](#renditioncallback-examples)
+      - [renditionCallback for `worker` Examples:](#renditioncallback-for-worker-examples)
+    - [`renditionCallback` function for `batchWorker` (required)](#renditioncallback-function-for-batchworker-required)
+      - [Parameters:](#parameters-1)
+      - [**`source`**:](#source-1)
+      - [**`renditions`**:](#renditions)
+      - [**`outdir`**:](#outdir)
+      - [**`params`**:](#params-1)
+      - [`renditionCallback` for `batchWorker` example:](#renditioncallback-for-batchworker-example)
       - [Worker Options (optional)](#worker-options-optional)
     - [Contributing](#contributing)
     - [Licensing](#licensing)
@@ -78,11 +84,11 @@ await main(params);
 
 The `worker` and `batchWorker` take two parameters: `renditonCallback` and `options` as described below.
 
-### Rendition callback function (required)
+### `renditionCallback` function for `worker` (required)
 The `renditionCallback` function is where you can put your custom worker logic. For example, if you would like to call an external API, you can make fetch requests to that API inside your `renditionCallback` function.
 
 #### Parameters:
-The parameters for the rendition callback function are: `source`, `rendition`, `outdir`, and `params`
+The parameters for the rendition callback function are: `source`, `rendition`, and `params`
 #### **`source`**:
 source Object containing the following attributes:
 
@@ -107,13 +113,10 @@ rendition Object containing the following attributes:
 | `sha1` | `function` | provides the rendition sha1 (does not take any parameters) |
 | `id` | `function` | provides the an id used to identify a rendition (does not take any parameters) |
 
-#### **`outdir`**:
-(only in batchWorker): directory to put renditions produced in batch workers
-
 #### **`params`**:
 original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asset-processing))
 
-#### renditionCallback Examples:
+#### renditionCallback for `worker` Examples:
 
 At the bare minimum, the rendition callback function must write something to the `rendition.path`.
 
@@ -127,6 +130,40 @@ async function renditionCallback(source, rendition) => {
     }
     // process infile and write to outfile
     await fs.copyFile(source.path, rendition.path);
+}
+```
+
+### `renditionCallback` function for `batchWorker` (required)
+
+The `renditionCallback` for `batchWorker` has slightly different parameters.
+
+#### Parameters:
+The parameters for the rendition callback function are: `source`, `renditions`, `outdir`, and `params`
+#### **`source`**:
+Source is the exact same as for `renditionCallback` in `worker`
+#### **`renditions`**:
+Renditions are an array of renditions. Each rendition has the same structure as for `renditionCallback` in `worker`
+#### **`outdir`**:
+directory to put renditions produced in batch workers
+#### **`params`**:
+`params` is the exact same as for `renditionCallback` in `worker`
+
+#### `renditionCallback` for `batchWorker` example:
+
+At the bare minimum, the rendition callback function must write something to the `rendition.path`.
+
+Simplest example (copying the source file):
+```js
+async function renditionCallback(source, renditions, outdir, params) => {
+    // Check for unsupported file
+    const stats = await fs.stat(source.path);
+    if (stats.size === 0) {
+        throw new SourceUnsupportedError('source file is unsupported');
+    }
+    // process infile and write to outfile
+    renditions.forEach(rendition, () => {
+        await fs.copyFile(source.path, outdir + rendition.path);
+    })
 }
 ```
 
