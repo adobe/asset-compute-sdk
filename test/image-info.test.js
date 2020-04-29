@@ -36,7 +36,7 @@ describe("image-info.js", function (){
     });
 
     it("returns image information for svg file", async function(){
-        const filePath = "test/files/funky/file.svg";
+        const filePath = "test/files/negative/file.svg";
         const result = ImageInfo.getImageInfoFromFile(filePath);
         assert.equal(result.width, 512);
         assert.equal(result.height, 288);
@@ -56,7 +56,7 @@ describe("image-info.js", function (){
         let errThrown = false;
         try {
             ImageInfo.getImageInfoFromFile(filePath);
-        } catch (err) {
+        } catch (err) { /* eslint-disable-line no-unused-vars */
             errThrown = true;
         }
         assert.equal(errThrown, true);
@@ -67,7 +67,7 @@ describe("image-info.js", function (){
         let errThrown = false;
         try {
             ImageInfo.getImageInfoFromFile(filePath);
-        } catch (err) {
+        } catch (err) { /* eslint-disable-line no-unused-vars */
             errThrown = true;
         }
         assert.equal(errThrown, true);
@@ -151,7 +151,7 @@ describe("image-info.js", function (){
         let errThrown = false;
         try {
             await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
-        } catch (err) {
+        } catch (err) { /* eslint-disable-line no-unused-vars */
             errThrown = true;
         }
         assert.equal(errThrown, true);

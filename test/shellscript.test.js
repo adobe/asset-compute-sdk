@@ -81,7 +81,7 @@ describe("api.js (shell)", () => {
         process.chdir(previousWorkingDir);
         try {
             fs.rmdirSync(TEST_DIR, {recursive: true});
-        } catch (ignore) {}
+        } catch (ignore) { } /* eslint-disable-line no-unused-vars */
 
         testUtil.afterEach();
         delete process.env.DISABLE_ACTION_TIMEOUT_METRIC;
@@ -171,7 +171,7 @@ describe("api.js (shell)", () => {
             // ensure there is no worker.sh
             try {
                 fs.unlinkSync("worker.sh");
-            } catch (ignore) {
+            } catch (ignore) { /* eslint-disable-line no-unused-vars */
             }
             assert.throws(() => shellScriptWorker(), /Shell script 'worker.sh' not found$/);
         });

@@ -39,7 +39,7 @@ test_logs_bld: &test_logs_bld
   # Test-logs for modules without action folder
   store_artifacts:
     path: build
-    destination: build  
+    destination: build
 test_logs_ac_nui: &test_logs_ac_nui
   # Test-logs for modules with action folder for image comparision
   store_artifacts:
@@ -127,7 +127,7 @@ jobs:
     machine:
         enabled: true
         docker_layer_caching: true
-    steps:  
+    steps:
       - checkout
       - *ssh_keys
       - *artifactory_login
@@ -165,7 +165,7 @@ jobs:
   deploy_app:
     docker:
       - image: circleci/node:12.16.1
-    steps:  
+    steps:
       - checkout
       - *ssh_keys
       - *artifactory_login
@@ -188,7 +188,7 @@ jobs:
             cd ~/appLatest/bridgeDir/app
             cat ~/circleci/deploy-app-step-2.sh
             ~/circleci/deploy-app-step-2.sh
-            
+
       - persist_to_workspace:
           root: ~/workspace
           paths:
@@ -205,7 +205,7 @@ jobs:
           NUI_IT_INTEGRATION_YAML: ${NUI_IT_INTEGRATION_YAML}
           AZURE_STORAGE_KEY: ${AZURE_STORAGE_KEY}
           AZURE_STORAGE_ACCOUNT: ${AZURE_STORAGE_ACCOUNT}
-    
+
       steps:
         - checkout
         - *artifactory_login
@@ -237,7 +237,7 @@ jobs:
           command: |
             cat ~/circleci/release.sh
             ~/circleci/release.sh
-            
+
       - persist_to_workspace:
           root: ~/tmpDir
           paths:
@@ -259,7 +259,7 @@ jobs:
           command: |
             cat ~/circleci/dependent-version-update.sh
             ~/circleci/dependent-version-update.sh
-              
+
   validate_config:
     working_directory: ~/validate
     docker:
