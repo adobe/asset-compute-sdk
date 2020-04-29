@@ -3,6 +3,7 @@
 
 - [Adobe Asset Compute SDK](#adobe-asset-compute-sdk)
   - [Installation](#installation)
+  - [Overview](#overview)
   - [Examples](#examples)
     - [Simple javascript worker](#simple-javascript-worker)
     - [Batch processing javascript worker](#batch-processing-javascript-worker)
@@ -35,6 +36,19 @@ Adobe Asset Compute SDK library a shared library used by all Asset Compute worke
 npm install @adobe/asset-compute-sdk
 ```
 
+## Overview
+A high-level overview of Adobe Asset Compute worker SDK
+
+1. Setup
+- Initiates the New Relic metrics agent and Adobe IO Events handler (see [asset-compute-commons](https://github.com/adobe/asset-compute-commons) for more information)
+- Sets up the proper directories for local access to source and rendition
+2. Download source file from `url` in [`source`](#source) object
+3. Run `renditionCallback` function for each rendition ([worker](#renditioncallback-function-for-worker-required)) or for all the renditions at once ([batch worker](#renditioncallback-function-for-batchworker-required))
+- The rendition callback is where you put your worker logic. At the minimum, this function needs to convert the local source file into a local rendition file
+4. Upload renditions to `target` in [`rendition`](#rendition) object
+5. Notify the client via Adobe IO Events after each rendition
+- It sends a `rendition_created` or `rendition_failed` event depending on the outcome (see [Asset Compute API asynchronous events](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asynchronous-events) for more information)
+- If the worker is part of a chain of workers, it will only send successful rendition events after the last worker in the chain
 ## Examples
 
 ### Simple javascript worker
@@ -105,7 +119,7 @@ Object containing the following attributes:
 | `instructions` | `object` | rendition parameters from the worker params (e.g. quality, dpi, format, hei etc. See full list [here](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#rendition-instructions) |
 | `directory` | `string` | directory to put the renditions |
 | `name` | `string` | filename of the rendition to create |
-| `path` | `string` | path to store rendition locally (must put rendition here in order to be uploaded to cloud storage) |
+| `path` | `string` | Absolute path to store rendition locally (must put rendition here in order to be uploaded to cloud storage) |
 | `index` | `number` | number used to identify a rendition |
 | `target` | `string` or `object` | URL to which the generated rendition should be uploaded or multipart pre-signed URL upload information for the generated rendition |
 | `metadata` | `object` | stores rendition metadata |
