@@ -1,6 +1,24 @@
 <!--- when a new release happens, the VERSION and URL in the badge have to be manually updated because it's a private registry --->
 [![npm version](https://img.shields.io/badge/%40nui%2Flibrary-24.0.0-blue.svg)](https://artifactory.corp.adobe.com/artifactory/npm-nui-release/@nui/library/-/@nui/library-24.0.0.tgz)
 
+- [Adobe Asset Compute SDK](#adobe-asset-compute-sdk)
+  - [Installation](#installation)
+  - [Examples](#examples)
+    - [Simple javascript worker](#simple-javascript-worker)
+    - [Batch processing javascript worker](#batch-processing-javascript-worker)
+    - [ShellScript worker](#shellscript-worker)
+  - [API details](#api-details)
+    - [Rendition callback function (required)](#rendition-callback-function-required)
+      - [Parameters:](#parameters)
+      - [**`source`**:](#source)
+      - [**`rendition`**:](#rendition)
+      - [**`outdir`**:](#outdir)
+      - [**`params`**:](#params)
+      - [renditionCallback Examples:](#renditioncallback-examples)
+      - [Worker Options (optional)](#worker-options-optional)
+    - [Contributing](#contributing)
+    - [Licensing](#licensing)
+
 # Adobe Asset Compute SDK
 
 This shared library is used by all Asset Compute workers and takes care of common functions like asset download & rendition upload.
@@ -63,26 +81,39 @@ The `worker` and `batchWorker` take in two parameters: `renditonCallback` and `o
 ### Rendition callback function (required)
 The `renditionCallback` function is where you can put your custom worker logic. For example, if you would like to call an external API, you can make fetch requests to that API inside your `renditionCallback` function.
 
-Parameters:
-- `source`: source Object containing the following attributes:
-	- name
-	- path: path to local copy of source file
-	- type: storage type
-	- url: presigned url containing the source file
-- `rendition`: rendition Object containing the following attributes:
-	- instructions: rendition parameters from the worker params (e.g. quality, dpi, format, hei etc)
-    - directory
-    - name
-    - path: path to store rendition locally (must put rendition here in order to be uploaded to cloud storage)
-    - index: rendition index
-    - target: presigned url to put rendition
-    - metadata: object storing rendition metadata
-    - size: function returning the rendition size (called like `rendition.size()`)
-    - sha1: function returning the rendition sha1 (called like `rendition.sha1()`)
-    - id: function returning the unique rendition id (called like `rendition.id()`)
-- outdir (only in batchWorker): directory to put renditions produced in batch workers
-- params: original params passed into the worker
+#### Parameters:
+The parameters for the rendition callback function are: `source`, `rendition`, `outdir`, and `params`
+#### **`source`**:
+source Object containing the following attributes:
 
+| Name | Type | Description | Example |
+|------|------|-------------|---------|
+| `url` | `string` | URL pointing to the source binary. | `"http://example.com/image.jpg"` |
+| `path`| `string` |  Path to local copy of source file | `"tmp/image.jpg"` |
+| `name` | `string` | File name. File extension in the name might be used if no mime type can be detected. Takes precedence over filename in URL path or filename in content-disposition header of the binary resource. Defaults to "file". | `"image.jpg"` |
+#### **`rendition`**: 
+rendition Object containing the following attributes:
+
+| Name | Type | Description |
+|------|------|-------------|
+| `instructions` | `object` | rendition parameters from the worker params (e.g. quality, dpi, format, hei etc. See full list [here](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#rendition-instructions) |
+| `directory` | `string` | directory to put the renditions |
+| `name` | `string` | filename of the rendition to create |
+| `path` | `string` | path to store rendition locally (must put rendition here in order to be uploaded to cloud storage) |
+| `index` | `number` | number used to identify a rendition |
+| `target` | `string` or `object` | URL to which the generated rendition should be uploaded or multipart pre-signed URL upload information for the generated rendition |
+| `metadata` | `object` | stores rendition metadata |
+| `size` | `function` | provides the rendition size (does not take any parameters) |
+| `sha1` | `function` | provides the rendition sha1 (does not take any parameters) |
+| `id` | `function` | provides the an id used to identify a rendition (does not take any parameters) |
+
+#### **`outdir`**:
+(only in batchWorker): directory to put renditions produced in batch workers
+
+#### **`params`**:
+original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asset-processing))
+
+#### renditionCallback Examples:
 
 At the bare minimum, the rendition callback function must write something to the `rendition.path`.
 
@@ -114,7 +145,7 @@ async function renditionCallback(source, rendition, params) => {
 }
 const options = {
 	disableSourceDownload: true
-}
+};
 const main = worker(renditionCallback, options);
 await main(params);
 ```
@@ -124,7 +155,7 @@ Disable rendition upload example:
 const { worker } = require('@adobe/asset-compute-sdk');
 const options = {
 	disableRenditionUpload: true
-}
+};
 const main = worker(renditionCallback, options);
 await main(params);
 ```
