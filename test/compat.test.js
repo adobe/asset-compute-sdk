@@ -51,7 +51,7 @@ describe('compat.js', () => {
 
             try {
                 await result;
-            } catch(e) {}
+            } catch (e) { } /* eslint-disable-line no-unused-vars */
         });
 
         it('should download source, invoke worker callback and upload rendition', async () => {
@@ -127,10 +127,10 @@ describe('compat.js', () => {
 
             await forEachRendition({
                 source: 'file.jpg',
-                renditions: [Object.assign({
+                renditions: [{
                     fmt: "png",
                     target: "https://example.com/MyRendition.png"
-                })],
+                }],
                 requestId: "test-request-id",
             }, { disableSourceDownloadSource: true }, workerFn);
 

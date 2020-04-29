@@ -34,7 +34,7 @@ describe('http.js (multipart)', function() {
     afterEach(async function() {
       nock.cleanAll();
       mockFs.restore();
-      delete process.env.NUI_DISABLE_RETRIES;
+      delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
       try {
         await removeFiles("rendition*");
       } catch (err) {
@@ -179,7 +179,7 @@ describe('http.js (multipart)', function() {
     }).timeout(5000);
 
     it('test rendition with RenditionTooLarge failure', async function() {
-      process.env.NUI_DISABLE_RETRIES = true;
+      process.env.ASSET_COMPUTE_DISABLE_RETRIES = true;
       const rendition = _buildMultipartData(0, 33, 1);
         nock('http://unittest')
           .matchHeader('content-length',33)

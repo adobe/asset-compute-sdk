@@ -19,7 +19,7 @@ const assert = require('assert');
 const FileTypeChecker = require('../lib/utils/file-type.js');
 
 describe("file-type.js", function (){
-    // for local use, to verify file types 
+    // for local use, to verify file types
     /*
     it.only("returns file type information", async function(){
         const localPath = << your file path here >> ;
@@ -37,14 +37,14 @@ describe("file-type.js", function (){
     });
 
     it("returns type even if file is small", async function(){
-        const filePath = "test/files/funky/1pixel.png";
+        const filePath = "test/files/negative/1pixel.png";
         const result = await FileTypeChecker.extractFileTypeFormat(filePath);
         assert.equal(result.ext, "png");
         assert.equal(result.mime, "image/png");
     });
 
     it("handles gracefully not being able to guess", async function(){
-        const filePath = "test/files/funky/file.svg";
+        const filePath = "test/files/negative/file.svg";
         const result = await FileTypeChecker.extractFileTypeFormat(filePath);
         assert.equal(result, null);
     });
@@ -54,13 +54,13 @@ describe("file-type.js", function (){
         let result = await FileTypeChecker.verifyFileTypeFormat(filePath, "png");
         assert.equal(result, true);
 
-        filePath  = "test/files/funky/png-masquerading-as-jpg.jpg";
+        filePath  = "test/files/negative/png-masquerading-as-jpg.jpg";
         result = await FileTypeChecker.verifyFileTypeFormat(filePath, "jpg");
         assert.equal(result, false);
     });
 
     it("handles gracefully not being able to verify an extension", async function(){
-        const filePath = "test/files/funky/file.svg";
+        const filePath = "test/files/negative/file.svg";
         const result = await FileTypeChecker.verifyFileTypeFormat(filePath, "svg");
         assert.equal(result, null);
     });
@@ -70,19 +70,19 @@ describe("file-type.js", function (){
         let result = await FileTypeChecker.verifyFileMimeType(filePath, "image/png");
         assert.equal(result, true);
 
-        filePath  = "test/files/funky/png-masquerading-as-jpg.jpg";
+        filePath  = "test/files/negative/png-masquerading-as-jpg.jpg";
         result = await FileTypeChecker.verifyFileTypeFormat(filePath, "image/jpg");
         assert.equal(result, false);
     });
 
     it("handles gracefully not being able to verify a mime type", async function(){
-        const filePath = "test/files/funky/file.svg";
+        const filePath = "test/files/negative/file.svg";
         const result = await FileTypeChecker.verifyFileMimeType(filePath, "image/svg");
         assert.equal(result, null);
     });
 
     it("returns file type information for png when extension is wrong", async function(){
-        const filePath = "test/files/funky/png-masquerading-as-jpg.jpg";
+        const filePath = "test/files/negative/png-masquerading-as-jpg.jpg";
         const result = await FileTypeChecker.extractFileTypeFormat(filePath);
         assert.equal(result.ext, "png");
         assert.equal(result.mime, "image/png");
@@ -91,14 +91,14 @@ describe("file-type.js", function (){
     it("returns file type information when extension is wrong and file seems corrupt", async function(){
         // that file cannot be opened by preview, but browsers and VS Code will be able to open it
         // it may seem corrupt but it isn't. It's the wrong format <-> extension association
-        const filePath = "test/files/funky/file-webp-masquerading-as-png.png";
+        const filePath = "test/files/negative/file-webp-masquerading-as-png.png";
         const result = await FileTypeChecker.extractFileTypeFormat(filePath);
         assert.equal(result.ext, "webp");
         assert.equal(result.mime, "image/webp");
     });
 
     it("returns file type information when extension is wrong and file seems corrupt (small file)", async function(){
-        const filePath = "test/files/funky/1pixel.webp";
+        const filePath = "test/files/negative/1pixel.webp";
         const result = await FileTypeChecker.extractFileTypeFormat(filePath);
         assert.equal(result.ext, "webp");
         assert.equal(result.mime, "image/webp");
@@ -107,7 +107,7 @@ describe("file-type.js", function (){
     it("returns file type information when extension is wrong (masquerade) (small file)", async function(){
         // that file cannot be opened by preview, but browsers and VS Code will be able to open it
         // it may seem corrupt but it isn't. It's the wrong format <-> extension association
-        const filePath = "test/files/funky/1pixel-masquerade.png";
+        const filePath = "test/files/negative/1pixel-masquerade.png";
         const result = await FileTypeChecker.extractFileTypeFormat(filePath);
         assert.equal(result.ext, "webp");
         assert.equal(result.mime, "image/webp");
@@ -115,14 +115,14 @@ describe("file-type.js", function (){
 
     // list of supported formats: https://github.com/sindresorhus/file-type#supported-file-types
     it("handles gracefully not being able to verify an extension (unsupported format)", async function(){
-        const filePath = "test/files/funky/1pixel.xcf";
+        const filePath = "test/files/negative/1pixel.xcf";
         const result = await FileTypeChecker.verifyFileTypeFormat(filePath, "xcf");
         assert.equal(result, null);
     });
 
     // list of supported formats: https://github.com/sindresorhus/file-type#supported-file-types
     it("handles gracefully not being able to verify a mime type (unsupported format)", async function(){
-        const filePath = "test/files/funky/1pixel.xcf";
+        const filePath = "test/files/negative/1pixel.xcf";
         const result = await FileTypeChecker.verifyFileMimeType(filePath, "image/png");
         assert.equal(result, null);
     });

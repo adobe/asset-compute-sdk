@@ -43,7 +43,7 @@ function beforeEach() {
 
     process.env.__OW_NAMESPACE = "namespace";
     process.env.__OW_ACTION_NAME = "/namespace/package/test_action";
-    process.env.NUI_DISABLE_RETRIES = "disable";
+    process.env.ASSET_COMPUTE_DISABLE_RETRIES = "disable";
 
     // http instrumentation has timeouts that can get in the way and we do not need it for any of the tests
     process.env.OPENWHISK_NEWRELIC_DISABLE_ALL_INSTRUMENTATION = true;
@@ -57,7 +57,7 @@ function afterEach() {
     MetricsTestHelper.afterEachTest();
     nock.cleanAll();
     mockFs.restore();
-    delete process.env.NUI_DISABLE_RETRIES;
+    delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
     delete process.env.__OW_ACTION_NAME;
     delete process.env.__OW_DEADLINE;
 }
@@ -143,10 +143,11 @@ function simpleParams(options={}) {
 
     return {
         source: SOURCE,
-        renditions: [Object.assign({
+        renditions: [{
+            ...options.rendition,
             fmt: "png",
             target: "https://example.com/MyRendition.png"
-        }, options.rendition)],
+        }],
         requestId: "test-request-id",
         auth: PARAMS_AUTH,
         newRelicEventsURL: MetricsTestHelper.MOCK_URL,
@@ -290,7 +291,7 @@ async function assertThrowsAndAwait(cb, message) {
         // eslint-disable-next-line callback-return
         const promise = cb();
         await promise;
-    } catch (e) {
+    } catch (e) { /* eslint-disable-line no-unused-vars */
         thrown = true;
     }
     if (!thrown) {

@@ -35,7 +35,7 @@ describe('http.js', () => {
         nock.cleanAll();
         mockFs.restore();
         delete process.env.__OW_ACTION_NAME;
-        delete process.env.NUI_DISABLE_RETRIES;
+        delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
     })
 
     describe('download', () => {
@@ -61,7 +61,7 @@ describe('http.js', () => {
         });
 
 
-        it("should fail downloading a jpg file mocking @adobe/httptransfer", async () => { 
+        it("should fail downloading a jpg file mocking @adobe/httptransfer", async () => {
             const source = {
                 url: "https://example.com/fakeEarth.jpg"
             };
@@ -152,7 +152,7 @@ describe('http.js', () => {
         });
 
         it("should fail uploading a rendition with 504", async () => {
-            process.env.NUI_DISABLE_RETRIES = true // disable retries to test upload failure
+            process.env.ASSET_COMPUTE_DISABLE_RETRIES = true // disable retries to test upload failure
             mockFs({ "./storeFiles/jpg": {
                 "fakeEarth.jpg": "hello world!"
             } });
@@ -204,7 +204,7 @@ describe('http.js', () => {
 
 
         it("should fail uploading a rendition with 404", async () => {
-            process.env.NUI_DISABLE_RETRIES = true // disable retries to test upload failure
+            process.env.ASSET_COMPUTE_DISABLE_RETRIES = true // disable retries to test upload failure
             mockFs({ "./storeFiles/jpg": {
                 "fakeEarth.jpg": "hello world!"
             } });

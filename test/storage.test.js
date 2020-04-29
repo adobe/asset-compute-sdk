@@ -34,7 +34,7 @@ describe('storage.js', () => {
 			nock.cleanAll();
 			mockFs.restore();
 			delete process.env.WORKER_TEST_MODE;
-			delete process.env.NUI_DISABLE_RETRIES;
+			delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
 		})
 		it('should download simple png and return a new source object', async () => {
 			const paramsSource = {
@@ -75,7 +75,7 @@ describe('storage.js', () => {
         })
 
 		it('should fail during download', async () => {
-			process.env.NUI_DISABLE_RETRIES = true // disable retries to test upload failure
+			process.env.ASSET_COMPUTE_DISABLE_RETRIES = true // disable retries to test upload failure
 			const paramsSource = {
 				url: 'https://example.com/photo/elephant.png'
 			};
@@ -175,7 +175,7 @@ describe('storage.js', () => {
 			nock.cleanAll();
 			mockFs.restore();
 			delete process.env.WORKER_TEST_MODE;
-			delete process.env.NUI_DISABLE_RETRIES;
+			delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
 		});
 
 		it('should upload simple rendition', async () => {
