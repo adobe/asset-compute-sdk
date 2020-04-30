@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "adobe/asset-compute-sdk.git"
+    "url": "adobe/asset-compute-sdk"
   },
   "dependencies": {
     "@adobe/httptransfer": "^1.0.0",
