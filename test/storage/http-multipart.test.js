@@ -15,7 +15,7 @@ governing permissions and limitations under the License.
 
 'use strict';
 
-const { RenditionTooLarge } = require('@nui/asset-compute-commons');
+const { RenditionTooLarge } = require('@adobe/asset-compute-commons');
 const http =  require('../../lib/storage/http');
 const mockFs = require('mock-fs');
 const assert = require('assert')
