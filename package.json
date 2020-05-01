@@ -13,7 +13,7 @@
   "dependencies": {
     "@adobe/httptransfer": "^1.0.0",
     "@adobe/node-fetch-retry": "^1.0.1",
-    "@nui/asset-compute-commons": "^14.0.0",
+    "@adobe/asset-compute-commons": "^1.0.0",
     "@adobe/metrics-sampler": "^1.0.0",
     "ajv": "6.12.0",
     "@adobe/cgroup-metrics": "^3.0.0",
