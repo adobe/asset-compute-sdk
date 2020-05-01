@@ -811,7 +811,7 @@ describe("api.js", () => {
             const params = testUtil.simpleParams();
             await main(params);
 
-            await MetricsTestHelper.metricsDone();
+            await MetricsTestHelper.metricsDone(700);
             testUtil.assertNockDone();
 
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
@@ -840,7 +840,7 @@ describe("api.js", () => {
                 "cpu_usagePercentage_q1": 0,
                 "cpu_usagePercentage_q3": 0
             }]);
-        }).timeout(20000);
+        }).timeout(60000);
 
         it('verify events with some successful and some not generated rendtions during processing', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
