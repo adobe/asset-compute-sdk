@@ -803,7 +803,7 @@ describe("api.js", () => {
 
             async function workerFn(source, rendition) {
                 await writeFile(rendition.path, testUtil.RENDITION_CONTENT);
-                await sleep(300);
+                await sleep(500);
                 return Promise.resolve();
             }
 
