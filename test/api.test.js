@@ -803,7 +803,7 @@ describe("api.js", () => {
 
             async function workerFn(source, rendition) {
                 await writeFile(rendition.path, testUtil.RENDITION_CONTENT);
-                await sleep(200);
+                await sleep(300);
                 return Promise.resolve();
             }
 
@@ -811,7 +811,7 @@ describe("api.js", () => {
             const params = testUtil.simpleParams();
             await main(params);
 
-            await MetricsTestHelper.metricsDone(700);
+            await MetricsTestHelper.metricsDone();
             testUtil.assertNockDone();
 
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
@@ -840,7 +840,7 @@ describe("api.js", () => {
                 "cpu_usagePercentage_q1": 0,
                 "cpu_usagePercentage_q3": 0
             }]);
-        }).timeout(60000);
+        });
 
         it('verify events with some successful and some not generated rendtions during processing', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
