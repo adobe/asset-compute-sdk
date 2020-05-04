@@ -16,7 +16,7 @@ governing permissions and limitations under the License.
 
 const { shellScriptWorker } = require('../lib/api');
 const ShellScriptWorker = require("../lib/shell/shellscript");
-const { ClientError } = require('@nui/asset-compute-commons');
+const { ClientError } = require('@adobe/asset-compute-commons');
 
 const testUtil = require('./testutil');
 const assert = require('assert');
@@ -24,7 +24,7 @@ const mockFs = require('mock-fs');
 const fs = require('fs');
 const path = require("path");
 const envfile = require("envfile");
-const { MetricsTestHelper } = require("@nui/asset-compute-commons");
+const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 
 const TEST_DIR = "build/tests/shellscript";
 

@@ -21,7 +21,7 @@ const {
     SourceUnsupportedError,
     SourceCorruptError,
     RenditionTooLarge
-} = require('@nui/asset-compute-commons');
+} = require('@adobe/asset-compute-commons');
 
 module.exports = {
     GenericError,

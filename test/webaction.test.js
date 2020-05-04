@@ -21,7 +21,7 @@ const testUtil = require('./testutil');
 const assert = require('assert');
 const fs = require('fs-extra');
 const mockFs = require('mock-fs');
-const { MetricsTestHelper } = require("@nui/asset-compute-commons");
+const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 const mockRequire = require("mock-require");
 
 describe("web action for custom workers", function() {
