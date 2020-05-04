@@ -621,7 +621,7 @@ describe("api.js", () => {
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
             assert.ok(!fs.existsSync(renditionDir));
-        });
+        }).timeout(60000);
 
         it("should throw an error object if source download fails", async () => {
             MetricsTestHelper.mockNewRelic();
@@ -1204,7 +1204,7 @@ describe("api.js", () => {
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
             assert.ok(!fs.existsSync(renditionDir));
-        });
+        }).timeout(60000);
 
         it("should throw an error object if source download fails", async () => {
             MetricsTestHelper.mockNewRelic();
