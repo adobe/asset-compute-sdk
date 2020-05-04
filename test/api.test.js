@@ -835,7 +835,7 @@ describe("api.js", () => {
                 "cpu_usagePercentage_min": 0,
                 "cpu_usagePercentage_max": 0,
                 "cpu_usagePercentage_mean": 0,
-                "cpu_usagePercentage_stdev": null,
+                "cpu_usagePercentage_stdev": 0,
                 "cpu_usagePercentage_median": 0,
                 "cpu_usagePercentage_q1": 0,
                 "cpu_usagePercentage_q3": 0
