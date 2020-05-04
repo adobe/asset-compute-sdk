@@ -22,7 +22,7 @@ const fs = require('fs-extra');
 const nock = require('nock');
 const assert = require('assert');
 const mockFs = require('mock-fs');
-const { MetricsTestHelper } = require("@nui/asset-compute-commons");
+const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 
 describe('compat.js', () => {
 

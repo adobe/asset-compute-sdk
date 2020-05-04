@@ -20,7 +20,7 @@ const url = require('url');
 const mockFs = require('mock-fs');
 const assert = require('assert');
 const lodash = require("lodash");
-const { MetricsTestHelper } = require("@nui/asset-compute-commons");
+const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 
 const SOURCE_CONTENT = "source content";
 const RENDITION_CONTENT = "rendition content";

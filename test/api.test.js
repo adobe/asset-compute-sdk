@@ -20,9 +20,9 @@ const { worker, batchWorker } = require('../lib/api');
 const testUtil = require('./testutil');
 const assert = require('assert');
 const fs = require('fs-extra');
-const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@nui/asset-compute-commons');
+const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@adobe/asset-compute-commons');
 const mockFs = require('mock-fs');
-const { MetricsTestHelper } = require("@nui/asset-compute-commons");
+const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 
 describe("api.js", () => {
     beforeEach(function() {
@@ -621,7 +621,7 @@ describe("api.js", () => {
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
             assert.ok(!fs.existsSync(renditionDir));
-        });
+        }).timeout(60000);
 
         it("should throw an error object if source download fails", async () => {
             MetricsTestHelper.mockNewRelic();
@@ -803,7 +803,7 @@ describe("api.js", () => {
 
             async function workerFn(source, rendition) {
                 await writeFile(rendition.path, testUtil.RENDITION_CONTENT);
-                await sleep(200);
+                await sleep(500);
                 return Promise.resolve();
             }
 
@@ -835,7 +835,7 @@ describe("api.js", () => {
                 "cpu_usagePercentage_min": 0,
                 "cpu_usagePercentage_max": 0,
                 "cpu_usagePercentage_mean": 0,
-                "cpu_usagePercentage_stdev": null,
+                "cpu_usagePercentage_stdev": 0,
                 "cpu_usagePercentage_median": 0,
                 "cpu_usagePercentage_q1": 0,
                 "cpu_usagePercentage_q3": 0
@@ -1204,7 +1204,7 @@ describe("api.js", () => {
             // ensure cleanup
             assert.ok(!fs.existsSync(sourcePath));
             assert.ok(!fs.existsSync(renditionDir));
-        });
+        }).timeout(60000);
 
         it("should throw an error object if source download fails", async () => {
             MetricsTestHelper.mockNewRelic();
