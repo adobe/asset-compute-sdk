@@ -1,5 +1,5 @@
-<!--- when a new release happens, the VERSION and URL in the badge have to be manually updated because it's a private registry --->
-[![npm version](https://img.shields.io/badge/%40nui%2Flibrary-27.0.0-blue.svg)](https://artifactory.corp.adobe.com/artifactory/npm-nui-release/@nui/library/-/@nui/library-27.0.0.tgz)
+# Asset Compute SDK
+This shared library is used by all Asset Compute workers and takes care of common things like asset download & rendition upload.
 
 - [Adobe Asset Compute SDK](#adobe-asset-compute-sdk)
   - [Installation](#installation)

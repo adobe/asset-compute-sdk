@@ -21,7 +21,7 @@ const nock = require('nock');
 const assert = require('assert');
 const fs = require('fs-extra');
 const path = require('path');
-const { GenericError } = require('@nui/asset-compute-commons');
+const { GenericError } = require('@adobe/asset-compute-commons');
 
 describe('storage.js', () => {
 	describe('getSource', () => {
