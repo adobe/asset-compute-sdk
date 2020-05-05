@@ -31,7 +31,7 @@
     "valid-url": "^1.0.9"
   },
   "devDependencies": {
-    "@adobe/eslint-config-asset-compute": "^1.1.0",
+    "@nui/eslint-config": "^1.0.4",
     "envfile": "^5.1.0",
     "expect.js": "^0.3.1",
     "fetch-mock": "^9.4.0",
