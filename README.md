@@ -1,5 +1,9 @@
 # Adobe Asset Compute Worker SDK
 
+[![Version](https://img.shields.io/npm/v/@adobe/asset-compute-sdk.svg)](https://npmjs.org/package/@adobe/asset-compute-sdk)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+[![Travis](https://travis-ci.com/adobe/asset-compute-sdk.svg?branch=master)](https://travis-ci.com/adobe/asset-compute-sdk)
+
 This library is required for all custom workers for the Adobe Asset Compute Service. It provides an easy to use framework and takes care of common things like asset & rendition access, validation and type checks, event notification, error handling and more.
 
   - [Installation](#installation)
