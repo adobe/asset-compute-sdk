@@ -3,7 +3,7 @@
   "description": "Adobe Asset Compute Worker SDK",
   "license": "Apache-2.0",
   "version": "1.0.2",
-    "author": {
+  "author": {
     "name": "Adobe Inc."
   },
   "repository": {
