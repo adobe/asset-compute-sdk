@@ -1,7 +1,7 @@
-# Asset Compute SDK
-This shared library is used by all Asset Compute workers and takes care of common things like asset download & rendition upload.
+# Adobe Asset Compute Worker SDK
 
-- [Adobe Asset Compute SDK](#adobe-asset-compute-sdk)
+This library is required for all custom workers for the Adobe Asset Compute Service. It provides an easy to use framework and takes care of common things like asset & rendition access, validation and type checks, event notification, error handling and more.
+
   - [Installation](#installation)
   - [Overview](#overview)
   - [Examples](#examples)
@@ -26,10 +26,6 @@ This shared library is used by all Asset Compute workers and takes care of commo
     - [Contributing](#contributing)
     - [Licensing](#licensing)
 
-# Adobe Asset Compute SDK
-
-Adobe Asset Compute SDK library a shared library used by all Asset Compute workers and takes care of common functions like asset download & rendition upload.
-
 ## Installation
 
 ```bash
@@ -37,18 +33,18 @@ npm install @adobe/asset-compute-sdk
 ```
 
 ## Overview
-A high-level overview of Adobe Asset Compute worker SDK
+These are the high-level steps done by the Adobe Asset Compute Worker SDK:
 
 1. Setup
-- Initiates the New Relic metrics agent and Adobe IO Events handler (see [asset-compute-commons](https://github.com/adobe/asset-compute-commons) for more information)
-- Sets up the proper directories for local access to source and rendition
+   - Initiates the metrics agent and Adobe IO Events handler (see [asset-compute-commons](https://github.com/adobe/asset-compute-commons) for more information)
+   - Sets up the proper directories for local access to source and rendition
 2. Download source file from `url` in [`source`](#source) object
 3. Run `renditionCallback` function for each rendition ([worker](#renditioncallback-function-for-worker-required)) or for all the renditions at once ([batch worker](#renditioncallback-function-for-batchworker-required))
-- The rendition callback is where you put your worker logic. At the minimum, this function needs to convert the local source file into a local rendition file
+   - The rendition callback is where you put your worker logic. At the minimum, this function needs to convert the local source file into a local rendition file
 4. Upload renditions to `target` in [`rendition`](#rendition) object
 5. Notify the client via Adobe IO Events after each rendition
-- It sends a `rendition_created` or `rendition_failed` event depending on the outcome (see [Asset Compute API asynchronous events](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asynchronous-events) for more information)
-- If the worker is part of a chain of workers, it will only send successful rendition events after the last worker in the chain
+   - It sends a `rendition_created` or `rendition_failed` event depending on the outcome (see [Asset Compute API asynchronous events](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asynchronous-events) for more information)
+   - If the worker is part of a chain of workers, it will only send successful rendition events after the last worker in the chain
 ## Examples
 
 ### Simple javascript worker
