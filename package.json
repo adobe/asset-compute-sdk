@@ -11,7 +11,7 @@
     "url": "adobe/asset-compute-sdk"
   },
   "dependencies": {
-    "@adobe/httptransfer": "^1.0.0",
+    "@adobe/httptransfer": "^1.0.1",
     "@adobe/node-fetch-retry": "^1.0.1",
     "@adobe/asset-compute-commons": "^1.0.1",
     "@adobe/metrics-sampler": "^1.0.0",
@@ -31,10 +31,10 @@
     "valid-url": "^1.0.9"
   },
   "devDependencies": {
-    "@adobe/eslint-config-asset-compute": "^1.1.0",
+    "@adobe/eslint-config-asset-compute": "^1.2.0",
     "envfile": "^5.1.0",
     "expect.js": "^0.3.1",
-    "fetch-mock": "^9.4.0",
+    "fetch-mock": "^9.5.0",
     "lockfile-lint": "^4.2.2",
     "lodash": "^4.17.15",
     "mocha": "^7.1.2",
