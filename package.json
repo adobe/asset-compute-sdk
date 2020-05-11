@@ -35,6 +35,7 @@
     "envfile": "^5.1.0",
     "expect.js": "^0.3.1",
     "fetch-mock": "^9.5.0",
+    "license-checker": "^25.0.1",
     "lockfile-lint": "^4.2.2",
     "lodash": "^4.17.15",
     "mocha": "^7.1.2",
