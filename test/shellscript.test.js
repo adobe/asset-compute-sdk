@@ -22,7 +22,7 @@ const testUtil = require('./testutil');
 const assert = require('assert');
 const mockFs = require('mock-fs');
 const fs = require('fs');
-const path = require("path");
+const path = require('canonical-path');
 const envfile = require("envfile");
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 

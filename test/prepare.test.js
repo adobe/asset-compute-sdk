@@ -19,7 +19,7 @@ const fse = require('fs-extra');
 const assert = require('assert');
 const sinon = require('sinon');
 
-const path = require('path');
+const path = require('canonical-path');
 const {createDirectories, cleanupDirectories} = require('../lib/prepare');
 
 describe('prepare.js', () => {

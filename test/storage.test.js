@@ -20,7 +20,7 @@ const mockFs = require('mock-fs');
 const nock = require('nock');
 const assert = require('assert');
 const fs = require('fs-extra');
-const path = require('path');
+const path = require('canonical-path');
 const { GenericError } = require('@adobe/asset-compute-commons');
 
 describe('storage.js', () => {

@@ -28,7 +28,7 @@ const TEST_LOG_FILE = process.env.MOCHA_TEST_LOG_FILE || "build/mocha.test.log";
 
 const clone = require('clone');
 const util = require('util');
-const path = require('path');
+const path = require('canonical-path');
 const fsExtra = require('fs-extra');
 
 // ---------------------------------------------------------------------
