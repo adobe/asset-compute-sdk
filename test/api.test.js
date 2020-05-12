@@ -840,7 +840,7 @@ describe("api.js", () => {
                 "cpu_usagePercentage_q1": 0,
                 "cpu_usagePercentage_q3": 0
             }]);
-        }).timeout(10000);
+        });
 
         it('verify events with some successful and some not generated rendtions during processing', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
