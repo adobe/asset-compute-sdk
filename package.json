@@ -31,7 +31,8 @@
     "valid-url": "^1.0.9"
   },
   "devDependencies": {
-    "@adobe/eslint-config-asset-compute": "^1.2.0",
+    "@adobe/eslint-config-asset-compute": "^1.3.0",
+    "codecov": "^3.7.0",
     "envfile": "^5.1.0",
     "expect.js": "^0.3.1",
     "fetch-mock": "^9.5.0",
@@ -56,7 +57,8 @@
     "adobe"
   ],
   "scripts": {
-    "test": "nyc --reporter=html --reporter=text mocha test --file test/logfile.setup.js --recursive",
-    "posttest": "eslint ./ && ./node_modules/lockfile-lint/bin/lockfile-lint.js --path package-lock.json —type npm --allowed-hosts npm artifactory.corp.adobe.com --allowed-schemes \"https:\" \"file:\" --empty-hostname true"
+    "test": "nyc mocha test --file test/logfile.setup.js --recursive --exit",
+    "posttest": "eslint ./ && ./node_modules/lockfile-lint/bin/lockfile-lint.js --path package-lock.json —type npm --allowed-hosts npm artifactory.corp.adobe.com --allowed-schemes \"https:\" \"file:\" --empty-hostname true",
+    "beautify": "eslint ./ --fix"
   }
 }

@@ -1,14 +1,14 @@
 /*
-Copyright 2020 Adobe. All rights reserved.
-This file is licensed to you under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License. You may obtain a copy
-of the License at http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under
-the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
-OF ANY KIND, either express or implied. See the License for the specific language
-governing permissions and limitations under the License.
-*/
+ * Copyright 2020 Adobe. All rights reserved.
+ * This file is licensed to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+ * OF ANY KIND, either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
+ */
 
 /* eslint-env mocha */
 /* eslint mocha/no-mocha-arrows: "off" */
@@ -20,7 +20,7 @@ const assert = require('assert');
 const { validateParameters, validateRendition } = require('../lib/validate');
 
 function assertValidateThrows(params, name="GenericError", message) {
-    const expectedError = {}
+    const expectedError = {};
     if (name) {
         expectedError.name = name;
     }
@@ -28,7 +28,7 @@ function assertValidateThrows(params, name="GenericError", message) {
         expectedError.message = message;
     }
     assert.throws(() => {
-        validateParameters(params)
+        validateParameters(params);
     }, expectedError);
 }
 
@@ -85,28 +85,28 @@ describe('validate.js', () => {
             nothing: "nothing"
         };
         assert.throws(() => {
-            validateRendition(rendition)
+            validateRendition(rendition);
         });
 
         rendition = {
             target: 42
         };
         assert.throws(() => {
-            validateRendition(rendition)
+            validateRendition(rendition);
         });
 
         rendition = {
             url: 42
         };
         assert.throws(() => {
-            validateRendition(rendition)
+            validateRendition(rendition);
         });
 
         rendition = {
             url: null
         };
         assert.throws(() => {
-            validateRendition(rendition)
+            validateRendition(rendition);
         });
     });
 
@@ -233,49 +233,49 @@ describe('validate.js', () => {
 
     it('throws if rendition array is empty', () => {
         assertValidateThrows({
-                source: "https://example.com/image.jpg",
-                renditions: []
-            },
-            "GenericError",
-            "'renditions' array is empty."
+            source: "https://example.com/image.jpg",
+            renditions: []
+        },
+        "GenericError",
+        "'renditions' array is empty."
         );
 
         assertValidateThrows({
-                source: "https://example.com/image.jpg",
-                renditions: [null, null]
-            },
-            "GenericError",
-            "'renditions' array is empty."
+            source: "https://example.com/image.jpg",
+            renditions: [null, null]
+        },
+        "GenericError",
+        "'renditions' array is empty."
         );
     });
 
     it('throws if rendition is not an array', () => {
         assertValidateThrows({
-                source: "https://example.com/image.jpg",
-                renditions: "rendition-array"
-            },
-            "GenericError",
-            "'renditions' is not an array."
+            source: "https://example.com/image.jpg",
+            renditions: "rendition-array"
+        },
+        "GenericError",
+        "'renditions' is not an array."
         );
 
         assertValidateThrows({
-                source: "https://example.com/image.jpg",
-                renditions: {}
-            },
-            "GenericError",
-            "'renditions' is not an array."
+            source: "https://example.com/image.jpg",
+            renditions: {}
+        },
+        "GenericError",
+        "'renditions' is not an array."
         );
     });
 
     it('throws if source is not a valid url', () => {
         for (const invalidUrl of INVALID_URLS) {
             assertValidateThrows({
-                    source: invalidUrl,
-                    renditions: [{
-                        target: "https://example.com/target.jpg"
-                    }]
-                },
-                "SourceUnsupportedError"
+                source: invalidUrl,
+                renditions: [{
+                    target: "https://example.com/target.jpg"
+                }]
+            },
+            "SourceUnsupportedError"
             );
 
             assertValidateThrows({
@@ -287,29 +287,29 @@ describe('validate.js', () => {
                 }]
             },
             "SourceUnsupportedError"
-        );
-    }
+            );
+        }
     });
 
     it('throws if source is a http url', () => {
         assertValidateThrows({
-                source: "http://example.com/NOT_HTTPS",
-                renditions: [{
-                    target: "https://example.com/target.jpg"
-                }]
-            },
-            "SourceUnsupportedError"
+            source: "http://example.com/NOT_HTTPS",
+            renditions: [{
+                target: "https://example.com/target.jpg"
+            }]
+        },
+        "SourceUnsupportedError"
         );
 
         assertValidateThrows({
-                source: {
-                    url: "http://example.com/NOT_HTTPS"
-                },
-                renditions: [{
-                    target: "https://example.com/target.jpg"
-                }]
+            source: {
+                url: "http://example.com/NOT_HTTPS"
             },
-            "SourceUnsupportedError"
+            renditions: [{
+                target: "https://example.com/target.jpg"
+            }]
+        },
+        "SourceUnsupportedError"
         );
     });
 
@@ -333,115 +333,115 @@ describe('validate.js', () => {
 
     it('throws if rendition.target or rendition.url is http url', () => {
         assertValidateThrows({
-                source: "https://example.com/image.jpg",
-                renditions: [{
-                    target: "http://example.com/NOT_HTTPS"
-                }]
-            },
-            "GenericError"
+            source: "https://example.com/image.jpg",
+            renditions: [{
+                target: "http://example.com/NOT_HTTPS"
+            }]
+        },
+        "GenericError"
         );
 
         assertValidateThrows({
-                source: "https://example.com/image.jpg",
-                renditions: [{
-                    url: "http://example.com/NOT_HTTPS"
-                }]
-            },
-            "GenericError"
+            source: "https://example.com/image.jpg",
+            renditions: [{
+                url: "http://example.com/NOT_HTTPS"
+            }]
+        },
+        "GenericError"
         );
     });
 
     it('throws if rendition.target.urls or rendition.url contains invalid url', () => {
         for (const invalidUrl of INVALID_URLS) {
             assertValidateThrows({
-                    source: "https://example.com/image.jpg",
-                    renditions: [{
-                        target: {
-                            urls: [
-                                invalidUrl,
-                                "https://example.com/target.jpg"
-                            ]
-                        }
-                    }]
-                },
-                "GenericError"
-            );
-
-            assertValidateThrows({
-                    source: "https://example.com/image.jpg",
-                    renditions: [{
-                        target: {
-                            urls: [
-                                "https://example.com/target.jpg",
-                                invalidUrl,
-                                "https://example.com/target2.jpg"
-                            ]
-                        }
-                    }]
-                },
-                "GenericError"
-            );
-
-            assertValidateThrows({
-                    source: "https://example.com/image.jpg",
-                    renditions: [{
-                        target: {
-                            urls: [
-                                "https://example.com/target.jpg",
-                                "https://example.com/target2.jpg",
-                                invalidUrl
-                            ]
-                        }
-                    }]
-                },
-                "GenericError"
-            );
-        }
-    });
-
-    it('throws if rendition.target.urls or rendition.url contains http url', () => {
-        assertValidateThrows({
                 source: "https://example.com/image.jpg",
                 renditions: [{
                     target: {
                         urls: [
-                            "http://example.com/NOT_HTTPS",
+                            invalidUrl,
                             "https://example.com/target.jpg"
                         ]
                     }
                 }]
             },
             "GenericError"
-        );
+            );
 
-        assertValidateThrows({
+            assertValidateThrows({
                 source: "https://example.com/image.jpg",
                 renditions: [{
                     target: {
                         urls: [
                             "https://example.com/target.jpg",
-                            "http://example.com/NOT_HTTPS",
+                            invalidUrl,
                             "https://example.com/target2.jpg"
                         ]
                     }
                 }]
             },
             "GenericError"
-        );
+            );
 
-        assertValidateThrows({
+            assertValidateThrows({
                 source: "https://example.com/image.jpg",
                 renditions: [{
                     target: {
                         urls: [
                             "https://example.com/target.jpg",
                             "https://example.com/target2.jpg",
-                            "http://example.com/NOT_HTTPS"
+                            invalidUrl
                         ]
                     }
                 }]
             },
             "GenericError"
+            );
+        }
+    });
+
+    it('throws if rendition.target.urls or rendition.url contains http url', () => {
+        assertValidateThrows({
+            source: "https://example.com/image.jpg",
+            renditions: [{
+                target: {
+                    urls: [
+                        "http://example.com/NOT_HTTPS",
+                        "https://example.com/target.jpg"
+                    ]
+                }
+            }]
+        },
+        "GenericError"
+        );
+
+        assertValidateThrows({
+            source: "https://example.com/image.jpg",
+            renditions: [{
+                target: {
+                    urls: [
+                        "https://example.com/target.jpg",
+                        "http://example.com/NOT_HTTPS",
+                        "https://example.com/target2.jpg"
+                    ]
+                }
+            }]
+        },
+        "GenericError"
+        );
+
+        assertValidateThrows({
+            source: "https://example.com/image.jpg",
+            renditions: [{
+                target: {
+                    urls: [
+                        "https://example.com/target.jpg",
+                        "https://example.com/target2.jpg",
+                        "http://example.com/NOT_HTTPS"
+                    ]
+                }
+            }]
+        },
+        "GenericError"
         );
     });
 
