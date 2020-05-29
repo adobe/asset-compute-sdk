@@ -63,6 +63,7 @@ async function renditionCallback(source, rendition, params) => {
 const main = worker(renditionCallback, options);
 await main(params);
 ```
+
 ### Batch processing javascript worker
 
 Calls rendition function once with all the renditions
