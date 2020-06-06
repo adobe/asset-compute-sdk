@@ -65,8 +65,8 @@ describe('http.js (multipart)', function() {
                 },
                 id: () => {return 12345;},
                 size: () => { return 230;},
-				inline: () => false,
-				mimeType: () => "image/jpeg"
+                inline: () => false,
+                mimeType: () => "image/jpeg"
             };
 
         }
