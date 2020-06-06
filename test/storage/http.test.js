@@ -1,19 +1,20 @@
 /*
-Copyright 2020 Adobe. All rights reserved.
-This file is licensed to you under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License. You may obtain a copy
-of the License at http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under
-the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
-OF ANY KIND, either express or implied. See the License for the specific language
-governing permissions and limitations under the License.
-*/
+ * Copyright 2020 Adobe. All rights reserved.
+ * This file is licensed to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+ * OF ANY KIND, either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
+ */
 
 /* eslint-env mocha */
 /* eslint mocha/no-mocha-arrows: "off" */
 
 'use strict';
+
 const mockFs = require("mock-fs");
 const fs = require('fs-extra');
 const { download, upload } = require('../../lib/storage/http');
@@ -29,14 +30,14 @@ describe('http.js', () => {
     beforeEach( () => {
         mockFs();
         process.env.__OW_ACTION_NAME = 'test_action';
-    })
+    });
     afterEach( () => {
         http.downloadFile = oldDownloadFileHttpTransfer;
         nock.cleanAll();
         mockFs.restore();
         delete process.env.__OW_ACTION_NAME;
         delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
-    })
+    });
 
     describe('download', () => {
 
@@ -50,7 +51,7 @@ describe('http.js', () => {
 
             nock("https://example.com")
                 .get("/fakeEarth.jpg")
-                .reply(200, "ok")
+                .reply(200, "ok");
 
             const file = './storeFiles/jpg/fakeEarth.jpg';
 
@@ -67,8 +68,8 @@ describe('http.js', () => {
             mockFs({ './storeFiles/jpg': {} });
 
             http.downloadFile = function() {
-                throw new Error('ERRRR. GET \'https://example.com/fakeEarth.jpg\' failed with status 404.')
-            }
+                throw new Error('ERRRR. GET \'https://example.com/fakeEarth.jpg\' failed with status 404.');
+            };
             const file = './storeFiles/jpg/fakeEarth.jpg';
             try {
                 await download(source, file);
@@ -92,7 +93,7 @@ describe('http.js', () => {
 
             nock("https://example.com")
                 .get("/fakeEarth.jpg")
-                .reply(404, "error")
+                .reply(404, "error");
 
             try {
                 await download(source, file);
@@ -101,7 +102,7 @@ describe('http.js', () => {
                 assert.equal(e.message, "GET 'https://example.com/fakeEarth.jpg' failed with status 404");
                 assert.equal(e.location, "test_action_download");
             }
-            assert.equal(fs.statSync(file).size, 0) // should error on createReadStream
+            assert.equal(fs.statSync(file).size, 0); // should error on createReadStream
         });
 
         it("should fail downloading once before succeeding", async () => {
@@ -113,17 +114,17 @@ describe('http.js', () => {
 
             nock("https://example.com")
                 .get("/fakeEarth.jpg")
-                .reply(504, "error")
+                .reply(504, "error");
             nock("https://example.com")
                 .get("/fakeEarth.jpg")
-                .reply(200, "ok")
+                .reply(200, "ok");
 
             process.env.__OW_DEADLINE = Date.now() + 1000;
             await download(source, file);
             assert.ok(nock.isDone());
             assert.ok(fs.existsSync(file));
         });
-    })
+    });
     describe('upload', () => {
 
         it("should upload one rendition successfully", async () => {
@@ -144,7 +145,7 @@ describe('http.js', () => {
             nock("https://example.com")
                 .matchHeader('content-type', 'image/jpeg')
                 .put("/fakeEarth.jpg", "hello world!")
-                .reply(200)
+                .reply(200);
 
             assert.ok(fs.existsSync(file));
             await upload(rendition);
@@ -152,7 +153,7 @@ describe('http.js', () => {
         });
 
         it("should fail uploading a rendition with 504", async () => {
-            process.env.ASSET_COMPUTE_DISABLE_RETRIES = true // disable retries to test upload failure
+            process.env.ASSET_COMPUTE_DISABLE_RETRIES = true; // disable retries to test upload failure
             mockFs({ "./storeFiles/jpg": {
                 "fakeEarth.jpg": "hello world!"
             } });
@@ -168,7 +169,7 @@ describe('http.js', () => {
 
             nock("https://example.com")
                 .put("/fakeEarth.jpg", "hello world!")
-                .replyWithError(504)
+                .replyWithError(504);
 
             assert.ok(fs.existsSync(file));
             try {
@@ -196,10 +197,10 @@ describe('http.js', () => {
             };
             nock("https://example.com")
                 .put("/fakeEarth.jpg", "hello world!")
-                .reply(503, "error")
+                .reply(503, "error");
             nock("https://example.com")
                 .put("/fakeEarth.jpg", "hello world!")
-                .reply(200, "ok")
+                .reply(200, "ok");
 
             assert.ok(fs.existsSync(file));
             await upload(rendition);
@@ -208,7 +209,7 @@ describe('http.js', () => {
 
 
         it("should fail uploading a rendition with 404", async () => {
-            process.env.ASSET_COMPUTE_DISABLE_RETRIES = true // disable retries to test upload failure
+            process.env.ASSET_COMPUTE_DISABLE_RETRIES = true; // disable retries to test upload failure
             mockFs({ "./storeFiles/jpg": {
                 "fakeEarth.jpg": "hello world!"
             } });
@@ -224,7 +225,7 @@ describe('http.js', () => {
 
             nock("https://example.com")
                 .put("/fakeEarth.jpg", "hello world!")
-                .reply(404, "error")
+                .reply(404, "error");
 
             assert.ok(fs.existsSync(file));
             try {
@@ -245,10 +246,10 @@ describe('http.js', () => {
 
             nock("https://example.com")
                 .put("/fakeEarth.jpg", "hello world!")
-                .reply(200)
+                .reply(200);
 
             const rendition = {
-                id: () => { return '1234'},
+                id: () => { return '1234';},
                 target: "https://example.com/fakeEarth.jpg"
             };
 
@@ -272,13 +273,13 @@ describe('http.js', () => {
             const file = "./storeFiles/jpg/fakeEarth.jpg";
 
             const rendition = {
-                id: () => { return '1234'},
+                id: () => { return '1234';},
                 path: file
             };
 
             nock("https://example.com")
                 .put("/fakeEarth.jpg", "hello world!")
-                .reply(200)
+                .reply(200);
 
             assert.ok(fs.existsSync(file));
             await upload(rendition);
