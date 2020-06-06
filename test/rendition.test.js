@@ -19,7 +19,7 @@ const assert = require('assert');
 const fs = require('fs-extra');
 const mockFs = require('mock-fs');
 const Rendition = require('../lib/rendition.js');
-const { readMetadataFromFile } = require('../lib/metadata');
+// const { readMetadataFromFile } = require('../lib/metadata');
 
 const filePath = "test/files/file.png";
 const PNG_CONTENTS = fs.readFileSync(filePath);
@@ -61,8 +61,7 @@ describe("rendition.js", () => {
         const directory = "/";
         await fs.writeFile("/rendition11.png", PNG_CONTENTS);
         const rendition = new Rendition(instructions, directory, 11);
-        rendition.metadata = await readMetadataFromFile(rendition.path);
-        assert.strictEqual(rendition.size(), PNG_SIZE);
+        assert.strictEqual(await rendition.size(), PNG_SIZE);
     });
 
     it('verifies method sha1 works properly', async function () {
@@ -70,8 +69,7 @@ describe("rendition.js", () => {
         const directory = "/";
         await fs.writeFile("/rendition11.png", PNG_CONTENTS);
         const rendition = new Rendition(instructions, directory, 11);
-        rendition.metadata = await readMetadataFromFile(rendition.path);
-        assert.strictEqual(rendition.sha1(), 'fe16bfbff4e31fcf726c18fe4051b71ee8c96150');
+        assert.strictEqual(await rendition.sha1(), 'fe16bfbff4e31fcf726c18fe4051b71ee8c96150');
     });
 
     it('verifies method id works properly', function () {
@@ -100,30 +98,25 @@ describe("rendition.js", () => {
         const directory = "/";
         await fs.writeFile("/rendition11.png", PNG_CONTENTS);
         let rendition = new Rendition(instructions, directory, 11);
-        rendition.metadata = await readMetadataFromFile(rendition.path);
-        assert.deepStrictEqual(rendition.metadata, {
-            "repo:size": 193011,
-            "repo:sha1": "fe16bfbff4e31fcf726c18fe4051b71ee8c96150",
-            "tiff:imageWidth": 512,
-            "tiff:imageHeight": 288
-        });
+        let metadata = await rendition.metadata();
+        assert.strictEqual(metadata["repo:size"], 193011);
+        assert.strictEqual(metadata["repo:sha1"], "fe16bfbff4e31fcf726c18fe4051b71ee8c96150");
+        assert.strictEqual(metadata["tiff:imageWidth"], 512);
+        assert.strictEqual(metadata["tiff:imageHeight"], 288);
 
         // now not a real image so getting the image width and height will fail
         fs.writeFileSync("/rendition11.png", 'hello world');
         rendition = new Rendition(instructions, directory, 11);
-        rendition.metadata = await readMetadataFromFile(rendition.path);
-        assert.deepStrictEqual(rendition.metadata, {
-            "repo:size": 11,
-            "repo:sha1": "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed",
-        });
+        metadata = await rendition.metadata();
+        assert.strictEqual(metadata["repo:size"], 11);
+        assert.strictEqual(metadata["repo:sha1"], "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed");
     });
 
     it('verifies metadata from missing file does not fail', async function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
         const rendition = new Rendition(instructions, directory, 12);
-        rendition.metadata = await readMetadataFromFile(rendition.path);
-        assert.deepStrictEqual(rendition.metadata, {});
+        assert.deepStrictEqual(await rendition.metadata(), {});
     });
 
     it('verifies function renditionFilename', function () {
