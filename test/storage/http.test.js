@@ -50,7 +50,6 @@ describe('http.js', () => {
             mockFs({ './storeFiles/jpg': {} });
 
             nock("https://example.com")
-                .matchHeader('content-type', 'image/jpeg')
                 .get("/fakeEarth.jpg")
                 .reply(200, "ok");
 
@@ -93,7 +92,6 @@ describe('http.js', () => {
             mockFs({ "./storeFiles/jpg": {} });
 
             nock("https://example.com")
-                .matchHeader('content-type', 'image/jpeg')
                 .get("/fakeEarth.jpg")
                 .reply(404, "error");
 
@@ -139,7 +137,9 @@ describe('http.js', () => {
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",
                 name: 'fakeEarth.jpg',
-                size: () => 1
+                size: () => 1,
+                inline: () => false,
+                mimeType: () => "image/jpeg"
             };
 
             nock("https://example.com")
@@ -162,7 +162,9 @@ describe('http.js', () => {
             const rendition = {
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",
-                size: () => 1
+                size: () => 1,
+                inline: () => false,
+                mimeType: () => "image/jpeg"
             };
 
             nock("https://example.com")
@@ -189,7 +191,9 @@ describe('http.js', () => {
             const rendition = {
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",
-                size: () => 1
+                size: () => 1,
+                inline: () => false,
+                mimeType: () => "image/jpeg"
             };
             nock("https://example.com")
                 .put("/fakeEarth.jpg", "hello world!")
@@ -214,7 +218,9 @@ describe('http.js', () => {
             const rendition = {
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",
-                size: () => 1
+                size: () => 1,
+                inline: () => false,
+                mimeType: () => "image/jpeg"
             };
 
             nock("https://example.com")

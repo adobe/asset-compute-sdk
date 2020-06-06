@@ -784,6 +784,10 @@ describe("api.js", () => {
 
         it('should send metrics - rendition and activation with cgroup metrics', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
+            // tests have this disabled by default, turn it on for this test
+            delete process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS;
+
             mockFs({
                 '/sys/fs/cgroup': {
                     'memory': {
@@ -1218,6 +1222,124 @@ describe("api.js", () => {
                     return true;
                 }
             );
+        });
+    });
+    describe("inline renditions", () => {
+
+        async function testInline(inlineLimit, renditionContent) {
+            process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS = true;
+
+            MetricsTestHelper.mockNewRelic();
+            const ioEvents = testUtil.mockIOEvents();
+
+            const SOURCE = "https://example.com/MySourceFile.jpg";
+            testUtil.nockGetFile(SOURCE).reply(200, "dummy");
+
+            const RENDITION = "https://example.com/MyRendition.txt";
+            // make this fail as it should never upload
+            const nockUpload = testUtil.nockPutFile(RENDITION, () => true, 200);
+
+            const params = {
+                source: SOURCE,
+                renditions: [{
+                    fmt: "txt",
+                    inlineLimit: inlineLimit,
+                    target: RENDITION
+                }],
+                auth: testUtil.PARAMS_AUTH,
+                newRelicEventsURL: MetricsTestHelper.MOCK_URL,
+                newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
+            };
+
+            const main = worker(async (source, rendition) => {
+                fs.writeFileSync(rendition.path, renditionContent);
+            });
+            const result = await main(params);
+            return { result, ioEvents, nockUpload };
+        }
+
+        it("should inline rendition if requested and rendition is smaller than threshold", async function() {
+            const {result, ioEvents, nockUpload } = await testInline(
+                16 * 1024, // 16 kb
+                "rendition content smaller than 16kb"
+            );
+
+            assert.ok(result.renditionErrors === undefined);
+            assert.equal(ioEvents.length, 1);
+            // ensure rendition was inlined
+            assert.strictEqual(ioEvents[0].data, "data:text/plain;charset=utf-8;base64,cmVuZGl0aW9uIGNvbnRlbnQgc21hbGxlciB0aGFuIDE2a2I=");
+            // and not uploaded
+            assert(!nockUpload.isDone());
+        });
+
+        it("should not inline rendition if requested but rendition is larger than threshold", async function() {
+            const {result, ioEvents, nockUpload } = await testInline(
+                5, // request inlining with limit too small
+                "rendition content larger than 5 bytes"
+            );
+
+            assert.ok(result.renditionErrors === undefined);
+            assert.equal(ioEvents.length, 1);
+            // ensure rendition was not inlined
+            assert.strictEqual(ioEvents[0].data, undefined);
+            // but uploaded
+            nockUpload.done();
+        });
+
+        it("should inline rendition if requested and rendition is exactly the inline limit", async function() {
+            const {result, ioEvents, nockUpload } = await testInline(
+                10, // request inlining with limit exceeding supported size
+                "0123456789"
+            );
+
+            assert.ok(result.renditionErrors === undefined);
+            assert.equal(ioEvents.length, 1);
+            assert.strictEqual(ioEvents[0].data, "data:text/plain;charset=utf-8;base64,MDEyMzQ1Njc4OQ==");
+            assert(!nockUpload.isDone());
+        });
+
+        it("should not inline rendition if requested but rendition is 1 byte larger than inline limit", async function() {
+            const {result, ioEvents, nockUpload } = await testInline(
+                10, // request inlining with limit exceeding supported size
+                "0123456789X"
+            );
+
+            assert.ok(result.renditionErrors === undefined);
+            assert.equal(ioEvents.length, 1);
+            // ensure rendition was not inlined
+            assert.strictEqual(ioEvents[0].data, undefined);
+            // but uploaded
+            nockUpload.done();
+        });
+
+        it("should inline rendition if requested and inline limit is exactly the allowed maximum", async function() {
+            const INLINE_LIMIT_MAX = 32 * 1024;
+
+            const {result, ioEvents, nockUpload } = await testInline(
+                INLINE_LIMIT_MAX, // request inlining with limit exceeding supported size
+                "rendition content"
+            );
+
+            assert.ok(result.renditionErrors === undefined);
+            assert.equal(ioEvents.length, 1);
+            assert.strictEqual(ioEvents[0].data, "data:text/plain;charset=utf-8;base64,cmVuZGl0aW9uIGNvbnRlbnQ=");
+            assert(!nockUpload.isDone());
+        });
+
+        it("should not inline rendition if requested but limit is too large", async function() {
+            const INLINE_LIMIT_MAX = 32 * 1024;
+
+            const {result, ioEvents, nockUpload } = await testInline(
+                INLINE_LIMIT_MAX + 1, // request inlining with limit exceeding supported size
+                "rendition content"
+            );
+
+            assert.ok(result.renditionErrors === undefined);
+            assert.equal(ioEvents.length, 1);
+            // ensure rendition was not inlined
+            assert.strictEqual(ioEvents[0].data, undefined);
+            // but uploaded
+            nockUpload.done();
         });
     });
 });
