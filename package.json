@@ -20,12 +20,12 @@
     "clone": "^2.1.2",
     "data-uri-to-buffer": "^3.0.1",
     "deprecation": "^2.3.1",
-    "file-type": "^14.6.0",
+    "file-type": "^14.6.1",
     "fs-extra": "^9.0.1",
     "image-size": "^0.8.3",
     "jsonwebtoken": "^8.5.1",
     "mime-types": "^2.1.27",
-    "openwhisk": "^3.21.1",
+    "openwhisk": "^3.21.2",
     "strip-ansi": "^6.0.0",
     "valid-data-url": "^2.0.0",
     "valid-url": "^1.0.9"
@@ -39,7 +39,7 @@
     "license-checker": "^25.0.1",
     "lockfile-lint": "^4.3.6",
     "lodash": "^4.17.15",
-    "mocha": "^7.2.0",
+    "mocha": "^8.0.1",
     "mock-fs": "^4.12.0",
     "mock-require": "^3.0.3",
     "mockery": "^2.1.0",
@@ -60,6 +60,7 @@
   "scripts": {
     "test": "nyc mocha test --file test/logfile.setup.js --recursive --exit",
     "posttest": "eslint ./ && license-checker --summary && ./node_modules/lockfile-lint/bin/lockfile-lint.js --path package-lock.json —type npm --allowed-hosts npm artifactory.corp.adobe.com --allowed-schemes \"https:\" \"file:\" --empty-hostname true",
-    "beautify": "eslint ./ --fix"
+    "beautify": "eslint ./ --fix",
+    "unit-test": "nyc mocha test --file test/logfile.setup.js --recursive --exit"
   }
 }

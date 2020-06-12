@@ -69,3 +69,6 @@ dist/
 
 # Important Documentation
 !.github/**
+
+# any log
+*.log
