@@ -10,6 +10,8 @@
  * governing permissions and limitations under the License.
  */
 
+'use strict';
+
 module.exports = {
     "extends": "@adobe/eslint-config-asset-compute"
 };

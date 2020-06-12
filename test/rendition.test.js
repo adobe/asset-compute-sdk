@@ -71,7 +71,7 @@ describe("rendition.js", () => {
         await fs.writeFile("/rendition11.png", PNG_CONTENTS);
         const rendition = new Rendition(instructions, directory, 11);
         rendition.metadata = await readMetadataFromFile(rendition.path);
-        assert.strictEqual(rendition.sha1(), 'fe16bfbff4e31fcf726c18fe4051b71ee8c96150');
+        assert.strictEqual(await rendition.sha1(), 'fe16bfbff4e31fcf726c18fe4051b71ee8c96150');
     });
 
     it('verifies method id works properly', function () {
