@@ -24,7 +24,6 @@
     "image-size": "^0.8.3",
     "jsonwebtoken": "^8.5.1",
     "mime-types": "^2.1.27",
-    "mmmagic": "^0.5.3",
     "openwhisk": "^3.21.2",
     "strip-ansi": "^6.0.0",
     "valid-data-url": "^2.0.0",
