@@ -156,4 +156,31 @@ describe("rendition.js", () => {
         assert.strictEqual(renditions[0].instructions.fmt, "png");
         assert.strictEqual(renditions[1].instructions.fmt, "jpeg");
     });
+
+    it('detects mimetype', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 12);
+
+        // overwrite path to point to test files
+        rendition.path = './test/files/file.bmp';
+        let result = await rendition.mimeType();
+        assert.ok(result === 'image/x-ms-bmp');
+
+        rendition.path = './test/files/negative/1pixel.png';
+        result = await rendition.mimeType();
+        assert.ok(result === 'image/png');
+
+        rendition.path = './test/files/negative/1pixel-masquerade.png';
+        result = await rendition.contentType();
+        assert.ok(result === 'image/webp');
+
+        rendition.path = './test/files/negative/file-webp-masquerading-as-png.png';
+        result = await rendition.mimeType();
+        assert.ok(result === 'image/webp');
+
+        rendition.path = './test/files/negative/png-masquerading-as-jpg.jpg';
+        result = await rendition.contentType();
+        assert.ok(result === 'image/png');
+    });
 });
