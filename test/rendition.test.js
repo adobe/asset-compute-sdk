@@ -157,7 +157,7 @@ describe("rendition.js", () => {
         assert.strictEqual(renditions[1].instructions.fmt, "jpeg");
     });
 
-    it('detects mimetype', async function () {
+    it.only('detects mimetype', async function () {
         console.log('IN TEST - detects mimetype');
 
         const instructions = { "fmt": "png", "target": "TargetName" };
