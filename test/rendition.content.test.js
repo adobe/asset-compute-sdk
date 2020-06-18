@@ -29,31 +29,31 @@ describe("rendition.js - content types", () => {
         // overwrite path to point to test files
         rendition.path = './test/files/file.bmp';
         let result = await rendition.mimeType();
-        assert.ok(result === 'image/x-ms-bmp');
+        assert.strictEqual(result, 'image/x-ms-bmp');
 
         rendition.path = './test/files/file.tif';
         result = await rendition.mimeType();
-        assert.ok(result === 'image/tiff');
+        assert.strictEqual(result, 'image/tiff');
 
         rendition.path = './test/files/file with spaces in name.bmp';
         result = await rendition.mimeType();
-        assert.ok(result === 'image/x-ms-bmp');
+        assert.strictEqual(result, 'image/x-ms-bmp');
 
         rendition.path = './test/files/negative/1pixel.png';
         result = await rendition.mimeType();
-        assert.ok(result === 'image/png');
+        assert.strictEqual(result, 'image/png');
 
         rendition.path = './test/files/negative/1pixel-masquerade.png';
         result = await rendition.contentType();
-        assert.ok(result === 'image/webp');
+        assert.strictEqual(result, 'image/webp');
 
         rendition.path = './test/files/negative/file-webp-masquerading-as-png.png';
         result = await rendition.mimeType();
-        assert.ok(result === 'image/webp');
+        assert.strictEqual(result, 'image/webp');
 
         rendition.path = './test/files/negative/png-masquerading-as-jpg.jpg';
         result = await rendition.contentType();
-        assert.ok(result === 'image/png');
+        assert.strictEqual(result, 'image/png');
     });
 
     it('gracefully handles not finding files when identifying mimetype', async function () {
@@ -64,19 +64,19 @@ describe("rendition.js - content types", () => {
         // overwrite path to point to test files
         rendition.path = './test/files/file-that-does-not-exist-and-should-therefore-not-be-here.bmp';
         let result = await rendition.mimeType();
-        assert.ok(result === 'application/octet-stream');
+        assert.strictEqual(result, 'application/octet-stream');
 
         rendition.path = '';
         result = await rendition.mimeType();
-        assert.ok(result === 'application/octet-stream');
+        assert.strictEqual(result, 'application/octet-stream');
 
         rendition.path = '  ';
         result = await rendition.mimeType();
-        assert.ok(result === 'application/octet-stream');
+        assert.strictEqual(result, 'application/octet-stream');
 
         rendition.path = '\n\n';
         result = await rendition.mimeType();
-        assert.ok(result === 'application/octet-stream');
+        assert.strictEqual(result, 'application/octet-stream');
     });
 
     it('detects encoding of an existing an accessible file', async function () {
@@ -87,11 +87,11 @@ describe("rendition.js - content types", () => {
         // overwrite path to point to test files
         rendition.path = './test/files/file.tif';
         let result = await rendition.encoding();
-        assert.ok(result === 'binary');
+        assert.strictEqual(result, 'binary');
         
         rendition.path = './test/files/file.txt';
         result = await rendition.encoding();
-        assert.ok(result === 'us-ascii');
+        assert.strictEqual(result, 'us-ascii');
     });
 
     it('gracefully handles not finding files when identifying encoding', async function () {
