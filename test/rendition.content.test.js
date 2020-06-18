@@ -31,6 +31,10 @@ describe("rendition.js - content types", () => {
         let result = await rendition.mimeType();
         assert.ok(result === 'image/x-ms-bmp');
 
+        rendition.path = './test/files/file.tif';
+        result = await rendition.mimeType();
+        assert.ok(result === 'image/tiff');
+
         rendition.path = './test/files/file with spaces in name.bmp';
         result = await rendition.mimeType();
         assert.ok(result === 'image/x-ms-bmp');

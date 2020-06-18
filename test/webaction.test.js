@@ -204,6 +204,21 @@ describe("web action for custom workers", function() {
         await assertHttpError(main(params), 401);
     });
 
+    it('should return http 401 if access token is not a bearer token', async function() {
+        const main = worker(() => {
+            assert.fail("worker function should not be invoked");
+        });
+
+        const params = {
+            __ow_method: "post",
+            __ow_headers: {
+                "authorization": `INVALID_TOKEN`,
+            }
+        };
+
+        await assertHttpError(main(params), 401);
+    });
+    
     it('should return http 429 if async invocation fails with 429', async function() {
         const worker = workerWithMockedOpenWhiskInvoke(() => {
             throw {

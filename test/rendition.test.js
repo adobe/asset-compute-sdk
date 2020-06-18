@@ -67,10 +67,31 @@ describe("rendition.js", () => {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
         await fs.writeFile("/rendition11.png", PNG_CONTENTS);
+
         const rendition = new Rendition(instructions, directory, 11);
+        assert.strictEqual(await rendition.sha1(), 'fe16bfbff4e31fcf726c18fe4051b71ee8c96150');
+
+        // second call (cached) returns the same sha1
         assert.strictEqual(await rendition.sha1(), 'fe16bfbff4e31fcf726c18fe4051b71ee8c96150');
     });
 
+    it('verifies method sha1 handles not finding the file', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        await fs.writeFile("/rendition11.png", PNG_CONTENTS);
+
+        try{
+            const rendition = new Rendition(instructions, directory, 11);
+            await fs.remove("/rendition11.png");
+
+            await rendition.sha1();
+
+            assert.fail("Should have failed to create a hash");
+        } catch (err){
+            assert.ok(err.toString().includes("creating sha1 hash failed"));
+        }
+    });
+    
     it('verifies method id works properly', function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
@@ -98,9 +119,7 @@ describe("rendition.js", () => {
         await fs.writeFile("/rendition11.png", PNG_CONTENTS);
         let rendition = new Rendition(instructions, directory, 11);
         let metadata = await rendition.metadata();
-        console.log('1 ------------------------');
-        console.log(metadata);
-        console.log('------------------------');
+
         // metadata we got through cmd file call will not work here (mockFs messes it up)
         assert.strictEqual(metadata["repo:size"], 193011);
         assert.strictEqual(metadata["repo:sha1"], "fe16bfbff4e31fcf726c18fe4051b71ee8c96150");
@@ -122,7 +141,7 @@ describe("rendition.js", () => {
         const metadata = await rendition.metadata();
         assert.deepStrictEqual(metadata, {});
     });
-
+    
     it('verifies function renditionFilename', function () {
         let extension;
         let index;

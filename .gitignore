@@ -15,6 +15,7 @@ pids
 .nyc_output
 reports/
 coverage/
+coverage.lcov
 lib-cov/
 
 # Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
