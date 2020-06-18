@@ -51,4 +51,15 @@ describe("rendition.js", () => {
         result = await rendition.contentType();
         assert.ok(result === 'image/png');
     });
+
+    it('falls back to default mimetype if the file is not found', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 12);
+
+        // overwrite path to point to test files
+        rendition.path = './test/files/file-that-does-not-exist-and-should-therefore-not-be-here.bmp';
+        const result = await rendition.mimeType();
+        assert.ok(result === 'application/octet-stream');
+    });
 });
