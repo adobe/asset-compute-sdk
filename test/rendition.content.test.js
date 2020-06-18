@@ -20,7 +20,7 @@ const Rendition = require('../lib/rendition.js');
 
 // WARNING: filesystem is not mocked here, so content-type identification can be tested with known files.
 
-describe("rendition.js", () => {
+describe("rendition.js - content types", () => {
     it('detects mimetype of an existing an accessible file', async function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
@@ -81,7 +81,7 @@ describe("rendition.js", () => {
         const rendition = new Rendition(instructions, directory, 12);
 
         // overwrite path to point to test files
-        rendition.path = './test/files/file.bmp';
+        rendition.path = './test/files/file.tif';
         let result = await rendition.encoding();
         assert.ok(result === 'binary');
         
@@ -111,5 +111,21 @@ describe("rendition.js", () => {
         rendition.path = '\n\n';
         result = await rendition.encoding();
         assert.ok(result === undefined);
+    });
+
+    it('verifies metadata works properly', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.path = './test/files/file.jpg';
+        const metadata = await rendition.metadata();
+
+        // test field by field
+        assert.strictEqual(metadata["repo:size"], 109472);
+        assert.strictEqual(metadata["repo:sha1"], "8b7ce94860836844eb17de009586fad2ca2fc8ad");
+        assert.strictEqual(metadata["tiff:imageWidth"], 512);
+        assert.strictEqual(metadata["tiff:imageHeight"], 288);
+        assert.strictEqual(metadata["dc:format"], "image/jpeg");
+        assert.strictEqual(metadata["repo:encoding"], "binary");
     });
 });
