@@ -90,7 +90,7 @@ describe("rendition.js - content types", () => {
         assert.strictEqual(result, 'binary');
         
         rendition.path = './test/files/file.txt';
-        result = await rendition.encoding();
+        result = await rendition.charset();
         assert.strictEqual(result, 'us-ascii');
     });
 
