@@ -169,6 +169,10 @@ describe("rendition.js", () => {
         let result = await rendition.mimeType();
         assert.ok(result === 'image/x-ms-bmp');
 
+        rendition.path = './test/files/file with spaces in name.bmp';
+        result = await rendition.mimeType();
+        assert.ok(result === 'image/x-ms-bmp');
+
         rendition.path = './test/files/negative/1pixel.png';
         result = await rendition.mimeType();
         assert.ok(result === 'image/png');
