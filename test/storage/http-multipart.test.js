@@ -65,7 +65,7 @@ describe('http.js (multipart)', function() {
                 },
                 id: () => {return 12345;},
                 size: () => { return 230;},
-                contentType: () => { return "image/jpeg" }
+                contentType: async () => { return "image/jpeg"; }
             };
 
         }

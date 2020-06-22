@@ -415,9 +415,9 @@ describe("api.js (shell)", () => {
             await scriptWorker.processWithScript(mockSource(), mockRendition(rendition));
 
             const env = readEnv("envfile");
-            console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+            console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
             console.log(env.mimefile);
-            console.log('------- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+            console.log('------- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
             assert.equal(env.source, `${process.cwd()}/in/source.jpg`);
             assert.equal(env.file, env.source);
             assert.equal(env.errorfile, `${process.cwd()}/out/errors/error.json`);

@@ -187,7 +187,8 @@ describe('storage.js', () => {
             const rendition = {
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",
-                size: () => 1
+                size: () => 1,
+                contentType: () => { return "image/jpeg"; }
             };
 
             nock("https://example.com")
@@ -211,7 +212,8 @@ describe('storage.js', () => {
             const rendition = {
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",
-                size: () => 1
+                size: () => 1,
+                contentType: () => { return "image/jpeg"; }
             };
 
             nock("https://example.com")
