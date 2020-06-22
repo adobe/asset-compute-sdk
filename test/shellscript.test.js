@@ -415,10 +415,14 @@ describe("api.js (shell)", () => {
             await scriptWorker.processWithScript(mockSource(), mockRendition(rendition));
 
             const env = readEnv("envfile");
+            console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+            console.log(env.mimefile);
+            console.log('------- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
             assert.equal(env.source, `${process.cwd()}/in/source.jpg`);
             assert.equal(env.file, env.source);
             assert.equal(env.errorfile, `${process.cwd()}/out/errors/error.json`);
             assert.equal(env.rendition, `${process.cwd()}/out/rendition0.png`);
+            assert.equal(env.mimefile, `${process.cwd()}/out/mimeinfo/mimeinfo-0.txt`);
             assert.equal(env.rendition_target, "https://example.com/MyRendition.png");
             assert.equal(env.rendition_wid, rendition.wid);
             assert.equal(env.rendition_fmt, rendition.fmt);
@@ -453,6 +457,7 @@ describe("api.js (shell)", () => {
             assert.equal(env.source, `${process.cwd()}/in/source.jpg`);
             assert.equal(env.file, env.source);
             assert.equal(env.errorfile, `${process.cwd()}/out/errors/error.json`);
+            assert.equal(env.mimefile, `${process.cwd()}/out/mimeinfo/mimeinfo-0.txt`);
             assert.equal(env.rendition, `${process.cwd()}/out/rendition0.png`);
             assert.equal(env.rendition_target, "https://example.com/image.jpg");
             assert.equal(env.rendition_wid, "Unicorn");
