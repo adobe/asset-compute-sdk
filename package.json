@@ -18,6 +18,7 @@
     "@adobe/node-fetch-retry": "^1.0.1",
     "ajv": "6.12.2",
     "clone": "^2.1.2",
+    "command-exists": "^1.2.9",
     "data-uri-to-buffer": "^3.0.1",
     "deprecation": "^2.3.1",
     "fs-extra": "^9.0.1",
