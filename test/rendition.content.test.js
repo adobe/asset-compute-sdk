@@ -21,7 +21,7 @@ const Rendition = require('../lib/rendition.js');
 // WARNING: filesystem is not mocked here, so content-type identification can be tested with known files.
 
 describe("rendition.js - content types", () => {
-    it('detects mimetype of an existing an accessible file', async function () {
+    it.only('detects mimetype of an existing an accessible file', async function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
         const rendition = new Rendition(instructions, directory, 12);
@@ -87,7 +87,7 @@ describe("rendition.js - content types", () => {
         // overwrite path to point to test files
         rendition.path = './test/files/file.tif';
         let result = await rendition.encoding();
-        assert.strictEqual(result, 'binary');
+        assert.ok(result === null);
         
         rendition.path = './test/files/file.txt';
         result = await rendition.charset();
@@ -102,19 +102,19 @@ describe("rendition.js - content types", () => {
         // overwrite path to point to test files
         rendition.path = './test/files/file-that-does-not-exist-and-should-therefore-not-be-here.bmp';
         let result = await rendition.encoding();
-        assert.ok(result === undefined);
+        assert.ok(result === null);
 
         rendition.path = '';
         result = await rendition.encoding();
-        assert.ok(result === undefined);
+        assert.ok(result === null);
 
         rendition.path = '  ';
         result = await rendition.encoding();
-        assert.ok(result === undefined);
+        assert.ok(result === null);
 
         rendition.path = '\n\n';
         result = await rendition.encoding();
-        assert.ok(result === undefined);
+        assert.ok(result === null);
     });
 
     it('verifies metadata works properly', async function () {
@@ -130,6 +130,6 @@ describe("rendition.js - content types", () => {
         assert.strictEqual(metadata["tiff:imageWidth"], 512);
         assert.strictEqual(metadata["tiff:imageHeight"], 288);
         assert.strictEqual(metadata["dc:format"], "image/jpeg");
-        assert.strictEqual(metadata["repo:encoding"], "binary");
+        assert.ok(metadata["repo:encoding"] === null);
     });
 });
