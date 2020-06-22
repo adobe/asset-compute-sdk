@@ -25,7 +25,7 @@ const util = require('util');
 
 const removeFiles = util.promisify(rimraf);
 
-describe.only('http.js (multipart)', function() {
+describe('http.js (multipart)', function() {
     describe('http multipart upload', function() {
         beforeEach(async function() {
             mockFs();
@@ -65,7 +65,7 @@ describe.only('http.js (multipart)', function() {
                 },
                 id: () => {return 12345;},
                 size: () => { return 230;},
-                contentType: () => { return "application/octet-stream" }
+                contentType: () => { return "image/jpeg" }
             };
 
         }
