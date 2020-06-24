@@ -242,4 +242,61 @@ describe("rendition.js", () => {
         const contentType = await rendition.contentType();
         assert.strictEqual(contentType, "txt/plain; charset=ascii");
     });
+
+    it('handles gracefully reading incomplete data for mime+encoding', async function () {
+        const mimeInfoFilepath = "/test-mimeinfo-file.txt";
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        await fs.writeFile(mimeInfoFilepath, "image/jpeg");
+        const rendition = new Rendition(instructions, directory, 11);
+
+        rendition.mimeInfoPath = mimeInfoFilepath;
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, undefined);
+        
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, undefined);
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, undefined);
+    });
+
+    it('handles gracefully reading partial data for mime+encoding', async function () {
+        const mimeInfoFilepath = "/test-mimeinfo-file.txt";
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        await fs.writeFile(mimeInfoFilepath, "txt/plain;");
+        const rendition = new Rendition(instructions, directory, 11);
+
+        rendition.mimeInfoPath = mimeInfoFilepath;
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, "txt/plain");
+
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, undefined);
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "txt/plain");
+    });
+
+    it('handles gracefully reading malformed data for mime+encoding', async function () {
+        const mimeInfoFilepath = "/test-mimeinfo-file.txt";
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        await fs.writeFile(mimeInfoFilepath, "this is wrong data");
+        const rendition = new Rendition(instructions, directory, 11);
+
+        rendition.mimeInfoPath = mimeInfoFilepath;
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, undefined);
+        
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, undefined);
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, undefined);
+    });
 });
