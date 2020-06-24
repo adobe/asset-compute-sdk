@@ -173,7 +173,7 @@ describe("rendition.js", () => {
         assert.strictEqual(renditions[1].instructions.fmt, "jpeg");
     });
 
-    it.only('can set mimetype+encoding (image)', async function () {
+    it('can set mimetype+encoding (for image)', async function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
         const rendition = new Rendition(instructions, directory, 11);
@@ -189,11 +189,49 @@ describe("rendition.js", () => {
         assert.strictEqual(contentType, "image/jpeg");
     });
 
-    it.only('can set mimetype+encoding (text)', async function () {
+    it('can read mime+encoding info from file (for image)', async function () {
+        const mimeInfoFilepath = "/test-mimeinfo-file.txt";
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        await fs.writeFile(mimeInfoFilepath, "image/jpeg; charset=binary");
+        const rendition = new Rendition(instructions, directory, 11);
+
+        rendition.mimeInfoPath = mimeInfoFilepath;
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, "image/jpeg");
+
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, null);
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "image/jpeg");
+    });
+
+    it('can set mimetype+encoding (for text)', async function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
         const rendition = new Rendition(instructions, directory, 11);
         rendition.setMimeInformation("txt/plain", "charset=ascii");
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, "txt/plain");
+
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, "charset=ascii");
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "txt/plain; charset=ascii");
+    });
+
+    it('can read mime+encoding info from file (for text)', async function () {
+        const mimeInfoFilepath = "/test-mimeinfo-file.txt";
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        await fs.writeFile(mimeInfoFilepath, "txt/plain; charset=ascii");
+        const rendition = new Rendition(instructions, directory, 11);
+
+        rendition.mimeInfoPath = mimeInfoFilepath;
 
         const mime = await rendition.mimeType();
         assert.strictEqual(mime, "txt/plain");
