@@ -172,4 +172,36 @@ describe("rendition.js", () => {
         assert.strictEqual(renditions[0].instructions.fmt, "png");
         assert.strictEqual(renditions[1].instructions.fmt, "jpeg");
     });
+
+    it.only('can set mimetype+encoding (image)', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.setMimeInformation("image/jpeg", "charset=binary");
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, "image/jpeg");
+
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, null);
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "image/jpeg");
+    });
+
+    it.only('can set mimetype+encoding (text)', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.setMimeInformation("txt/plain", "charset=ascii");
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, "txt/plain");
+
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, "charset=ascii");
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "txt/plain; charset=ascii");
+    });
 });
