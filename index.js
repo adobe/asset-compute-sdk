@@ -14,12 +14,32 @@
 
 const { worker, batchWorker, shellScriptWorker } = require('./lib/api');
 const { process, forEachRendition } = require('./lib/compat');
+const {
+    GenericError,
+    ClientError,
+    Reason,
+    RenditionFormatUnsupportedError,
+    SourceFormatUnsupportedError,
+    SourceUnsupportedError,
+    SourceCorruptError,
+    RenditionTooLarge
+} = require('@adobe/asset-compute-commons');
 
 // -----------------------< exports >-----------------------------------
 module.exports = {
     worker,
     batchWorker,
     shellScriptWorker,
+
+    // errors
+    GenericError,
+    ClientError,
+    Reason,
+    RenditionFormatUnsupportedError,
+    SourceFormatUnsupportedError,
+    SourceUnsupportedError,
+    SourceCorruptError,
+    RenditionTooLarge,
 
     // exporting for backwards compatibility
     process,
