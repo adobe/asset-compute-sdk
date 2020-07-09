@@ -70,22 +70,22 @@ describe("rendition.js - content types", () => {
         // overwrite path to point to test files
         rendition.path = './test/files/file-that-does-not-exist-and-should-therefore-not-be-here.bmp';
         let result = await rendition.mimeType();
-        assert.strictEqual(result, undefined);
+        assert.strictEqual(result, null);
 
         rendition = new Rendition(instructions, directory, 12);
         rendition.path = '';
         result = await rendition.mimeType();
-        assert.strictEqual(result, undefined);
+        assert.strictEqual(result, null);
 
         rendition = new Rendition(instructions, directory, 12);
         rendition.path = '  ';
         result = await rendition.mimeType();
-        assert.strictEqual(result, undefined);
+        assert.strictEqual(result, null);
 
         rendition = new Rendition(instructions, directory, 12);
         rendition.path = '\n\n';
         result = await rendition.mimeType();
-        assert.strictEqual(result, undefined);
+        assert.strictEqual(result, null);
     });
 
     it('detects encoding of an existing an accessible file', async function () {
@@ -101,7 +101,7 @@ describe("rendition.js - content types", () => {
         rendition = new Rendition(instructions, directory, 12);
         rendition.path = './test/files/file.txt';
         result = await rendition.encoding();
-        assert.strictEqual(result, 'charset=us-ascii');
+        assert.strictEqual(result, 'us-ascii');
     });
 
     it('gracefully handles not finding files when identifying encoding', async function () {
@@ -112,22 +112,22 @@ describe("rendition.js - content types", () => {
         // overwrite path to point to test files
         rendition.path = './test/files/file-that-does-not-exist-and-should-therefore-not-be-here.bmp';
         let result = await rendition.encoding();
-        assert.ok(result === undefined);
+        assert.ok(result === null);
 
         rendition = new Rendition(instructions, directory, 12);
         rendition.path = '';
         result = await rendition.encoding();
-        assert.ok(result === undefined);
+        assert.ok(result === null);
 
         rendition = new Rendition(instructions, directory, 12);
         rendition.path = '  ';
         result = await rendition.encoding();
-        assert.ok(result === undefined);
+        assert.ok(result === null);
 
         rendition = new Rendition(instructions, directory, 12);
         rendition.path = '\n\n';
         result = await rendition.encoding();
-        assert.ok(result === undefined);
+        assert.ok(result === null);
     });
 
     it('verifies metadata works properly', async function () {
