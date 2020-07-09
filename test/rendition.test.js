@@ -219,6 +219,6 @@ describe("rendition.js", () => {
         assert.strictEqual(encoding, null);
 
         const contentType = await rendition.contentType();
-        assert.strictEqual(contentType, null);
+        assert.strictEqual(contentType, "application/octet-stream");
     });
 });
