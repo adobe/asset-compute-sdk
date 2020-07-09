@@ -205,6 +205,54 @@ describe("rendition.js", () => {
         assert.strictEqual(contentType, "txt/plain; charset=ascii");
     });
 
+    it('can set mimetype+boundary (for multipart)', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.setContentType("multipart/form-data", null, "something");
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, "multipart/form-data");
+
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, null);
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "multipart/form-data; boundary=something");
+    });
+
+    it('does not set boundary if mime type is not multipart (no encoding)', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.setContentType("unknown/form-data", null, "something");
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, "unknown/form-data");
+
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, null);
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "unknown/form-data");
+    });
+
+    it('does not set boundary if mime type is not multipart (with encoding)', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.setContentType("unknown/form-data", "ascii", "something");
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, "unknown/form-data");
+
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, "ascii");
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "unknown/form-data; charset=ascii");
+    });
+
     it('handles gracefully reading incomplete data for mime+encoding', async function () {
         const mimeInfoFilepath = "/test-mimeinfo-file.txt";
         const instructions = { "fmt": "png", "target": "TargetName" };
