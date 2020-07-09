@@ -13,10 +13,30 @@
 'use strict';
 
 const { worker, batchWorker, shellScriptWorker } = require('./lib/api');
+const {
+    GenericError,
+    ClientError,
+    Reason,
+    RenditionFormatUnsupportedError,
+    SourceFormatUnsupportedError,
+    SourceUnsupportedError,
+    SourceCorruptError,
+    RenditionTooLarge
+} = require('@adobe/asset-compute-commons');
 
 // -----------------------< exports >-----------------------------------
 module.exports = {
     worker,
     batchWorker,
-    shellScriptWorker
+    shellScriptWorker,
+
+    // errors
+    GenericError,
+    ClientError,
+    Reason,
+    RenditionFormatUnsupportedError,
+    SourceFormatUnsupportedError,
+    SourceUnsupportedError,
+    SourceCorruptError,
+    RenditionTooLarge
 };
