@@ -13,7 +13,6 @@
 'use strict';
 
 const { worker, batchWorker, shellScriptWorker } = require('./lib/api');
-const { process, forEachRendition } = require('./lib/compat');
 const {
     GenericError,
     ClientError,
@@ -39,9 +38,5 @@ module.exports = {
     SourceFormatUnsupportedError,
     SourceUnsupportedError,
     SourceCorruptError,
-    RenditionTooLarge,
-
-    // exporting for backwards compatibility
-    process,
-    forEachRendition
+    RenditionTooLarge
 };
