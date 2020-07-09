@@ -93,6 +93,39 @@ describe("api.js (shell)", () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
 
             createScript("worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition`);
+
+            const main = shellScriptWorker();
+
+            const result = await main(testUtil.simpleParams());
+
+            // validate no errors
+            assert.ok(result.renditionErrors === undefined);
+
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
+            testUtil.assertNockDone();
+        });
+
+        it("should run a shell script and handle resulting rendition and content type metadata (verbose)", async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
+            createScript("worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition && echo $typefile && echo "application/pdf; charset=binary" > "$typefile" && cat $typefile`);
+
+            const main = shellScriptWorker();
+
+            const result = await main(testUtil.simpleParams());
+
+            // validate no errors
+            assert.ok(result.renditionErrors === undefined);
+
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
+            testUtil.assertNockDone();
+        });
+
+        it("should run a shell script and handle gracefully malformed content type metadata", async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
+            createScript("worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition && echo "not-a-valid-content-type" > "$typefile"`);
+
             const main = shellScriptWorker();
 
             const result = await main(testUtil.simpleParams());

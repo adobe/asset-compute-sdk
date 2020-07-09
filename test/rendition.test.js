@@ -205,15 +205,13 @@ describe("rendition.js", () => {
         assert.strictEqual(contentType, "txt/plain; charset=ascii");
     });
 
-    it('handles gracefully reading incomplete data for mime+encoding incomplete rendition', async function () {
+    it('handles gracefully reading incomplete data for mime+encoding', async function () {
         const mimeInfoFilepath = "/test-mimeinfo-file.txt";
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
         await fs.writeFile(mimeInfoFilepath, "image/jpeg");
         const rendition = new Rendition(instructions, directory, 11);
 
-        rendition.mimeInfoPath = mimeInfoFilepath;
-
         const mime = await rendition.mimeType();
         assert.strictEqual(mime, null);
         
@@ -222,63 +220,5 @@ describe("rendition.js", () => {
 
         const contentType = await rendition.contentType();
         assert.strictEqual(contentType, null);
-    });
-
-    it('handles gracefully reading partial data for mime+encoding incomplete rendition', async function () {
-        const mimeInfoFilepath = "/test-mimeinfo-file.txt";
-        const instructions = { "fmt": "png", "target": "TargetName" };
-        const directory = "/";
-        await fs.writeFile(mimeInfoFilepath, "txt/plain");
-        const rendition = new Rendition(instructions, directory, 11);
-
-        rendition.mimeInfoPath = mimeInfoFilepath;
-
-        const mime = await rendition.mimeType();
-        assert.strictEqual(mime, null);
-
-        const encoding = await rendition.encoding();
-        assert.strictEqual(encoding, null);
-
-        const contentType = await rendition.contentType();
-        assert.strictEqual(contentType, null);
-    });
-
-    it('handles gracefully reading malformed data for mime+encoding', async function () {
-        const mimeInfoFilepath = "/test-mimeinfo-file.txt";
-        const instructions = { "fmt": "png", "target": "TargetName" };
-        const directory = "/";
-        await fs.writeFile(mimeInfoFilepath, "this is wrong data");
-        const rendition = new Rendition(instructions, directory, 11);
-
-        rendition.mimeInfoPath = mimeInfoFilepath;
-
-        const mime = await rendition.mimeType();
-        assert.strictEqual(mime, null);
-        
-        const encoding = await rendition.encoding();
-        assert.strictEqual(encoding, null);
-
-        const contentType = await rendition.contentType();
-        assert.strictEqual(contentType, null);
-    });
-
-    it('explicitly setting mime+encoding wins over reading file content', async function () {
-        const mimeInfoFilepath = "/test-mimeinfo-file.txt";
-        const instructions = { "fmt": "png", "target": "TargetName" };
-        const directory = "/";
-        const rendition = new Rendition(instructions, directory, 11);
-        await fs.writeFile(mimeInfoFilepath, "txt/plain; charset=ascii");
-        rendition.setContentType("image/jpeg", "binary");
-
-        rendition.mimeInfoPath = mimeInfoFilepath;
-
-        const mime = await rendition.mimeType();
-        assert.strictEqual(mime, "image/jpeg");
-
-        const encoding = await rendition.encoding();
-        assert.strictEqual(encoding, null);
-
-        const contentType = await rendition.contentType();
-        assert.strictEqual(contentType, "image/jpeg");
     });
 });
