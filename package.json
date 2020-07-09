@@ -18,7 +18,7 @@
     "@adobe/node-fetch-retry": "^1.0.1",
     "ajv": "6.12.3",
     "clone": "^2.1.2",
-    "contenttype": "^1.0.2",
+    "content-type": "^1.0.4",
     "data-uri-to-buffer": "^3.0.1",
     "deprecation": "^2.3.1",
     "file-type": "^14.6.2",

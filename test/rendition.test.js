@@ -177,7 +177,7 @@ describe("rendition.js", () => {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
         const rendition = new Rendition(instructions, directory, 11);
-        rendition.setMimeInformation("image/jpeg", "charset=binary");
+        rendition.setContentType("image/jpeg", "charset=binary");
 
         const mime = await rendition.mimeType();
         assert.strictEqual(mime, "image/jpeg");
@@ -212,7 +212,7 @@ describe("rendition.js", () => {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
         const rendition = new Rendition(instructions, directory, 11);
-        rendition.setMimeInformation("txt/plain", "charset=ascii");
+        rendition.setContentType("txt/plain", "charset=ascii");
 
         const mime = await rendition.mimeType();
         assert.strictEqual(mime, "txt/plain");
@@ -306,7 +306,7 @@ describe("rendition.js", () => {
         const directory = "/";
         const rendition = new Rendition(instructions, directory, 11);
         await fs.writeFile(mimeInfoFilepath, "txt/plain; charset=ascii");
-        rendition.setMimeInformation("image/jpeg", "charset=binary");
+        rendition.setContentType("image/jpeg", "charset=binary");
 
         rendition.mimeInfoPath = mimeInfoFilepath;
 
@@ -326,7 +326,7 @@ describe("rendition.js", () => {
         const directory = "/";
         const rendition = new Rendition(instructions, directory, 11);
         await fs.writeFile(mimeInfoFilepath, "txt/plain; charset=ascii");
-        rendition.setMimeInformation("txt/plain", null);
+        rendition.setContentType("txt/plain", null);
 
         rendition.mimeInfoPath = mimeInfoFilepath;
 
