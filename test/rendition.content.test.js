@@ -168,7 +168,7 @@ describe("rendition.js - content types", () => {
         assert.strictEqual(result.encoding, undefined);
     });
 
-    it('uses default mime if detection using file command totally fails', async function () {
+    it('uses default mime if detection using file command fails to return a valid content type', async function () {
         const failingFileCommand = async () => {
             return "this is not a valid content type";
         };
