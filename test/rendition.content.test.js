@@ -18,6 +18,9 @@
 const assert = require('assert');
 const Rendition = require('../lib/rendition.js');
 
+const rewire = require("rewire");
+const rewiredRendition = rewire('../lib/rendition.js');
+
 // WARNING: filesystem is not mocked here, so content-type identification can be tested with known files.
 
 describe("rendition.js - content types", () => {
@@ -143,8 +146,25 @@ describe("rendition.js - content types", () => {
         assert.strictEqual(metadata["tiff:imageWidth"], 512);
         assert.strictEqual(metadata["tiff:imageHeight"], 288);
         assert.strictEqual(metadata["dc:format"], "image/jpeg");
-
-        console.log(metadata["repo:encoding"]);
         assert.ok(metadata["repo:encoding"] === undefined);
+    });
+
+    it('tests fallback from file command to file-type lib', async function () {
+        const failingFileCommand = async () => {
+            throw new Error('file command failure simulation');
+        };
+        rewiredRendition.__set__("getMimeInformationFromFileCommand", failingFileCommand);
+
+        const rewiredDetectContentType = rewiredRendition.__get__("detectContentType");
+
+        // create a rendition to use 
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.path = './test/files/file.jpg';
+
+        const result = await rewiredDetectContentType(rendition);
+        assert.strictEqual(result.mime, "image/jpeg");
+        assert.strictEqual(result.encoding, undefined);
     });
 });
