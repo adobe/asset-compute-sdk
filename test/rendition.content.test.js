@@ -153,7 +153,7 @@ describe("rendition.js - content types", () => {
         const failingFileCommand = async () => {
             throw new Error('file command failure simulation');
         };
-        rewiredRendition.__set__("getMimeInformationFromFileCommand", failingFileCommand);
+        rewiredRendition.__set__("getContentTypeInformation", failingFileCommand);
 
         const rewiredDetectContentType = rewiredRendition.__get__("detectContentType");
 
@@ -165,6 +165,25 @@ describe("rendition.js - content types", () => {
 
         const result = await rewiredDetectContentType(rendition);
         assert.strictEqual(result.mime, "image/jpeg");
+        assert.strictEqual(result.encoding, undefined);
+    });
+
+    it('uses default mime if detection using file command totally fails', async function () {
+        const failingFileCommand = async () => {
+            return "this is not a valid content type";
+        };
+        rewiredRendition.__set__("getContentTypeInformation", failingFileCommand);
+
+        const rewiredDetectContentType = rewiredRendition.__get__("detectContentType");
+
+        // create a rendition to use 
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.path = './test/files/file.jpg';
+
+        const result = await rewiredDetectContentType(rendition);
+        assert.strictEqual(result.mime, "application/octet-stream");
         assert.strictEqual(result.encoding, undefined);
     });
 });
