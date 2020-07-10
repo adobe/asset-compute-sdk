@@ -205,7 +205,8 @@ describe("rendition.js", () => {
         assert.strictEqual(contentType, "txt/plain; charset=ascii");
     });
 
-    it('can set mimetype+boundary (for multipart)', async function () {
+    it.skip('can set mimetype+boundary (for multipart)', async function () {
+        // skip - sdk not handling boundaries currently since there should be no multipart rendition
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
         const rendition = new Rendition(instructions, directory, 11);
