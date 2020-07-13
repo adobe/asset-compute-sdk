@@ -157,13 +157,7 @@ describe("rendition.js - content types", () => {
 
         const rewiredDetectContentType = rewiredRendition.__get__("detectContentType");
 
-        // create a rendition to use 
-        const instructions = { "fmt": "png", "target": "TargetName" };
-        const directory = "/";
-        const rendition = new Rendition(instructions, directory, 11);
-        rendition.path = './test/files/file.jpg';
-
-        const result = await rewiredDetectContentType(rendition);
+        const result = await rewiredDetectContentType('./test/files/file.jpg');
         assert.strictEqual(result.mime, "image/jpeg");
         assert.strictEqual(result.encoding, undefined);
     });
