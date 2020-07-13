@@ -19,7 +19,6 @@ const assert = require('assert');
 const fs = require('fs-extra');
 const mockFs = require('mock-fs');
 const Rendition = require('../lib/rendition.js');
-const { readMetadataFromFile } = require('../lib/metadata');
 
 const filePath = "test/files/file.png";
 const PNG_CONTENTS = fs.readFileSync(filePath);
@@ -61,7 +60,6 @@ describe("rendition.js", () => {
         const directory = "/";
         await fs.writeFile("/rendition11.png", PNG_CONTENTS);
         const rendition = new Rendition(instructions, directory, 11);
-        rendition.metadata = await readMetadataFromFile(rendition.path);
         assert.strictEqual(rendition.size(), PNG_SIZE);
     });
 
@@ -69,11 +67,31 @@ describe("rendition.js", () => {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
         await fs.writeFile("/rendition11.png", PNG_CONTENTS);
+
         const rendition = new Rendition(instructions, directory, 11);
-        rendition.metadata = await readMetadataFromFile(rendition.path);
-        assert.strictEqual(rendition.sha1(), 'fe16bfbff4e31fcf726c18fe4051b71ee8c96150');
+        assert.strictEqual(await rendition.sha1(), 'fe16bfbff4e31fcf726c18fe4051b71ee8c96150');
+
+        // second call (cached) returns the same sha1
+        assert.strictEqual(await rendition.sha1(), 'fe16bfbff4e31fcf726c18fe4051b71ee8c96150');
     });
 
+    it('verifies method sha1 handles not finding the file', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        await fs.writeFile("/rendition11.png", PNG_CONTENTS);
+
+        try{
+            const rendition = new Rendition(instructions, directory, 11);
+            await fs.remove("/rendition11.png");
+
+            await rendition.sha1();
+
+            assert.fail("Should have failed to create a hash");
+        } catch (err){
+            assert.ok(err.toString().includes("creating sha1 hash failed"));
+        }
+    });
+    
     it('verifies method id works properly', function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
@@ -100,32 +118,30 @@ describe("rendition.js", () => {
         const directory = "/";
         await fs.writeFile("/rendition11.png", PNG_CONTENTS);
         let rendition = new Rendition(instructions, directory, 11);
-        rendition.metadata = await readMetadataFromFile(rendition.path);
-        assert.deepStrictEqual(rendition.metadata, {
-            "repo:size": 193011,
-            "repo:sha1": "fe16bfbff4e31fcf726c18fe4051b71ee8c96150",
-            "tiff:imageWidth": 512,
-            "tiff:imageHeight": 288
-        });
+        let metadata = await rendition.metadata();
+
+        // metadata we got through cmd file call will not work here (mockFs messes it up)
+        assert.strictEqual(metadata["repo:size"], 193011);
+        assert.strictEqual(metadata["repo:sha1"], "fe16bfbff4e31fcf726c18fe4051b71ee8c96150");
+        assert.strictEqual(metadata["tiff:imageWidth"], 512);
+        assert.strictEqual(metadata["tiff:imageHeight"], 288);
 
         // now not a real image so getting the image width and height will fail
         fs.writeFileSync("/rendition11.png", 'hello world');
         rendition = new Rendition(instructions, directory, 11);
-        rendition.metadata = await readMetadataFromFile(rendition.path);
-        assert.deepStrictEqual(rendition.metadata, {
-            "repo:size": 11,
-            "repo:sha1": "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed",
-        });
+        metadata = await rendition.metadata();
+        assert.strictEqual(metadata["repo:size"], 11);
+        assert.strictEqual(metadata["repo:sha1"], "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed");
     });
 
     it('verifies metadata from missing file does not fail', async function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
         const rendition = new Rendition(instructions, directory, 12);
-        rendition.metadata = await readMetadataFromFile(rendition.path);
-        assert.deepStrictEqual(rendition.metadata, {});
+        const metadata = await rendition.metadata();
+        assert.deepStrictEqual(metadata, {});
     });
-
+    
     it('verifies function renditionFilename', function () {
         let extension;
         let index;
@@ -155,5 +171,103 @@ describe("rendition.js", () => {
         assert.strictEqual(renditions[1].index, 1);
         assert.strictEqual(renditions[0].instructions.fmt, "png");
         assert.strictEqual(renditions[1].instructions.fmt, "jpeg");
+    });
+
+    it('can set mimetype+encoding (for image)', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.setContentType("image/jpeg", "binary");
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, "image/jpeg");
+
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, null);
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "image/jpeg");
+    });
+
+    it('can set mimetype+encoding (for text)', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.setContentType("txt/plain", "ascii");
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, "txt/plain");
+
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, "ascii");
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "txt/plain; charset=ascii");
+    });
+
+    it.skip('can set mimetype+boundary (for multipart)', async function () {
+        // skip - sdk not handling boundaries currently since there should be no multipart rendition
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.setContentType("multipart/form-data", null, "something");
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, "multipart/form-data");
+
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, null);
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "multipart/form-data; boundary=something");
+    });
+
+    it('does not set boundary if mime type is not multipart (no encoding)', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.setContentType("unknown/form-data", null, "something");
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, "unknown/form-data");
+
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, null);
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "unknown/form-data");
+    });
+
+    it('does not set boundary if mime type is not multipart (with encoding)', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.setContentType("unknown/form-data", "ascii", "something");
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, "unknown/form-data");
+
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, "ascii");
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "unknown/form-data; charset=ascii");
+    });
+
+    it('handles gracefully reading incomplete data for mime+encoding', async function () {
+        const mimeInfoFilepath = "/test-mimeinfo-file.txt";
+        const instructions = { "fmt": "png", "target": "TargetName" };
+        const directory = "/";
+        await fs.writeFile(mimeInfoFilepath, "image/jpeg");
+        const rendition = new Rendition(instructions, directory, 11);
+
+        const mime = await rendition.mimeType();
+        assert.strictEqual(mime, null);
+        
+        const encoding = await rendition.encoding();
+        assert.strictEqual(encoding, null);
+
+        const contentType = await rendition.contentType();
+        assert.strictEqual(contentType, "application/octet-stream");
     });
 });

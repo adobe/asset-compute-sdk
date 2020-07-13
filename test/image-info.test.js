@@ -157,4 +157,21 @@ describe("image-info.js", function (){
         assert.equal(errThrown, true);
         assert(nock.isDone());
     });
+
+    it("gracefully handles not being able to get data from the image url", async function () {
+        const data = await readChunk('test/files/fileSmall.png', 0, bytesToRead);
+        const url = 'https://example.com/fileSmall.png';
+        nock('https://example.com')
+            .get('/fileSmall.png')
+            .reply(404, data);
+
+        // assert.throws is not happy with async functions currently, so...
+        try {
+            await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
+            assert.fail("Should have thrown");
+        } catch(err) {
+            assert.equal(err.message, 'failed to retrieve data from url');
+        }
+        assert(nock.isDone());
+    });
 });

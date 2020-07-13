@@ -139,7 +139,8 @@ describe('http.js', () => {
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",
                 name: 'fakeEarth.jpg',
-                size: () => 1
+                size: () => 1,
+                contentType: async () => "image/jpeg"
             };
 
             nock("https://example.com")
@@ -162,7 +163,8 @@ describe('http.js', () => {
             const rendition = {
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",
-                size: () => 1
+                size: () => 1,
+                contentType: () => "application/octet-stream"
             };
 
             nock("https://example.com")
@@ -189,7 +191,8 @@ describe('http.js', () => {
             const rendition = {
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",
-                size: () => 1
+                size: () => 1,
+                contentType: () => "application/octet-stream"
             };
             nock("https://example.com")
                 .put("/fakeEarth.jpg", "hello world!")
@@ -214,7 +217,8 @@ describe('http.js', () => {
             const rendition = {
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",
-                size: () => 1
+                size: () => 1,
+                contentType: () => "application/octet-stream"
             };
 
             nock("https://example.com")

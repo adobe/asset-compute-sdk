@@ -93,6 +93,39 @@ describe("api.js (shell)", () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
 
             createScript("worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition`);
+
+            const main = shellScriptWorker();
+
+            const result = await main(testUtil.simpleParams());
+
+            // validate no errors
+            assert.ok(result.renditionErrors === undefined);
+
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
+            testUtil.assertNockDone();
+        });
+
+        it("should run a shell script and handle resulting rendition and content type metadata (verbose)", async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
+            createScript("worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition && echo $typefile && echo "application/pdf; charset=binary" > "$typefile" && cat $typefile`);
+
+            const main = shellScriptWorker();
+
+            const result = await main(testUtil.simpleParams());
+
+            // validate no errors
+            assert.ok(result.renditionErrors === undefined);
+
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
+            testUtil.assertNockDone();
+        });
+
+        it("should run a shell script and handle gracefully malformed content type metadata", async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
+            createScript("worker.sh", `echo -n "${testUtil.RENDITION_CONTENT}" > $rendition && echo "not-a-valid-content-type" > "$typefile"`);
+
             const main = shellScriptWorker();
 
             const result = await main(testUtil.simpleParams());
@@ -419,6 +452,7 @@ describe("api.js (shell)", () => {
             assert.equal(env.file, env.source);
             assert.equal(env.errorfile, `${process.cwd()}/out/errors/error.json`);
             assert.equal(env.rendition, `${process.cwd()}/out/rendition0.png`);
+            assert.equal(env.typefile, `${process.cwd()}/out/errors/type.txt`);
             assert.equal(env.rendition_target, "https://example.com/MyRendition.png");
             assert.equal(env.rendition_wid, rendition.wid);
             assert.equal(env.rendition_fmt, rendition.fmt);
@@ -453,6 +487,7 @@ describe("api.js (shell)", () => {
             assert.equal(env.source, `${process.cwd()}/in/source.jpg`);
             assert.equal(env.file, env.source);
             assert.equal(env.errorfile, `${process.cwd()}/out/errors/error.json`);
+            assert.equal(env.typefile, `${process.cwd()}/out/errors/type.txt`);
             assert.equal(env.rendition, `${process.cwd()}/out/rendition0.png`);
             assert.equal(env.rendition_target, "https://example.com/image.jpg");
             assert.equal(env.rendition_wid, "Unicorn");
