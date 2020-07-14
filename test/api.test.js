@@ -23,6 +23,7 @@ const fs = require('fs-extra');
 const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@adobe/asset-compute-commons');
 const mockFs = require('mock-fs');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
+const sleep = require('util').promisify(setTimeout);
 
 describe("api.js", () => {
     beforeEach(function() {
@@ -532,6 +533,35 @@ describe("api.js", () => {
                 fmt: "png"
             },{
                 eventType: "activation"
+            }]);
+        });
+
+        it("should fail by timeout", async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "png"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
+            const main = worker(async function(source, rendition) {
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                await sleep(500);
+                console.log('waiting...');
+                return Promise.resolve();
+            });
+            assert.equal(typeof main, "function");
+            process.env.__OW_DEADLINE = Date.now() + 300;
+
+            await main(testUtil.simpleParams({noEventsNock:true}));
+
+            testUtil.assertNockDone();
+            await MetricsTestHelper.metricsDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: 'timeout'
             }]);
         });
 
