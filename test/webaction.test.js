@@ -27,6 +27,7 @@ const mockRequire = require("mock-require");
 describe("web action for custom workers", function() {
     beforeEach(function() {
         process.env.__OW_DEADLINE = Date.now() + this.timeout();
+        process.env.DISABLE_IO_EVENTS_ON_TIMEOUT = true;
         testUtil.beforeEach();
     });
 

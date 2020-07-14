@@ -24,14 +24,23 @@ const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError
 const mockFs = require('mock-fs');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 const sleep = require('util').promisify(setTimeout);
+const sinon = require('sinon');
+
+const TIMEOUT_EXIT_CODE = 124;
+let processSpy;
 
 describe("api.js", () => {
     beforeEach(function() {
         process.env.__OW_DEADLINE = Date.now() + this.timeout();
+        process.env.DISABLE_IO_EVENTS_ON_TIMEOUT = true;
+        processSpy = sinon.stub(process, 'exit').withArgs(TIMEOUT_EXIT_CODE).returns(1);
         testUtil.beforeEach();
     });
 
     afterEach(() => {
+        delete process.env.__OW_DEADLINE;
+        delete process.env.DISABLE_IO_EVENTS_ON_TIMEOUT;
+        process.exit.restore();
         testUtil.afterEach();
     });
 
@@ -536,11 +545,14 @@ describe("api.js", () => {
             }]);
         });
 
-        it("should fail by timeout", async () => {
+        it("should fail by timeout during rendition processing", async () => {
+            delete process.env.DISABLE_IO_EVENTS_ON_TIMEOUT;
+
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
             testUtil.nockIOEvent({
                 type: "rendition_failed",
                 errorReason: "GenericError",
+                errorMessage: 'Timeout',
                 rendition: {
                     fmt: "png"
                 },
@@ -557,13 +569,49 @@ describe("api.js", () => {
             process.env.__OW_DEADLINE = Date.now() + 300;
 
             await main(testUtil.simpleParams({noEventsNock:true}));
+            testUtil.assertNockDone();
+            await MetricsTestHelper.metricsDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: 'timeout'
+            },{
+                eventType: "activation"
+            }]);
+            assert.equal(processSpy.calledOnce, true, "did not call process.exit(124) on timeout");
+        });
+
+        it("should fail by timeout during second rendition processing", async () => {
+            delete process.env.DISABLE_IO_EVENTS_ON_TIMEOUT;
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                errorMessage: 'Timeout',
+                rendition: { fmt: 'xml', name: 'MyRendition3.xml' },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
+            const main = worker(async function(source, rendition) {
+                if (rendition.index === 2) {
+                    console.log('waiting...');
+                    await sleep(5000);
+                }
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                return Promise.resolve();
+            });
+            assert.equal(typeof main, "function");
+            process.env.__OW_DEADLINE = Date.now() + 7000;
+
+            await main(testUtil.paramsWithMultipleRenditions({noPut3:true}));
 
             testUtil.assertNockDone();
             await MetricsTestHelper.metricsDone();
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
                 eventType: 'timeout'
+            },{
+                eventType: "activation"
             }]);
-        });
+            assert.equal(processSpy.calledOnce, true, "did not call process.exit(124) on timeout");
+        }).timeout(10000);
 
         it('should support the disableSourceDownload flag', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
