@@ -60,6 +60,7 @@ function afterEach() {
     delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
     delete process.env.__OW_ACTION_NAME;
     delete process.env.__OW_DEADLINE;
+    delete process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS;
 }
 
 function nockGetFile(httpUrl) {

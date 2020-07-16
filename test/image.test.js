@@ -23,8 +23,11 @@ const fs = require('fs-extra');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 
 const REDDOT = "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==";
-describe("api.js", () => {
+describe("imagePostProcess", () => {
     beforeEach(function() {
+        process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS = true;
+        process.env.DISABLE_ACTION_TIMEOUT_METRIC = true;
+        process.env.OPENWHISK_NEWRELIC_DISABLE_ALL_INSTRUMENTATION = true;
         process.env.__OW_DEADLINE = Date.now() + this.timeout();
         testUtil.beforeEach();
     });
@@ -34,7 +37,7 @@ describe("api.js", () => {
     });
 
     it('should download source, invoke worker callback and upload rendition', async () => {
-        const receivedMetrics = MetricsTestHelper.mockNewRelic();
+        MetricsTestHelper.mockNewRelic();
 
         async function workerFn(source, rendition) {
             await fs.writeFile(rendition.path, Buffer.from(REDDOT, "base64"));
@@ -61,7 +64,6 @@ describe("api.js", () => {
         assert.ok(result.renditionErrors === undefined);
 
         testUtil.assertNockDone();
-        await testUtil.assertSimpleParamsMetrics(receivedMetrics);
 
     });
 });
