@@ -312,5 +312,6 @@ module.exports = {
     assertThrowsAndAwait,
     PARAMS_AUTH,
     assertSimpleParamsMetrics,
-    assertParamsWithMultipleRenditions
+    assertParamsWithMultipleRenditions,
+    nockPutFile
 };

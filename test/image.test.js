@@ -18,49 +18,53 @@
 const { worker } = require('../lib/api');
 
 const testUtil = require('./testutil');
+const mockFs = require('mock-fs');
 const assert = require('assert');
 const fs = require('fs-extra');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 
 const REDDOT = "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==";
 describe("imagePostProcess", () => {
-    beforeEach(function() {
+    beforeEach(function () {
         process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS = true;
         process.env.DISABLE_ACTION_TIMEOUT_METRIC = true;
         process.env.OPENWHISK_NEWRELIC_DISABLE_ALL_INSTRUMENTATION = true;
         process.env.__OW_DEADLINE = Date.now() + this.timeout();
         testUtil.beforeEach();
+
+        mockFs.restore();
+        process.env.WORKER_BASE_DIRECTORY = 'build/work';
     });
 
     afterEach(() => {
         testUtil.afterEach();
+        delete process.env.WORKER_BASE_DIRECTORY;
     });
 
     it('should download source, invoke worker callback and upload rendition', async () => {
         MetricsTestHelper.mockNewRelic();
+        testUtil.nockPutFile('https://example.com/MyRendition.png', Buffer.from(REDDOT, "base64"));
 
         async function workerFn(source, rendition) {
-            await fs.writeFile(rendition.path, Buffer.from(REDDOT, "base64"));
-            return Promise.resolve();
+            await fs.copyFile(source.path, rendition.path);
         }
 
         const main = worker(workerFn);
-        // const params =  {
-        //     source: SOURCE,
-        //     renditions: [{
-        //         ...options.rendition,
-        //         fmt: "png",
-        //         target: "https://example.com/MyRendition.png"
-        //     }],
-        //     requestId: "test-request-id",
-        //     auth: PARAMS_AUTH,
-        //     newRelicEventsURL: MetricsTestHelper.MOCK_URL,
-        //     newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
-        // };
-        const result = await main();
+        const params = {
+            source: `data:image/png;base64,${REDDOT}`,
+            renditions: [{
+                fmt: "png",
+                target: "https://example.com/MyRendition.png"
+            }],
+            requestId: "test-request-id",
+            auth: testUtil.PARAMS_AUTH,
+            newRelicEventsURL: MetricsTestHelper.MOCK_URL,
+            newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
+        };
+        const result = await main(params);
 
         // validate errors
-        testUtil.nockPutFile('https://example.com/MyRendition.png', REDDOT);
+        console.log(result.renditionErrors);
         assert.ok(result.renditionErrors === undefined);
 
         testUtil.assertNockDone();
