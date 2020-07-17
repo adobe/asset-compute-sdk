@@ -560,16 +560,13 @@ describe("api.js", () => {
                 source: "https://example.com/MySourceFile.jpg"
             });
 
-            const main = worker(async function(source, rendition) {
-                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+            const main = worker(async function() {
                 await sleep(200);
-                console.log('waiting...');
-                return Promise.resolve();
             });
             assert.equal(typeof main, "function");
             process.env.__OW_DEADLINE = Date.now() + 100;
 
-            await main(testUtil.simpleParams({noEventsNock:true}));
+            await main(testUtil.simpleParams({noEventsNock:true, noPut:true}));
             testUtil.assertNockDone();
             await MetricsTestHelper.metricsDone();
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
@@ -598,9 +595,9 @@ describe("api.js", () => {
                 if (rendition.index === 2) {
                     console.log('waiting...');
                     await sleep(5000);
+                    return;
                 }
                 fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
-                return Promise.resolve();
             });
             assert.equal(typeof main, "function");
             process.env.__OW_DEADLINE = Date.now() + 7000;
