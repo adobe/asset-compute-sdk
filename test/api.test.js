@@ -570,10 +570,6 @@ describe("api.js", () => {
             testUtil.assertNockDone();
             await MetricsTestHelper.metricsDone();
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
-                eventType: 'timeout'
-            },{
-                eventType: "activation"
-            }, {
                 eventType: 'error',
                 location: 'test_action_timeout'
             }]);
@@ -600,17 +596,12 @@ describe("api.js", () => {
                 fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
             });
             assert.equal(typeof main, "function");
-            process.env.__OW_DEADLINE = Date.now() + 7000;
-
+            process.env.__OW_DEADLINE = Date.now() + 20000;
             await main(testUtil.paramsWithMultipleRenditions({noPut3:true}));
 
             testUtil.assertNockDone();
             await MetricsTestHelper.metricsDone();
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
-                eventType: 'timeout'
-            },{
-                eventType: "activation"
-            }, {
                 eventType: 'error',
                 location: 'test_action_timeout'
             }]);
