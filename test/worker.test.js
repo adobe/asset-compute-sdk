@@ -24,7 +24,7 @@ const sinon = require('sinon');
 describe("worker.js", () => {
     it("should exit process on cleanup failure", async () => {
 
-        const processSpy =  sinon.stub(process, 'exit').withArgs(231).returns(1);
+        const processSpy =  sinon.stub(process, 'exit').withArgs(231);
 
         const params = {
             source: "https://adobe.com",
