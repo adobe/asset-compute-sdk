@@ -33,13 +33,14 @@ describe("api.js", () => {
     beforeEach(function() {
         process.env.__OW_DEADLINE = Date.now() + this.timeout();
         process.env.DISABLE_IO_EVENTS_ON_TIMEOUT = true;
-        processSpy = sinon.stub(process, 'exit').withArgs(TIMEOUT_EXIT_CODE).returns(1);
+        processSpy = sinon.stub(process, 'exit').withArgs(TIMEOUT_EXIT_CODE);
         testUtil.beforeEach();
     });
 
     afterEach(() => {
         delete process.env.__OW_DEADLINE;
         delete process.env.DISABLE_IO_EVENTS_ON_TIMEOUT;
+        delete process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS;
         process.exit.restore();
         testUtil.afterEach();
     });
@@ -547,12 +548,12 @@ describe("api.js", () => {
 
         it("should fail by timeout during rendition processing", async () => {
             delete process.env.DISABLE_IO_EVENTS_ON_TIMEOUT;
+            process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS = true;
 
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
             testUtil.nockIOEvent({
                 type: "rendition_failed",
                 errorReason: "GenericError",
-                errorMessage: 'Timeout',
                 rendition: {
                     fmt: "png"
                 },
@@ -575,17 +576,20 @@ describe("api.js", () => {
                 eventType: 'timeout'
             },{
                 eventType: "activation"
+            }, {
+                eventType: 'error',
+                location: 'test_action_timeout'
             }]);
             assert.equal(processSpy.calledOnce, true, "did not call process.exit(124) on timeout");
         });
 
         it("should fail by timeout during second rendition processing", async () => {
             delete process.env.DISABLE_IO_EVENTS_ON_TIMEOUT;
+            process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS = true;
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
             testUtil.nockIOEvent({
                 type: "rendition_failed",
                 errorReason: "GenericError",
-                errorMessage: 'Timeout',
                 rendition: { fmt: 'xml', name: 'MyRendition3.xml' },
                 source: "https://example.com/MySourceFile.jpg"
             });
@@ -609,9 +613,12 @@ describe("api.js", () => {
                 eventType: 'timeout'
             },{
                 eventType: "activation"
+            }, {
+                eventType: 'error',
+                location: 'test_action_timeout'
             }]);
             assert.equal(processSpy.calledOnce, true, "did not call process.exit(124) on timeout");
-        }).timeout(10000);
+        }).timeout(7000);
 
         it('should support the disableSourceDownload flag', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();

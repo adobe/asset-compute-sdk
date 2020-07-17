@@ -82,7 +82,6 @@ function nockIOEvent(expectedPayload, status=200) {
     return nock("https://eg-ingress.adobe.io")
         .post("/api/events", body => {
             const payload = parseIoEventPayload(body.event);
-            console.log('event payload', payload);
 
             return (body.user_guid === "org"
                 && body.provider_id === "asset_compute_org_test_client"
