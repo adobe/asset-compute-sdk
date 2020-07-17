@@ -562,12 +562,12 @@ describe("api.js", () => {
 
             const main = worker(async function(source, rendition) {
                 fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
-                await sleep(500);
+                await sleep(200);
                 console.log('waiting...');
                 return Promise.resolve();
             });
             assert.equal(typeof main, "function");
-            process.env.__OW_DEADLINE = Date.now() + 300;
+            process.env.__OW_DEADLINE = Date.now() + 100;
 
             await main(testUtil.simpleParams({noEventsNock:true}));
             testUtil.assertNockDone();
