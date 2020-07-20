@@ -43,7 +43,8 @@ describe("imagePostProcess", () => {
 
     it('should download source, invoke worker callback and upload rendition', async () => {
         MetricsTestHelper.mockNewRelic();
-        testUtil.nockPutFile('https://example.com/MyRendition.png', Buffer.from(REDDOT, "base64"));
+        const events = testUtil.mockIOEvents();
+        const putScope = testUtil.nockPutFile('https://example.com/MyRendition.png', Buffer.from(REDDOT, "base64"));
 
         async function workerFn(source, rendition) {
             await fs.copyFile(source.path, rendition.path);
@@ -64,10 +65,19 @@ describe("imagePostProcess", () => {
         const result = await main(params);
 
         // validate errors
-        console.log(result.renditionErrors);
+        // console.log(result.renditionErrors);
         assert.ok(result.renditionErrors === undefined);
 
-        testUtil.assertNockDone();
+        // console.log("=======================================================");
+        // console.log(events);
+        assert.equal(events.length, 1);
+        assert.equal(events[0].type, "rendition_created");
+        assert.equal(events[0].rendition.fmt, "png");
+        // TODO: adjust values
+        assert.equal(events[0].metadata["tiff:imageWidth"], 5);
+        assert.equal(events[0].metadata["tiff:imageHeight"], 5);
+        assert.equal(events[0].metadata["dc:format"], "image/png");
 
+        putScope.done();
     });
 });

@@ -70,7 +70,7 @@ function nockGetFile(httpUrl) {
 
 function nockPutFile(httpUrl, content, status=200) {
     const uri = url.parse(httpUrl);
-    nock(`${uri.protocol}//${uri.host}`)
+    return nock(`${uri.protocol}//${uri.host}`)
         .put(uri.path, content)
         .reply(status);
 }
@@ -92,6 +92,20 @@ function nockIOEvent(expectedPayload, status=200) {
                 && (!expectedPayload || lodash.matches(expectedPayload)(payload)));
         })
         .reply(status);
+}
+
+function mockIOEvents() {
+    const ioEvents = [];
+    nock("https://eg-ingress.adobe.io")
+        .post("/api/events", body => {
+            ioEvents.push(parseIoEventPayload(body.event));
+            return true;
+        })
+        .optionally()
+        .reply(200)
+        .persist();
+
+    return ioEvents;
 }
 
 const PARAMS_AUTH = {
@@ -308,6 +322,7 @@ module.exports = {
     simpleParams,
     paramsWithMultipleRenditions,
     nockIOEvent,
+    mockIOEvents,
     assertNockDone,
     assertThrowsAndAwait,
     PARAMS_AUTH,
