@@ -80,4 +80,44 @@ describe("imagePostProcess", () => {
 
         putScope.done();
     });
+
+    it('Should convert PNG to JPG - end to end test', async () => {
+        MetricsTestHelper.mockNewRelic();
+        const events = testUtil.mockIOEvents();
+        const putScope = testUtil.nockPutFile('https://example.com/MyRendition.jpg', Buffer.from(REDDOT, "base64"));
+
+        async function workerFn(source, rendition) {
+            await fs.copyFile(source.path, rendition.path);
+        }
+
+        const main = worker(workerFn);
+        const params = {
+            source: `data:image/png;base64,${REDDOT}`,
+            renditions: [{
+                fmt: "jpg",
+                target: "https://example.com/MyRendition.jpg"
+            }],
+            requestId: "test-request-id",
+            auth: testUtil.PARAMS_AUTH,
+            newRelicEventsURL: MetricsTestHelper.MOCK_URL,
+            newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
+        };
+        const result = await main(params);
+
+        // validate errors
+        console.log(result.renditionErrors);
+        assert.ok(result.renditionErrors === undefined);
+
+        console.log("=======================================================");
+        console.log(events);
+        assert.equal(events.length, 1);
+        assert.equal(events[0].type, "rendition_created");
+        assert.equal(events[0].rendition.fmt, "jpg");
+        // TODO: adjust values
+        assert.equal(events[0].metadata["tiff:imageWidth"], 5);
+        assert.equal(events[0].metadata["tiff:imageHeight"], 5);
+        assert.equal(events[0].metadata["dc:format"], "image/jpeg");
+
+        putScope.done();
+    });
 });
