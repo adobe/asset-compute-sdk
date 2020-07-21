@@ -26,7 +26,7 @@ const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 const sleep = require('util').promisify(setTimeout);
 const sinon = require('sinon');
 
-const TIMEOUT_EXIT_CODE = 124;
+const TIMEOUT_EXIT_CODE = 101;
 let processSpy;
 
 describe("api.js", () => {
@@ -572,7 +572,7 @@ describe("api.js", () => {
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
                 eventType: 'timeout'
             }]);
-            assert.equal(processSpy.calledOnce, true, "did not call process.exit(124) on timeout");
+            assert.equal(processSpy.calledOnce, true, "did not call process.exit(101) on timeout");
         });
 
         it("should fail by timeout during second rendition processing", async () => {
@@ -603,7 +603,7 @@ describe("api.js", () => {
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
                 eventType: 'timeout'
             }]);
-            assert.equal(processSpy.calledOnce, true, "did not call process.exit(124) on timeout");
+            assert.equal(processSpy.calledOnce, true, "did not call process.exit(101) on timeout");
         }).timeout(7000);
 
         it('should support the disableSourceDownload flag', async () => {
