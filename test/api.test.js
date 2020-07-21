@@ -570,8 +570,7 @@ describe("api.js", () => {
             testUtil.assertNockDone();
             await MetricsTestHelper.metricsDone();
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
-                eventType: 'error',
-                location: 'test_action_timeout'
+                eventType: 'timeout'
             }]);
             assert.equal(processSpy.calledOnce, true, "did not call process.exit(124) on timeout");
         });
@@ -602,8 +601,7 @@ describe("api.js", () => {
             testUtil.assertNockDone();
             await MetricsTestHelper.metricsDone();
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
-                eventType: 'error',
-                location: 'test_action_timeout'
+                eventType: 'timeout'
             }]);
             assert.equal(processSpy.calledOnce, true, "did not call process.exit(124) on timeout");
         }).timeout(7000);
