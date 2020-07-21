@@ -23,14 +23,25 @@ const fs = require('fs-extra');
 const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@adobe/asset-compute-commons');
 const mockFs = require('mock-fs');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
+const sleep = require('util').promisify(setTimeout);
+const sinon = require('sinon');
+
+const TIMEOUT_EXIT_CODE = 101;
+let processSpy;
 
 describe("api.js", () => {
     beforeEach(function() {
         process.env.__OW_DEADLINE = Date.now() + this.timeout();
+        process.env.DISABLE_IO_EVENTS_ON_TIMEOUT = true;
+        processSpy = sinon.stub(process, 'exit').withArgs(TIMEOUT_EXIT_CODE);
         testUtil.beforeEach();
     });
 
     afterEach(() => {
+        delete process.env.__OW_DEADLINE;
+        delete process.env.DISABLE_IO_EVENTS_ON_TIMEOUT;
+        delete process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS;
+        process.exit.restore();
         testUtil.afterEach();
     });
 
@@ -534,6 +545,66 @@ describe("api.js", () => {
                 eventType: "activation"
             }]);
         });
+
+        it("should fail by timeout during rendition processing", async () => {
+            delete process.env.DISABLE_IO_EVENTS_ON_TIMEOUT;
+            process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS = true;
+
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: {
+                    fmt: "png"
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
+            const main = worker(async function() {
+                await sleep(200);
+            });
+            assert.equal(typeof main, "function");
+            process.env.__OW_DEADLINE = Date.now() + 100;
+
+            await main(testUtil.simpleParams({noEventsNock:true, noPut:true}));
+            testUtil.assertNockDone();
+            await MetricsTestHelper.metricsDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: 'timeout'
+            }]);
+            assert.equal(processSpy.calledOnce, true, "did not call process.exit(101) on timeout");
+        });
+
+        it("should fail by timeout during second rendition processing", async () => {
+            delete process.env.DISABLE_IO_EVENTS_ON_TIMEOUT;
+            process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS = true;
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+            testUtil.nockIOEvent({
+                type: "rendition_failed",
+                errorReason: "GenericError",
+                rendition: { fmt: 'xml', name: 'MyRendition3.xml' },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
+            const main = worker(async function(source, rendition) {
+                if (rendition.index === 2) {
+                    console.log('waiting...');
+                    await sleep(5000);
+                    return;
+                }
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+            });
+            assert.equal(typeof main, "function");
+            process.env.__OW_DEADLINE = Date.now() + 20000;
+            await main(testUtil.paramsWithMultipleRenditions({noPut3:true}));
+
+            testUtil.assertNockDone();
+            await MetricsTestHelper.metricsDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: 'timeout'
+            }]);
+            assert.equal(processSpy.calledOnce, true, "did not call process.exit(101) on timeout");
+        }).timeout(7000);
 
         it('should support the disableSourceDownload flag', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
