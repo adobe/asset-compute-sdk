@@ -75,6 +75,19 @@ function nockPutFile(httpUrl, content, status=200) {
         .reply(status);
 }
 
+function mockPutFiles(httpUrl) {
+    const uri = url.parse(httpUrl);
+    const files = {};
+    nock(`${uri.protocol}//${uri.host}`)
+        .put(/.*/)
+        .optionally()
+        .reply(200, (path, requestBody) => {
+            files[path] = requestBody;
+        })
+        .persist();
+    return files;
+}
+
 function parseIoEventPayload(event) {
     return JSON.parse(Buffer.from(event, 'base64').toString());
 }
@@ -328,5 +341,6 @@ module.exports = {
     PARAMS_AUTH,
     assertSimpleParamsMetrics,
     assertParamsWithMultipleRenditions,
-    nockPutFile
+    nockPutFile,
+    mockPutFiles
 };

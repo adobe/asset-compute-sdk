@@ -24,6 +24,10 @@ const fs = require('fs-extra');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 
 const REDDOT = "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==";
+
+// TODO: expect jpeg binary
+const REDDOT_JPEG = "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==";
+
 describe("imagePostProcess", () => {
     beforeEach(function () {
         process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS = true;
@@ -41,50 +45,10 @@ describe("imagePostProcess", () => {
         delete process.env.WORKER_BASE_DIRECTORY;
     });
 
-    it('should download source, invoke worker callback and upload rendition', async () => {
+    it('should convert PNG to JPG - end to end test', async () => {
         MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
-        const putScope = testUtil.nockPutFile('https://example.com/MyRendition.png', Buffer.from(REDDOT, "base64"));
-
-        async function workerFn(source, rendition) {
-            await fs.copyFile(source.path, rendition.path);
-        }
-
-        const main = worker(workerFn);
-        const params = {
-            source: `data:image/png;base64,${REDDOT}`,
-            renditions: [{
-                fmt: "png",
-                target: "https://example.com/MyRendition.png"
-            }],
-            requestId: "test-request-id",
-            auth: testUtil.PARAMS_AUTH,
-            newRelicEventsURL: MetricsTestHelper.MOCK_URL,
-            newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
-        };
-        const result = await main(params);
-
-        // validate errors
-        // console.log(result.renditionErrors);
-        assert.ok(result.renditionErrors === undefined);
-
-        // console.log("=======================================================");
-        // console.log(events);
-        assert.equal(events.length, 1);
-        assert.equal(events[0].type, "rendition_created");
-        assert.equal(events[0].rendition.fmt, "png");
-        // TODO: adjust values
-        assert.equal(events[0].metadata["tiff:imageWidth"], 5);
-        assert.equal(events[0].metadata["tiff:imageHeight"], 5);
-        assert.equal(events[0].metadata["dc:format"], "image/png");
-
-        putScope.done();
-    });
-
-    it('Should convert PNG to JPG - end to end test', async () => {
-        MetricsTestHelper.mockNewRelic();
-        const events = testUtil.mockIOEvents();
-        const putScope = testUtil.nockPutFile('https://example.com/MyRendition.jpg', Buffer.from(REDDOT, "base64"));
+        const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
 
         async function workerFn(source, rendition) {
             await fs.copyFile(source.path, rendition.path);
@@ -110,6 +74,10 @@ describe("imagePostProcess", () => {
 
         console.log("=======================================================");
         console.log(events);
+        console.log("=======================================================");
+        console.log(uploadedRenditions);
+        console.log("=======================================================");
+
         assert.equal(events.length, 1);
         assert.equal(events[0].type, "rendition_created");
         assert.equal(events[0].rendition.fmt, "jpg");
@@ -117,7 +85,6 @@ describe("imagePostProcess", () => {
         assert.equal(events[0].metadata["tiff:imageWidth"], 5);
         assert.equal(events[0].metadata["tiff:imageHeight"], 5);
         assert.equal(events[0].metadata["dc:format"], "image/jpeg");
-
-        putScope.done();
+        assert.equal(uploadedRenditions["/MyRendition.jpg"], Buffer.from(REDDOT_JPEG, "base64"));
     });
 });
