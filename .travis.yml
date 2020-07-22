@@ -39,5 +39,5 @@ jobs:
         skip_cleanup: true
         script: npm run semantic-release
 
-after_script:
+after_success:
   - npm run report-coverage
