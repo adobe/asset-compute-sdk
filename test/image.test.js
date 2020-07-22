@@ -24,8 +24,6 @@ const fs = require('fs-extra');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 
 const REDDOT = "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==";
-
-// TODO: expect jpeg binary
 const REDDOT_JPEG = "ZmZkOGZmZTAwMDEwNGE0NjQ5NDYwMDAxMDEwMTAwNDgwMDQ4MDAwMGZmZGIwMDQzMDAwODA2MDYwNzA2MDUwODA3MDcwNzA5MDkwODBhMGMxNDBkMGMwYjBiMGMxOTEyMTMwZjE0MWQxYTFmMWUxZDFhMWMxYzIwMjQyZTI3MjAyMjJjMjMxYzFjMjgzNzI5MmMzMDMxMzQzNDM0MWYyNzM5M2QzODMyM2MyZTMzMzQzMmZmZGIwMDQzMDEwOTA5MDkwYzBiMGMxODBkMGQxODMyMjExYzIxMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMmZmYzAwMDExMDgwMDA1MDAwNTAzMDEyMjAwMDIxMTAxMDMxMTAxZmZjNDAwMTUwMDAxMDEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwNWZmYzQwMDIwMTAwMDAxMDMwNDAyMDMwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMDQwMzAwMDYwMjA1MTIyMTExMTMyMjMyZmZjNDAwMTUwMTAxMDEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDQwNmZmYzQwMDFmMTEwMDAyMDAwNjAzMDEwMDAwMDAwMDAwMDAwMDAwMDAwMDAyMDEwMzExMDAwNDA1NDE1MTYxMzE0MmZmZGEwMDBjMDMwMTAwMDIxMTAzMTEwMDNmMDBhNTRhZDJiOTVjOWU3NmEyNGM5YWE3NTg4NWQ0NmE3YzZmM2VkMGJiNjUyNzY3MDZkNzc1NzhlN2Q0OWU0OWZhMzExMTA1MDIwMDEwNGRmN2I3Y2JlZWE5YjJiOTViYTg1NzRjMDFhOTQ4N2U0MWZhMDJmNjJmOWFmZmQ5";
 
 describe("imagePostProcess", () => {
@@ -52,6 +50,7 @@ describe("imagePostProcess", () => {
 
         async function workerFn(source, rendition) {
             await fs.copyFile(source.path, rendition.path);
+            rendition.postProcess = true;
         }
 
         const main = worker(workerFn);
@@ -69,14 +68,7 @@ describe("imagePostProcess", () => {
         const result = await main(params);
 
         // validate errors
-        console.log(result.renditionErrors);
         assert.ok(result.renditionErrors === undefined);
-
-        console.log("=======================================================");
-        console.log(events);
-        console.log("=======================================================");
-        console.log(uploadedRenditions);
-        console.log("=======================================================");
 
         assert.equal(events.length, 1);
         assert.equal(events[0].type, "rendition_created");
