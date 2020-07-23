@@ -30,6 +30,7 @@ describe("imagePostProcess", () => {
     beforeEach(function () {
         process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS = true;
         process.env.DISABLE_ACTION_TIMEOUT_METRIC = true;
+        process.env.DISABLE_IO_EVENTS_ON_TIMEOUT = true;
         process.env.OPENWHISK_NEWRELIC_DISABLE_ALL_INSTRUMENTATION = true;
         process.env.__OW_DEADLINE = Date.now() + this.timeout();
         testUtil.beforeEach();
