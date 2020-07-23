@@ -24,7 +24,7 @@ const sinon = require('sinon');
 describe("worker.js", () => {
     it("should exit process on cleanup failure", async () => {
 
-        const processSpy =  sinon.stub(process, 'exit').withArgs(231).returns(1);
+        const processSpy =  sinon.stub(process, 'exit').withArgs(100);
 
         const params = {
             source: "https://adobe.com",
@@ -42,6 +42,7 @@ describe("worker.js", () => {
         };
         await testWorker.cleanup();
 
-        assert.equal(processSpy.calledOnce, true, "did not call process.exit(231) on cleanup failure");
+        assert.equal(processSpy.calledOnce, true, "did not call process.exit(100) on cleanup failure");
+        process.exit.restore();
     });
 });
