@@ -30,7 +30,7 @@ This library is required for all custom workers for the Adobe Asset Compute Serv
       - [Examples](#examples-2)
     - [Worker Options (optional)](#worker-options-optional)
   - [Contribution guidelines](#contribution-guidelines)
-  - [Available resources and libraries {#available-resources}](#available-resources-and-libraries-available-resources)
+  - [Available resources and libraries](#available-resources-and-libraries-available-resources)
   - [Licensing](#licensing)
 
 ## Installation
