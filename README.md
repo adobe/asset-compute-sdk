@@ -30,7 +30,7 @@ This library is required for all custom workers for the Adobe Asset Compute Serv
       - [Examples](#examples-2)
     - [Worker Options (optional)](#worker-options-optional)
   - [Contribution guidelines](#contribution-guidelines)
-  - [Available resources and libraries](#available-resources-and-libraries-available-resources)
+  - [Available resources and libraries](#available-resources-and-libraries)
   - [Licensing](#licensing)
 
 ## Installation
@@ -220,7 +220,7 @@ await main(params);
 
 ## Contribution guidelines
 
-Asset Compute Service has repository modularity and naming guidelines. It is modular to the extent possible, as fostered by the serverless concept and OpenWhisk framework. It means having small and focused GitHub repositories that support decoupled development and deployment lifecycles. One repository for one action is OK if it represents its own small services such as a worker. If you want to create a separate repository, log an issue in [Asset Compute SDK repository](https://github.com/adobe/asset-compute-sdk).
+Asset Compute Service has repository modularity and naming guidelines. It is modular to the extent possible, as fostered by the serverless concept and OpenWhisk framework. It means having small and focused GitHub repositories that support decoupled development and deployment lifecycles.
 
 For detailed guidelines, see the [contribution guidelines](./.github/CONTRIBUTING.md). Also, follow these [Git commit message guidelines](https://chris.beams.io/posts/git-commit/).
 
