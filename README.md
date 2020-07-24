@@ -7,6 +7,7 @@
 
 This library is required for all custom workers for the Adobe Asset Compute Service. It provides an easy to use framework and takes care of common things like asset & rendition access, validation and type checks, event notification, error handling and more.
 
+  - [Adobe Asset Compute Worker SDK](#adobe-asset-compute-worker-sdk)
   - [Installation](#installation)
   - [Overview](#overview)
   - [Examples](#examples)
@@ -28,8 +29,9 @@ This library is required for all custom workers for the Adobe Asset Compute Serv
         - [**`params`**](#params-1)
       - [Examples](#examples-2)
     - [Worker Options (optional)](#worker-options-optional)
-    - [Contributing](#contributing)
-    - [Licensing](#licensing)
+  - [Contribution guidelines](#contribution-guidelines)
+  - [Available resources and libraries {#available-resources}](#available-resources-and-libraries-available-resources)
+  - [Licensing](#licensing)
 
 ## Installation
 
