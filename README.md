@@ -216,8 +216,34 @@ const main = worker(renditionCallback, options);
 await main(params);
 ```
 
-### Contributing
-Contributions are welcomed! Read the [Contributing Guide](./.github/CONTRIBUTING.md) for more information.
+## Contribution guidelines 
 
-### Licensing
+Asset Compute Service has repository modularity and naming guidelines. It is modular to the extent possible, as fostered by the serverless concept and OpenWhisk framework. It means having small and focused GitHub repositories that support decoupled development and deployment lifecycles. One repository for one action is OK if it represents its own small services such as a worker. If you want to create a separate repository, log an issue in [Asset Compute SDK repository](https://github.com/adobe/asset-compute-sdk).
+
+For detailed guidelines, see the [contribution guidelines](.github/CONTRIBUTING.md). Also, follow these [Git commit message guidelines](https://chris.beams.io/posts/git-commit/).
+
+## Available resources and libraries {#available-resources}
+
+The open-sourced libraries of Asset Compute Service are:
+
+* [Asset Compute SDK](https://github.com/adobe/asset-compute-sdk): the worker SDK and main framework for third-party custom workers.
+* [Asset Compute Commons](https://github.com/adobe/asset-compute-commons): Common utilities needed by all Asset Compute serverless actions.
+* [Asset Compute Client](https://github.com/adobe/asset-compute-client): JavaScript client for the Adobe Asset Compute Service.
+* [Asset Compute example workers](https://github.com/adobe/asset-compute-example-workers): Samples of third-party Asset Compute worker.
+* [ESlint configuration](https://github.com/adobe/eslint-config-asset-compute): Shared ESLint configuration for Nodejs projects related to the Adobe Asset Compute service.
+* [Asset Compute Development Tool](https://github.com/adobe/asset-compute-devtool): Library for the developer tool to explore and to test the Adobe Asset Compute Service.
+* [aio-cli-plugin-asset-compute](https://github.com/adobe/aio-cli-plugin-asset-compute): Asset Compute plug-in for Adobe I/O Command Line Interface.
+* [Adobe Asset Compute integration tests](https://github.com/adobe/asset-compute-integration-tests): Integration tests for the Asset Compute developer experience.
+
+A few general purpose node libraries are:
+
+* [node-fetch-retry](https://github.com/adobe/node-fetch-retry): Node module to perform retries for HTTP requests.
+* [node-httptransfer](https://github.com/adobe/node-httptransfer): Transfer file content from HTTP(S) URLs to HTTP(S) URLs and between HTTP(S) URL.
+* [node-cgroup-metrics](https://github.com/adobe/node-cgroup-metrics): Node module for reading `cgroup` metrics. Reads from `/sys/fs/cgroup/`.
+* [node-openwhisk-newrelic](https://github.com/adobe/node-openwhisk-newrelic): Gather metrics from Apache OpenWhisk actions and send those to New Relic Insights.
+* [node-metrics-sampler](https://github.com/adobe/node-metrics-sampler): Library for collecting and gathering metrics.
+* [Cloud Blob Store Wrapper](https://github.com/adobe/node-cloud-blobstore-wrapper): General cloud storage library for Azure and AWS.
+
+
+## Licensing
 This project is licensed under the Apache V2 License. See [LICENSE](LICENSE) for more information.
