@@ -191,7 +191,7 @@ async function renditionCallback(source, renditions, outdir, params) => {
 ### Worker Options (optional)
 Optional parameters to pass into workers
 - disableSourceDownload: Boolean used to disable the source download (defaults to false).
-- disableRenditionUpload: Boolean used to disable the rendition upload (defaults to false). Use this flag only if no generated rendition is expected as a processing result.
+- disableRenditionUpload: Boolean used to disable the rendition upload (defaults to false).  WARNING: Use this flag only if no rendition should be uploaded. This will make the worker activation fail since the asset compute SDK expects a rendition output. 
 
 Disable source download example:
 ```js
