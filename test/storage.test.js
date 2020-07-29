@@ -188,7 +188,8 @@ describe('storage.js', () => {
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",
                 size: () => 1,
-                contentType: () => { return "image/jpeg"; }
+                contentType: () => { return "image/jpeg"; },
+                embed: () => { return false; }
             };
 
             nock("https://example.com")
@@ -213,7 +214,8 @@ describe('storage.js', () => {
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",
                 size: () => 1,
-                contentType: () => { return "image/jpeg"; }
+                contentType: () => { return "image/jpeg"; },
+                embed: () => { return false; }
             };
 
             nock("https://example.com")
