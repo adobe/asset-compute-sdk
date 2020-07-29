@@ -7,6 +7,7 @@
 
 This library is required for all custom workers for the Adobe Asset Compute Service. It provides an easy to use framework and takes care of common things like asset & rendition access, validation and type checks, event notification, error handling and more.
 
+  - [Adobe Asset Compute Worker SDK](#adobe-asset-compute-worker-sdk)
   - [Installation](#installation)
   - [Overview](#overview)
   - [Examples](#examples)
@@ -28,8 +29,9 @@ This library is required for all custom workers for the Adobe Asset Compute Serv
         - [**`params`**](#params-1)
       - [Examples](#examples-2)
     - [Worker Options (optional)](#worker-options-optional)
-    - [Contributing](#contributing)
-    - [Licensing](#licensing)
+  - [Contribution guidelines](#contribution-guidelines)
+  - [Available resources and libraries](#available-resources-and-libraries-available-resources)
+  - [Licensing](#licensing)
 
 ## Installation
 
@@ -188,8 +190,8 @@ async function renditionCallback(source, renditions, outdir, params) => {
 
 ### Worker Options (optional)
 Optional parameters to pass into workers
-- disableSourceDownload: Boolean used to disable the source download (defaults to false)
-- disableRenditionUpload: Boolean used to disable the rendition upload (defaults to false)
+- disableSourceDownload: Boolean used to disable the source download (defaults to false).
+- disableRenditionUpload: Boolean used to disable the rendition upload (defaults to false).  WARNING: Use this flag only if no rendition should be uploaded. This will make the worker activation fail since the asset compute SDK expects a rendition output. 
 
 Disable source download example:
 ```js
@@ -216,8 +218,24 @@ const main = worker(renditionCallback, options);
 await main(params);
 ```
 
-### Contributing
-Contributions are welcomed! Read the [Contributing Guide](./.github/CONTRIBUTING.md) for more information.
+## Contribution guidelines
 
-### Licensing
+Asset Compute Service has repository modularity and naming guidelines. It is modular to the extent possible, as fostered by the serverless concept and OpenWhisk framework. It means having small and focused GitHub repositories that support decoupled development and deployment lifecycles. One repository for one action is OK if it represents its own small services such as a worker. If you want to create a separate repository, log an issue in [Asset Compute SDK repository](https://github.com/adobe/asset-compute-sdk).
+
+For detailed guidelines, see the [contribution guidelines](./.github/CONTRIBUTING.md). Also, follow these [Git commit message guidelines](https://chris.beams.io/posts/git-commit/).
+
+## Available resources and libraries
+
+The open-sourced libraries of Asset Compute Service are:
+
+* [Asset Compute SDK](https://github.com/adobe/asset-compute-sdk): the worker SDK and main framework for third-party custom workers.
+* [Asset Compute Commons](https://github.com/adobe/asset-compute-commons): Common utilities needed by all Asset Compute serverless actions.
+* [Asset Compute Client](https://github.com/adobe/asset-compute-client): JavaScript client for the Adobe Asset Compute Service.
+* [Asset Compute example workers](https://github.com/adobe/asset-compute-example-workers): Samples of third-party Asset Compute worker.
+* [ESlint configuration](https://github.com/adobe/eslint-config-asset-compute): Shared ESLint configuration for Nodejs projects related to the Adobe Asset Compute service.
+* [Asset Compute Development Tool](https://github.com/adobe/asset-compute-devtool): Library for the developer tool to explore and to test the Adobe Asset Compute Service.
+* [aio-cli-plugin-asset-compute](https://github.com/adobe/aio-cli-plugin-asset-compute): Asset Compute plug-in for Adobe I/O Command Line Interface.
+* [Adobe Asset Compute integration tests](https://github.com/adobe/asset-compute-integration-tests): Integration tests for the Asset Compute developer experience.
+
+## Licensing
 This project is licensed under the Apache V2 License. See [LICENSE](LICENSE) for more information.
