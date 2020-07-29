@@ -23,6 +23,8 @@ const fs = require('fs-extra');
 const path = require('path');
 const { GenericError } = require('@adobe/asset-compute-commons');
 
+
+const EMBED_LIMIT_MAX = 32 * 1024;
 describe('storage.js', () => {
     describe('getSource', () => {
 
@@ -254,6 +256,34 @@ describe('storage.js', () => {
             assert.ok(fs.existsSync(file));
             assert.ok(fs.existsSync(requestedFile));
             assert.ok(! nock.isDone());
+        });
+
+        it('should embed small rendition, but not upload', async () => {
+            mockFs({
+                "./storeFiles/jpg": {
+                    "fakeEarth.jpg": "hello world!"
+                }
+            });
+            const file = "./storeFiles/jpg/fakeEarth.jpg";
+            const requestedFile = "./storeFiles/jpg/rendition.jpg";
+
+            const rendition = {
+                directory: "./storeFiles/jpg",
+                path: file,
+                target: "https://example.com/fakeEarth.jpg",
+                instructions: {
+                    name: path.basename(requestedFile),
+                    embedBinaryLimit: EMBED_LIMIT_MAX
+                },
+                size: () => 1,
+                contentType: () => { return "image/jpeg"; },
+                embed: () => { return true; },
+            };
+
+
+            assert.ok(fs.existsSync(file));
+            await putRendition(rendition);
+            assert.ok(fs.existsSync(file));
         });
     });
 });

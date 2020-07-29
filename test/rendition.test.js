@@ -19,10 +19,18 @@ const assert = require('assert');
 const fs = require('fs-extra');
 const mockFs = require('mock-fs');
 const Rendition = require('../lib/rendition.js');
+const { GenericError } = require('@adobe/asset-compute-commons');
 
 const filePath = "test/files/file.png";
 const PNG_CONTENTS = fs.readFileSync(filePath);
 const PNG_SIZE = fs.statSync(filePath).size;
+
+const filePathSmall = "test/files/fileSmall.png";
+const SMALL_PNG_CONTENTS = fs.readFileSync(filePathSmall);
+
+const DATA_URI_CONTENTS = "hello world";
+const DATA_URI = "data:text/plain;charset=utf-8;base64,aGVsbG8gd29ybGQ="; // data uri with text: "hello world"
+const EMBED_LIMIT_MAX = 32 * 1024;
 
 describe("rendition.js", () => {
     beforeEach(() => {
@@ -269,5 +277,65 @@ describe("rendition.js", () => {
 
         const contentType = await rendition.contentType();
         assert.strictEqual(contentType, "application/octet-stream");
+    });
+
+    it('should embed rendition because it is small enough', async function () {
+        // should embed because small enough
+        const instructions = { "fmt": "png", "target": "TargetName", embedBinaryLimit: EMBED_LIMIT_MAX };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+
+        await fs.writeFile("/rendition11.png", SMALL_PNG_CONTENTS);
+        const shouldEmbed = rendition.embed();
+        assert.strictEqual(shouldEmbed, true);
+    });
+
+    it('should not embed rendition if not specified in instructions', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName"};
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+
+        await fs.writeFile("/rendition11.png", SMALL_PNG_CONTENTS);
+        const shouldEmbed = rendition.embed();
+        assert.strictEqual(shouldEmbed, false);
+    });
+
+    it('should not embed rendition if rendition is larger than defined limit', async function () {
+        const instructions = { "fmt": "png", "target": "TargetName", embedBinaryLimit: 1};
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+
+        await fs.writeFile("/rendition11.png", SMALL_PNG_CONTENTS);
+        const shouldEmbed = rendition.embed();
+        assert.strictEqual(shouldEmbed, false);
+    });
+
+    it('should create a data uri', async function () {
+        const instructions = { "fmt": "txt", "target": "TargetName", embedBinaryLimit: 1};
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        rendition.setContentType("text/plain", "utf-8");
+
+        await fs.writeFile("/rendition11.txt", DATA_URI_CONTENTS);
+        const dataUri = await rendition.asDataUri();
+        assert.equal(dataUri, DATA_URI);
+    });
+
+    it('should not create a data uri because the rendition is too large', async function () {
+        const instructions = { "fmt": "txt", "target": "TargetName", embedBinaryLimit: 1};
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        // mock size function to make size larger than DATA_URI_LIMIT
+        rendition.size = function() {
+            return 3000000;
+        };
+
+        await fs.writeFile("/rendition11.txt", PNG_CONTENTS);
+        try {
+            await rendition.asDataUri();
+            assert.fail("Should have failed");
+        } catch (e) {
+            assert.ok(e instanceof GenericError);
+        }
     });
 });
