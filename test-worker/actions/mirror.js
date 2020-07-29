@@ -13,18 +13,10 @@
 'use strict';
 
 const { worker } = require('../../lib/api');
-const dataUriToBuffer = require('data-uri-to-buffer');
 const fs = require('fs').promises;
 
 exports.main = worker(async (source, rendition) => {
-    const dataUri = rendition.instructions.data || "data:text/plain;charset=utf-8;,hello";
-    const data = dataUriToBuffer(dataUri);
-
-    const type    = rendition.instructions["dc:format"]     || data.type;
-    const charset = rendition.instructions["repo:encoding"] || data.charset;
-
-    await fs.writeFile(rendition.path, data);
-    rendition.setContentType(type, charset);
-}, {
-    disableSourceDownload: true
+    // copy source to rendition to transfer 1:1
+    await fs.copyFile(source.path, rendition.path);
+    rendition.postProcess = true;
 });

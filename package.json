@@ -69,7 +69,6 @@
     "beautify": "eslint ./ --fix",
     "unit-test": "nyc --reporter=html --reporter=text mocha test --recursive --exit -- -v",
     "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
-    "semantic-release": "semantic-release",
-    "run-worker-test": "TODO: recursively remove .DS_Store, copy node modules to there && npm t && remove node_modules"
+    "semantic-release": "semantic-release"
   }
 }
