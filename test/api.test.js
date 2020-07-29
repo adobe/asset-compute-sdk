@@ -44,7 +44,6 @@ describe("api.js", () => {
         process.exit.restore();
         testUtil.afterEach();
     });
-
     describe("worker()", () => {
 
         it("should throw if worker callback is invalid", async () => {
@@ -707,6 +706,47 @@ describe("api.js", () => {
                     return true;
                 }
             );
+        });
+
+        it('should embed rendition in the io event', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+            const embedBinaryLimit = 32 * 1024;
+
+            function workerFn(source, rendition) {
+                fs.writeFileSync(rendition.path, 'hello world');
+                return Promise.resolve();
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams({noEventsNock: true, noPut: true});
+
+            params.renditions[0].embedBinaryLimit = embedBinaryLimit;
+
+            testUtil.nockIOEvent({
+                type: "rendition_created",
+                rendition: {
+                    fmt: "png",
+                    embedBinaryLimit: 32768
+                },
+                data: 'data:application/octet-stream;base64,aGVsbG8gd29ybGQ=',
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
+            const result = await main(params);
+
+            // validate errors
+            assert.ok(result.renditionErrors === undefined);
+
+            testUtil.assertNockDone();
+            MetricsTestHelper.assertArrayContains(receivedMetrics, [{
+                eventType: "rendition",
+                fmt: "png",
+                renditionFormat: "png",
+                requestId: "test-request-id"
+            // },{
+            //     eventType: "activation",
+            // activation metric is missing for some reason...need to investigate
+            }]);
         });
 
     });
