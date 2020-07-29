@@ -1,13 +1,7 @@
 {
   "name": "workerplayground",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
-  "dependencies": {
-    "data-uri-to-buffer": "^3.0.1"
-  },
-  "devDependencies": {
-    "@adobe/aio-cli-plugin-asset-compute": "^1.3.4"
-  },
   "scripts": {
     "test": "adobe-asset-compute test-worker"
   }
