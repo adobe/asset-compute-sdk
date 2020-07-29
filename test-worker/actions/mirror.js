@@ -12,7 +12,7 @@
 
 'use strict';
 
-const { worker } = require('../../../lib/api');
+const { worker } = require('../../lib/api');
 const dataUriToBuffer = require('data-uri-to-buffer');
 const fs = require('fs').promises;
 
