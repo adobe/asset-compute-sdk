@@ -295,7 +295,7 @@ describe("rendition.js", () => {
         const instructions = { "fmt": "txt", "target": "TargetName", embedBinaryLimit: EMBED_LIMIT_MAX };
         const directory = "/";
         const rendition = new Rendition(instructions, directory, 11);
-        const buff = new ArrayBuffer(32 * 1024);
+        const buff = Buffer.alloc(32 * 1024);
 
         await fs.writeFile("/rendition11.txt", buff);
         const shouldEmbed = rendition.shouldEmbedInIOEvent();
