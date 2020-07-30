@@ -191,7 +191,7 @@ describe('storage.js', () => {
                 target: "https://example.com/fakeEarth.jpg",
                 size: () => 1,
                 contentType: () => { return "image/jpeg"; },
-                embed: () => { return false; }
+                shouldEmbedInIOEvent: () => { return false; }
             };
 
             nock("https://example.com")
@@ -217,7 +217,7 @@ describe('storage.js', () => {
                 target: "https://example.com/fakeEarth.jpg",
                 size: () => 1,
                 contentType: () => { return "image/jpeg"; },
-                embed: () => { return false; }
+                shouldEmbedInIOEvent: () => { return false; }
             };
 
             nock("https://example.com")
@@ -277,7 +277,7 @@ describe('storage.js', () => {
                 },
                 size: () => 1,
                 contentType: () => { return "image/jpeg"; },
-                embed: () => { return true; },
+                shouldEmbedInIOEvent: () => { return true; },
             };
 
 

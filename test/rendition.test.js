@@ -286,7 +286,7 @@ describe("rendition.js", () => {
         const rendition = new Rendition(instructions, directory, 11);
 
         await fs.writeFile("/rendition11.png", SMALL_PNG_CONTENTS);
-        const shouldEmbed = rendition.embed();
+        const shouldEmbed = rendition.shouldEmbedInIOEvent();
         assert.strictEqual(shouldEmbed, true);
     });
 
@@ -296,7 +296,7 @@ describe("rendition.js", () => {
         const rendition = new Rendition(instructions, directory, 11);
 
         await fs.writeFile("/rendition11.png", SMALL_PNG_CONTENTS);
-        const shouldEmbed = rendition.embed();
+        const shouldEmbed = rendition.shouldEmbedInIOEvent();
         assert.strictEqual(shouldEmbed, false);
     });
 
@@ -306,7 +306,7 @@ describe("rendition.js", () => {
         const rendition = new Rendition(instructions, directory, 11);
 
         await fs.writeFile("/rendition11.png", SMALL_PNG_CONTENTS);
-        const shouldEmbed = rendition.embed();
+        const shouldEmbed = rendition.shouldEmbedInIOEvent();
         assert.strictEqual(shouldEmbed, false);
     });
 

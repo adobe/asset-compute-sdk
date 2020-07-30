@@ -748,7 +748,7 @@ describe("api.js", () => {
             }]);
         });
 
-        it('should not embed rendition in the io event if the rendition is too small', async () => {
+        it('should not embed rendition in the io event if the rendition is too big', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
             const embedBinaryLimit = 10;
 
