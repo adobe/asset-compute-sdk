@@ -290,6 +290,18 @@ describe("rendition.js", () => {
         assert.strictEqual(shouldEmbed, true);
     });
 
+    it('should embed rendition when it is the limit size (32kb)', async function () {
+        // should embed because small enough
+        const instructions = { "fmt": "txt", "target": "TargetName", embedBinaryLimit: EMBED_LIMIT_MAX };
+        const directory = "/";
+        const rendition = new Rendition(instructions, directory, 11);
+        const buff = new ArrayBuffer(32 * 1024);
+
+        await fs.writeFile("/rendition11.txt", buff);
+        const shouldEmbed = rendition.shouldEmbedInIOEvent();
+        assert.strictEqual(shouldEmbed, true);
+    });
+
     it('should not embed rendition if not specified in instructions', async function () {
         const instructions = { "fmt": "png", "target": "TargetName"};
         const directory = "/";
