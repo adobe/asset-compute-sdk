@@ -719,14 +719,13 @@ describe("api.js", () => {
 
             const main = worker(workerFn);
             const params = testUtil.simpleParams({noEventsNock: true, noPut: true});
-
             params.renditions[0].embedBinaryLimit = embedBinaryLimit;
 
             testUtil.nockIOEvent({
                 type: "rendition_created",
                 rendition: {
                     fmt: "png",
-                    embedBinaryLimit: 32768
+                    embedBinaryLimit: embedBinaryLimit
                 },
                 data: 'data:application/octet-stream;base64,aGVsbG8gd29ybGQ=',
                 source: "https://example.com/MySourceFile.jpg"
@@ -738,15 +737,46 @@ describe("api.js", () => {
             assert.ok(result.renditionErrors === undefined);
 
             testUtil.assertNockDone();
+            await MetricsTestHelper.metricsDone();
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
                 eventType: "rendition",
                 fmt: "png",
                 renditionFormat: "png",
                 requestId: "test-request-id"
-            // },{
-            //     eventType: "activation",
-            // activation metric is missing for some reason...need to investigate
+            },{
+                eventType: "activation"
             }]);
+        });
+
+        it('should not embed rendition in the io event if the rendition is too small', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+            const embedBinaryLimit = 10;
+
+            function workerFn(source, rendition) {
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                return Promise.resolve();
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams({noEventsNock: true});
+            params.renditions[0].embedBinaryLimit = embedBinaryLimit;
+
+            testUtil.nockIOEvent({
+                type: "rendition_created",
+                rendition: {
+                    fmt: "png",
+                    embedBinaryLimit: embedBinaryLimit
+                },
+                source: "https://example.com/MySourceFile.jpg"
+            });
+
+            const result = await main(params);
+
+            // validate errors
+            assert.ok(result.renditionErrors === undefined);
+
+            testUtil.assertNockDone();
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
         });
 
     });
