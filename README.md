@@ -127,7 +127,7 @@ Object containing the following attributes:
 | `name` | `string` | filename of the rendition to create |
 | `path` | `string` | Absolute path to store rendition locally (must put rendition here in order to be uploaded to cloud storage) |
 | `index` | `number` | number used to identify a rendition |
-| `target` | `string` or `object` | URL to which the generated rendition should be uploaded or multipart pre-signed URL upload information for the generated rendition |
+| `target` | `string` or `object` | A single URL string to which the generated rendition should be uploaded or an object array containing many multipart pre-signed URLs for the generated rendition </br> While developing, `rendition.target` should not be used |
 
 ##### **`params`**
 original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asset-processing))
@@ -163,7 +163,7 @@ The parameters for the rendition callback function are: `source`, `renditions`, 
 ##### **`source`**
 Source is the exact same as for `renditionCallback` in `worker`
 ##### **`renditions`**
-Renditions are an array of renditions. Each rendition has the same structure as for `renditionCallback` in `worker`
+Renditions is an array of `rendition` objects. Each `rendition` object has the same structure as for `renditionCallback` in `worker`
 ##### **`outdir`**
 directory to put renditions produced in batch workers
 ##### **`params`**
