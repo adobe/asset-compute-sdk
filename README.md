@@ -48,8 +48,7 @@ These are the high-level steps done by the Adobe Asset Compute Worker SDK:
 2. Download source file from `url` in [`source`](#source) object
 3. Run `renditionCallback` function for each rendition ([worker](#renditioncallback-function-for-worker-required)) or for all the renditions at once ([batch worker](#renditioncallback-function-for-batchworker-required))
    - The rendition callback is where you put your worker logic. At the minimum, this function needs to convert the local source file into a local rendition file
-4. Upload renditions to `target` in [`rendition`](#rendition) object
-5. Notify the client via Adobe IO Events after each rendition
+4. Notify the client via Adobe IO Events after each rendition
    - It sends a `rendition_created` or `rendition_failed` event depending on the outcome (see [Asset Compute API asynchronous events](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asynchronous-events) for more information)
    - If the worker is part of a chain of workers, it will only send successful rendition events after the last worker in the chain
 ## Examples
@@ -127,7 +126,6 @@ Object containing the following attributes:
 | `name` | `string` | filename of the rendition to create |
 | `path` | `string` | Absolute path to store rendition locally (must put rendition here in order to be uploaded to cloud storage) |
 | `index` | `number` | number used to identify a rendition |
-| `target` | `string` or `object` | A single URL string to which the generated rendition should be uploaded or an object array containing many multipart pre-signed URLs for the generated rendition </br> While developing, `rendition.target` should not be used |
 
 ##### **`params`**
 original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asset-processing))
