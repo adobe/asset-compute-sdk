@@ -50,7 +50,7 @@ These are the high-level steps done by the Adobe Asset Compute Worker SDK:
    - The rendition callback is where you put your worker logic. At the minimum, this function needs to convert the local source file into a local rendition file
 4. Upload renditions to `target` in [`rendition`](#rendition) object
 5. Notify the client via Adobe IO Events after each rendition
-   - It sends a `rendition_created` or `rendition_failed` event depending on the outcome (see [Asset Compute API asynchronous events](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asynchronous-events) for more information)
+   - It sends a `rendition_created` or `rendition_failed` event depending on the outcome (see [Asset Compute API asynchronous events](https://docs.adobe.com/content/help/en/asset-compute/using/api.html#asynchronous-events) for more information)
    - If the worker is part of a chain of workers, it will only send successful rendition events after the last worker in the chain
 ## Examples
 
@@ -122,7 +122,7 @@ Object containing the following attributes:
 
 | Name | Type | Description |
 |------|------|-------------|
-| `instructions` | `object` | rendition parameters from the worker params (e.g. quality, dpi, format, hei etc. See full list [here](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#rendition-instructions) |
+| `instructions` | `object` | rendition parameters from the worker params (e.g. quality, dpi, format, height etc. See full list [here](https://docs.adobe.com/content/help/en/asset-compute/using/api.html#rendition-instructions) |
 | `directory` | `string` | directory to put the renditions |
 | `name` | `string` | filename of the rendition to create |
 | `path` | `string` | Absolute path to store rendition locally (must put rendition here in order to be uploaded to cloud storage) |
@@ -130,7 +130,7 @@ Object containing the following attributes:
 | `target` | `string` or `object` | URL to which the generated rendition should be uploaded or multipart pre-signed URL upload information for the generated rendition |
 
 ##### **`params`**
-original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asset-processing))
+original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://docs.adobe.com/content/help/en/asset-compute/using/api.html#process-request))
 
 _Note: This argument is usually not needed, as a callback should take its information from the `rendition.instructions` which are the specific rendition parameters from the request._
 
