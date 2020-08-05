@@ -120,7 +120,7 @@ Object containing the following attributes:
 
 | Name | Type | Description |
 |------|------|-------------|
-| `instructions` | `object` | rendition parameters from the worker params (e.g. quality, dpi, format, hei etc. See full list [here](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#rendition-instructions) |
+| `instructions` | `object` | rendition parameters from the worker params (e.g. quality, dpi, format, height etc. See full list [here](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#rendition-instructions) |
 | `directory` | `string` | directory to put the renditions |
 | `name` | `string` | filename of the rendition to create |
 | `path` | `string` | Absolute path to store rendition locally (must put rendition here in order to be uploaded to cloud storage) |
