@@ -4,8 +4,8 @@ packages:
     actions:
       mirror:
         function: actions/mirror.js
-        web: 'yes'
-        runtime: 'nodejs:10'
+        web: 'no'
+        docker: 'docker-senseiwins-release.dr-uw2.adobeitc.com/nui/nodejs10-action-centos:1.1.0'
         limits:
           concurrency: 10
         annotations:
