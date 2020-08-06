@@ -73,3 +73,5 @@ dist/
 
 # any log
 *.log
+
+.DS_Store
