@@ -1,3 +1,3 @@
 #!/bin/bash
 
-## Add image validation
+## TODO Custom validation steps
