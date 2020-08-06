@@ -121,14 +121,14 @@ Object containing the following attributes:
 
 | Name | Type | Description |
 |------|------|-------------|
-| `instructions` | `object` | rendition parameters from the worker params (e.g. quality, dpi, format, hei etc. See full list [here](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#rendition-instructions) |
+| `instructions` | `object` | rendition parameters from the worker params (e.g. quality, dpi, format, height etc. See full list [here](https://docs.adobe.com/content/help/en/asset-compute/using/api.html#rendition-instructions) |
 | `directory` | `string` | directory to put the renditions |
 | `name` | `string` | filename of the rendition to create |
 | `path` | `string` | Absolute path to store rendition locally (must put rendition here in order to be uploaded to cloud storage) |
 | `index` | `number` | number used to identify a rendition |
 
 ##### **`params`**
-original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asset-processing))
+original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://docs.adobe.com/content/help/en/asset-compute/using/api.html#process-request))
 
 _Note: This argument is usually not needed, as a callback should take its information from the `rendition.instructions` which are the specific rendition parameters from the request._
 
