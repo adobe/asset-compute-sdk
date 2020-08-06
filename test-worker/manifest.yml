@@ -5,7 +5,7 @@ packages:
       mirror:
         function: actions/mirror.js
         web: 'yes'
-        docker: 'docker-senseiwins-release.dr-uw2.adobeitc.com/nui/nodejs10-action-centos:1.1.0'
+        docker: 'nui/sdk-base-image'
         limits:
           concurrency: 10
         annotations:
