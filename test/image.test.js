@@ -44,7 +44,7 @@ describe("imagePostProcess", () => {
         delete process.env.WORKER_BASE_DIRECTORY;
     });
 
-    it('should convert PNG to JPG - end to end test', async () => {
+    it.only('should convert PNG to JPG - end to end test', async () => {
         MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
