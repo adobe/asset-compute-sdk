@@ -79,6 +79,6 @@ describe("imagePostProcess", () => {
         assert.equal(events[0].metadata["tiff:imageWidth"], 5);
         assert.equal(events[0].metadata["tiff:imageHeight"], 5);
         assert.equal(events[0].metadata["dc:format"], "image/jpeg");
-        assert.equal(uploadedRenditions["/MyRendition.jpg"], Buffer.from(REDDOT_JPEG, "base64"));
+        assert.equal(Buffer.from(uploadedRenditions["/MyRendition.jpg"]), Buffer.from(REDDOT_JPEG, "base64"));
     });
 });
