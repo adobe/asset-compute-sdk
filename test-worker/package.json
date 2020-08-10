@@ -1,8 +1,0 @@
-{
-  "name": "workerplayground",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "test": "adobe-asset-compute test-worker"
-  }
-}

@@ -49,6 +49,7 @@ describe("imagePostProcess", () => {
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
 
+        // will use default image processing engine
         async function workerFn(source, rendition) {
             await fs.copyFile(source.path, rendition.path);
             rendition.postProcess = true;
