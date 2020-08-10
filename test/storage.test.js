@@ -237,6 +237,7 @@ describe('storage.js', () => {
             const requestedFile = "./storeFiles/jpg/rendition.jpg";
 
             const rendition = {
+                name: "simple-rendition.png",
                 directory: "./storeFiles/jpg",
                 path: file,
                 target: "https://example.com/fakeEarth.jpg",

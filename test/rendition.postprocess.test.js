@@ -44,11 +44,12 @@ describe("imagePostProcess", () => {
         delete process.env.WORKER_BASE_DIRECTORY;
     });
 
-    it('should convert PNG to JPG - end to end test', async () => {
+    it.only('should convert PNG to JPG - end to end test', async () => {
         MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
 
+        // will use default image processing engine
         async function workerFn(source, rendition) {
             await fs.copyFile(source.path, rendition.path);
             rendition.postProcess = true;
@@ -78,6 +79,6 @@ describe("imagePostProcess", () => {
         assert.equal(events[0].metadata["tiff:imageWidth"], 5);
         assert.equal(events[0].metadata["tiff:imageHeight"], 5);
         assert.equal(events[0].metadata["dc:format"], "image/jpeg");
-        assert.equal(uploadedRenditions["/MyRendition.jpg"], Buffer.from(REDDOT_JPEG, "base64"));
+        assert.equal(Buffer.from(uploadedRenditions["/MyRendition.jpg"]), Buffer.from(REDDOT_JPEG, "base64"));
     });
 });
