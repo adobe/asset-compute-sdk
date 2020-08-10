@@ -7,6 +7,7 @@
 
 This library is required for all custom workers for the Adobe Asset Compute Service. It provides an easy to use framework and takes care of common things like asset & rendition access, validation and type checks, event notification, error handling and more.
 
+  - [Adobe Asset Compute Worker SDK](#adobe-asset-compute-worker-sdk)
   - [Installation](#installation)
   - [Overview](#overview)
   - [Examples](#examples)
@@ -28,8 +29,9 @@ This library is required for all custom workers for the Adobe Asset Compute Serv
         - [**`params`**](#params-1)
       - [Examples](#examples-2)
     - [Worker Options (optional)](#worker-options-optional)
-    - [Contributing](#contributing)
-    - [Licensing](#licensing)
+  - [Contribution guidelines](#contribution-guidelines)
+  - [Available resources and libraries](#available-resources-and-libraries)
+  - [Licensing](#licensing)
 
 ## Installation
 
@@ -46,8 +48,7 @@ These are the high-level steps done by the Adobe Asset Compute Worker SDK:
 2. Download source file from `url` in [`source`](#source) object
 3. Run `renditionCallback` function for each rendition ([worker](#renditioncallback-function-for-worker-required)) or for all the renditions at once ([batch worker](#renditioncallback-function-for-batchworker-required))
    - The rendition callback is where you put your worker logic. At the minimum, this function needs to convert the local source file into a local rendition file
-4. Upload renditions to `target` in [`rendition`](#rendition) object
-5. Notify the client via Adobe IO Events after each rendition
+4. Notify the client via Adobe IO Events after each rendition
    - It sends a `rendition_created` or `rendition_failed` event depending on the outcome (see [Asset Compute API asynchronous events](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asynchronous-events) for more information)
    - If the worker is part of a chain of workers, it will only send successful rendition events after the last worker in the chain
 ## Examples
@@ -120,15 +121,14 @@ Object containing the following attributes:
 
 | Name | Type | Description |
 |------|------|-------------|
-| `instructions` | `object` | rendition parameters from the worker params (e.g. quality, dpi, format, height etc. See full list [here](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#rendition-instructions) |
+| `instructions` | `object` | rendition parameters from the worker params (e.g. quality, dpi, format, height etc. See full list [here](https://docs.adobe.com/content/help/en/asset-compute/using/api.html#rendition-instructions) |
 | `directory` | `string` | directory to put the renditions |
 | `name` | `string` | filename of the rendition to create |
 | `path` | `string` | Absolute path to store rendition locally (must put rendition here in order to be uploaded to cloud storage) |
 | `index` | `number` | number used to identify a rendition |
-| `target` | `string` or `object` | URL to which the generated rendition should be uploaded or multipart pre-signed URL upload information for the generated rendition |
 
 ##### **`params`**
-original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://git.corp.adobe.com/nui/nui/blob/master/doc/api.md#asset-processing))
+original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://docs.adobe.com/content/help/en/asset-compute/using/api.html#process-request))
 
 _Note: This argument is usually not needed, as a callback should take its information from the `rendition.instructions` which are the specific rendition parameters from the request._
 
@@ -161,7 +161,7 @@ The parameters for the rendition callback function are: `source`, `renditions`, 
 ##### **`source`**
 Source is the exact same as for `renditionCallback` in `worker`
 ##### **`renditions`**
-Renditions are an array of renditions. Each rendition has the same structure as for `renditionCallback` in `worker`
+Renditions is an array of `rendition` objects. Each `rendition` object has the same structure as for `renditionCallback` in `worker`
 ##### **`outdir`**
 directory to put renditions produced in batch workers
 ##### **`params`**
@@ -188,8 +188,8 @@ async function renditionCallback(source, renditions, outdir, params) => {
 
 ### Worker Options (optional)
 Optional parameters to pass into workers
-- disableSourceDownload: Boolean used to disable the source download (defaults to false)
-- disableRenditionUpload: Boolean used to disable the rendition upload (defaults to false)
+- disableSourceDownload: Boolean used to disable the source download (defaults to false).
+- disableRenditionUpload: Boolean used to disable the rendition upload (defaults to false).  WARNING: Use this flag only if no rendition should be uploaded. This will make the worker activation fail since the asset compute SDK expects a rendition output. 
 
 Disable source download example:
 ```js
@@ -216,8 +216,24 @@ const main = worker(renditionCallback, options);
 await main(params);
 ```
 
-### Contributing
-Contributions are welcomed! Read the [Contributing Guide](./.github/CONTRIBUTING.md) for more information.
+## Contribution guidelines
 
-### Licensing
+Asset Compute Service has repository modularity and naming guidelines. It is modular to the extent possible, as fostered by the serverless concept and OpenWhisk framework. It means having small and focused GitHub repositories that support decoupled development and deployment lifecycles. One repository for one action is OK if it represents its own small services such as a worker. If you want to create a separate repository, log an issue in [Asset Compute SDK repository](https://github.com/adobe/asset-compute-sdk).
+
+For detailed guidelines, see the [contribution guidelines](./.github/CONTRIBUTING.md). Also, follow these [Git commit message guidelines](https://chris.beams.io/posts/git-commit/).
+
+## Available resources and libraries
+
+The open-sourced libraries of Asset Compute Service are:
+
+* [Asset Compute SDK](https://github.com/adobe/asset-compute-sdk): the worker SDK and main framework for third-party custom workers.
+* [Asset Compute Commons](https://github.com/adobe/asset-compute-commons): Common utilities needed by all Asset Compute serverless actions.
+* [Asset Compute Client](https://github.com/adobe/asset-compute-client): JavaScript client for the Adobe Asset Compute Service.
+* [Asset Compute example workers](https://github.com/adobe/asset-compute-example-workers): Samples of third-party Asset Compute worker.
+* [ESlint configuration](https://github.com/adobe/eslint-config-asset-compute): Shared ESLint configuration for Nodejs projects related to the Adobe Asset Compute service.
+* [Asset Compute Development Tool](https://github.com/adobe/asset-compute-devtool): Library for the developer tool to explore and to test the Adobe Asset Compute Service.
+* [aio-cli-plugin-asset-compute](https://github.com/adobe/aio-cli-plugin-asset-compute): Asset Compute plug-in for Adobe I/O Command Line Interface.
+* [Adobe Asset Compute integration tests](https://github.com/adobe/asset-compute-integration-tests): Integration tests for the Asset Compute developer experience.
+
+## Licensing
 This project is licensed under the Apache V2 License. See [LICENSE](LICENSE) for more information.
