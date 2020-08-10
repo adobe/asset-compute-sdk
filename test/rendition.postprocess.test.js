@@ -23,8 +23,8 @@ const assert = require('assert');
 const fs = require('fs-extra');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 
-const REDDOT = "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==";
-const REDDOT_JPEG = "ZmZkOGZmZTAwMDEwNGE0NjQ5NDYwMDAxMDEwMTAwNDgwMDQ4MDAwMGZmZGIwMDQzMDAwODA2MDYwNzA2MDUwODA3MDcwNzA5MDkwODBhMGMxNDBkMGMwYjBiMGMxOTEyMTMwZjE0MWQxYTFmMWUxZDFhMWMxYzIwMjQyZTI3MjAyMjJjMjMxYzFjMjgzNzI5MmMzMDMxMzQzNDM0MWYyNzM5M2QzODMyM2MyZTMzMzQzMmZmZGIwMDQzMDEwOTA5MDkwYzBiMGMxODBkMGQxODMyMjExYzIxMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMjMyMzIzMmZmYzAwMDExMDgwMDA1MDAwNTAzMDEyMjAwMDIxMTAxMDMxMTAxZmZjNDAwMTUwMDAxMDEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwNWZmYzQwMDIwMTAwMDAxMDMwNDAyMDMwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMDQwMzAwMDYwMjA1MTIyMTExMTMyMjMyZmZjNDAwMTUwMTAxMDEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDQwNmZmYzQwMDFmMTEwMDAyMDAwNjAzMDEwMDAwMDAwMDAwMDAwMDAwMDAwMDAyMDEwMzExMDAwNDA1NDE1MTYxMzE0MmZmZGEwMDBjMDMwMTAwMDIxMTAzMTEwMDNmMDBhNTRhZDJiOTVjOWU3NmEyNGM5YWE3NTg4NWQ0NmE3YzZmM2VkMGJiNjUyNzY3MDZkNzc1NzhlN2Q0OWU0OWZhMzExMTA1MDIwMDEwNGRmN2I3Y2JlZWE5YjJiOTViYTg1NzRjMDFhOTQ4N2U0MWZhMDJmNjJmOWFmZmQ5";
+const REDDOT = "tests/files/file.png";
+const REDDOT_JPEG = "tests/files/test-renditions/png-to-jpg-rendition.jpg";
 
 describe("imagePostProcess", () => {
     beforeEach(function () {
@@ -67,6 +67,7 @@ describe("imagePostProcess", () => {
             newRelicEventsURL: MetricsTestHelper.MOCK_URL,
             newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
         };
+
         const result = await main(params);
 
         // validate errors
