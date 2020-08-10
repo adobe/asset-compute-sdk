@@ -20,11 +20,12 @@ const { worker } = require('../lib/api');
 const testUtil = require('./testutil');
 const mockFs = require('mock-fs');
 const assert = require('assert');
+
 const fs = require('fs-extra');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 
-const REDDOT = "tests/files/file.png";
-const REDDOT_JPEG = "tests/files/test-renditions/png-to-jpg-rendition.jpg";
+const PNG_FILE = "test/files/file.png";
+const PNG_FILE_JPEG = "test/files/test-renditions/png-to-jpg-rendition.jpg";
 
 describe("imagePostProcess", () => {
     beforeEach(function () {
@@ -55,12 +56,13 @@ describe("imagePostProcess", () => {
             rendition.postProcess = true;
         }
 
+        const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
         const main = worker(workerFn);
         const params = {
-            source: `data:image/png;base64,${REDDOT}`,
+            source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
                 fmt: "jpg",
-                target: "https://example.com/MyRendition.jpg"
+                target: "https://example.com/MyRendition.jpeg"
             }],
             requestId: "test-request-id",
             auth: testUtil.PARAMS_AUTH,
@@ -71,15 +73,21 @@ describe("imagePostProcess", () => {
         const result = await main(params);
 
         // validate errors
+        //console.log(result.renditionErrors);
         assert.ok(result.renditionErrors === undefined);
 
         assert.equal(events.length, 1);
         assert.equal(events[0].type, "rendition_created");
         assert.equal(events[0].rendition.fmt, "jpg");
-        // TODO: adjust values
-        assert.equal(events[0].metadata["tiff:imageWidth"], 5);
-        assert.equal(events[0].metadata["tiff:imageHeight"], 5);
+        assert.equal(events[0].metadata["tiff:imageWidth"], 512);
+        assert.equal(events[0].metadata["tiff:imageHeight"], 288);
         assert.equal(events[0].metadata["dc:format"], "image/jpeg");
-        assert.equal(Buffer.from(uploadedRenditions["/MyRendition.jpg"]), Buffer.from(REDDOT_JPEG, "base64"));
+        
+        // compare files by buffer
+        let expectedFile = await fs.readFile(PNG_FILE_JPEG);
+        expectedFile = expectedFile.toString('base64');
+        
+        const outFile = uploadedRenditions["/MyRendition.jpeg"];
+        assert.ok(expectedFile === outFile.toString('base64'));
     });
 });
