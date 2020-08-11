@@ -24,8 +24,7 @@ const assert = require('assert');
 const fs = require('fs-extra');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 
-const PNG_FILE = "test/files/file.png";
-const PNG_FILE_JPEG = "test/files/test-renditions/png-to-jpg-rendition.jpg";
+const PNG_FILE = "test/files/fileSmall.png";
 
 describe("imagePostProcess", () => {
     beforeEach(function () {
@@ -45,7 +44,7 @@ describe("imagePostProcess", () => {
         delete process.env.WORKER_BASE_DIRECTORY;
     });
 
-    it.only('should convert PNG to JPG - end to end test', async () => {
+    it('should convert PNG to JPG - end to end test', async () => {
         MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
@@ -73,21 +72,17 @@ describe("imagePostProcess", () => {
         const result = await main(params);
 
         // validate errors
-        //console.log(result.renditionErrors);
         assert.ok(result.renditionErrors === undefined);
 
         assert.equal(events.length, 1);
         assert.equal(events[0].type, "rendition_created");
         assert.equal(events[0].rendition.fmt, "jpg");
-        assert.equal(events[0].metadata["tiff:imageWidth"], 512);
-        assert.equal(events[0].metadata["tiff:imageHeight"], 288);
+        assert.equal(events[0].metadata["tiff:imageWidth"], 10);
+        assert.equal(events[0].metadata["tiff:imageHeight"], 6);
         assert.equal(events[0].metadata["dc:format"], "image/jpeg");
         
-        // compare files by buffer
-        let expectedFile = await fs.readFile(PNG_FILE_JPEG);
-        expectedFile = expectedFile.toString('base64');
-        
-        const outFile = uploadedRenditions["/MyRendition.jpeg"];
-        assert.ok(expectedFile === outFile.toString('base64'));
+        const uploadedFileBase64 = Buffer.from(uploadedRenditions["/MyRendition.jpeg"]).toString('base64');
+        const expectedFileBase64 = "ZmZkOGZmZTAwMDEwNGE0NjQ5NDYwMDAxMDEwMjAwMWMwMDFjMDAwMGZmZGIwMDQzMDAwMzAyMDIwMjAyMDIwMzAyMDIwMjAzMDMwMzAzMDQwNjA0MDQwNDA0MDQwODA2MDYwNTA2MDkwODBhMGEwOTA4MDkwOTBhMGMwZjBjMGEwYjBlMGIwOTA5MGQxMTBkMGUwZjEwMTAxMTEwMGEwYzEyMTMxMjEwMTMwZjEwMTAxMGZmZGIwMDQzMDEwMzAzMDMwNDAzMDQwODA0MDQwODEwMGIwOTBiMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMGZmYzAwMDExMDgwMDA2MDAwYTAzMDExMTAwMDIxMTAxMDMxMTAxZmZjNDAwMTQwMDAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDZmZmM0MDAxZjEwMDAwMTAzMDQwMzAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMzAyMDEwNjA0MDgxMTEyMzEwMDA3ODFmZmM0MDAxNTAxMDEwMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMjA2ZmZjNDAwMjExMTAwMDEwMzAzMDQwMzAwMDAwMDAwMDAwMDAwMDAwMDAwMDEwMzAyMDAxMTA0MjE0MTkyZDExMzE0YzFlMmZmZGEwMDBjMDMwMTAwMDIxMTAzMTEwMDNmMDAwZjFlYjMxYjY3ODkxYzg2OTFhYTYzMjkzNTBhZGQyNTA5MGExYTJhNzIyOTliOGMyMzc1NmJmN2I2OGEzNmNlZDQ4NmE2ODhjZWE0OTNjNDk3NjJkN2ViMDJlNTE1MDI5YTM0N2IzNThiODFlMjU2OWNjMTFiMjZkZjQ4YTRlYWQ4NzVjYTZhZjY3NmM3MmY4NGYzZDdlNjAxOGEzNzYwZTYyMDgyYWUxNWVjNzZlZjk5ZmZkOQ==";
+        assert.ok(expectedFileBase64 === uploadedFileBase64);
     });
 });
