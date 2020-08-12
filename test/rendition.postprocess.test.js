@@ -15,7 +15,7 @@
 
 'use strict';
 
-const { worker } = require('../lib/api');
+const { worker, batchWorker } = require('../lib/api');
 
 const testUtil = require('./testutil');
 const mockFs = require('mock-fs');
@@ -25,6 +25,7 @@ const fs = require('fs-extra');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 
 const PNG_FILE = "test/files/fileSmall.png";
+const BASE64_RENDITION_JPG = "ZmZkOGZmZTAwMDEwNGE0NjQ5NDYwMDAxMDEwMjAwMWMwMDFjMDAwMGZmZGIwMDQzMDAwMzAyMDIwMjAyMDIwMzAyMDIwMjAzMDMwMzAzMDQwNjA0MDQwNDA0MDQwODA2MDYwNTA2MDkwODBhMGEwOTA4MDkwOTBhMGMwZjBjMGEwYjBlMGIwOTA5MGQxMTBkMGUwZjEwMTAxMTEwMGEwYzEyMTMxMjEwMTMwZjEwMTAxMGZmZGIwMDQzMDEwMzAzMDMwNDAzMDQwODA0MDQwODEwMGIwOTBiMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMGZmYzAwMDExMDgwMDA2MDAwYTAzMDExMTAwMDIxMTAxMDMxMTAxZmZjNDAwMTQwMDAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDZmZmM0MDAxZjEwMDAwMTAzMDQwMzAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMzAyMDEwNjA0MDgxMTEyMzEwMDA3ODFmZmM0MDAxNTAxMDEwMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMjA2ZmZjNDAwMjExMTAwMDEwMzAzMDQwMzAwMDAwMDAwMDAwMDAwMDAwMDAwMDEwMzAyMDAxMTA0MjE0MTkyZDExMzE0YzFlMmZmZGEwMDBjMDMwMTAwMDIxMTAzMTEwMDNmMDAwZjFlYjMxYjY3ODkxYzg2OTFhYTYzMjkzNTBhZGQyNTA5MGExYTJhNzIyOTliOGMyMzc1NmJmN2I2OGEzNmNlZDQ4NmE2ODhjZWE0OTNjNDk3NjJkN2ViMDJlNTE1MDI5YTM0N2IzNThiODFlMjU2OWNjMTFiMjZkZjQ4YTRlYWQ4NzVjYTZhZjY3NmM3MmY4NGYzZDdlNjAxOGEzNzYwZTYyMDgyYWUxNWVjNzZlZjk5ZmZkOQ==";
 
 describe("imagePostProcess", () => {
     beforeEach(function () {
@@ -82,22 +83,22 @@ describe("imagePostProcess", () => {
         assert.equal(events[0].metadata["dc:format"], "image/jpeg");
         
         const uploadedFileBase64 = Buffer.from(uploadedRenditions["/MyRendition.jpeg"]).toString('base64');
-        const expectedFileBase64 = "ZmZkOGZmZTAwMDEwNGE0NjQ5NDYwMDAxMDEwMjAwMWMwMDFjMDAwMGZmZGIwMDQzMDAwMzAyMDIwMjAyMDIwMzAyMDIwMjAzMDMwMzAzMDQwNjA0MDQwNDA0MDQwODA2MDYwNTA2MDkwODBhMGEwOTA4MDkwOTBhMGMwZjBjMGEwYjBlMGIwOTA5MGQxMTBkMGUwZjEwMTAxMTEwMGEwYzEyMTMxMjEwMTMwZjEwMTAxMGZmZGIwMDQzMDEwMzAzMDMwNDAzMDQwODA0MDQwODEwMGIwOTBiMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMGZmYzAwMDExMDgwMDA2MDAwYTAzMDExMTAwMDIxMTAxMDMxMTAxZmZjNDAwMTQwMDAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDZmZmM0MDAxZjEwMDAwMTAzMDQwMzAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMzAyMDEwNjA0MDgxMTEyMzEwMDA3ODFmZmM0MDAxNTAxMDEwMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMjA2ZmZjNDAwMjExMTAwMDEwMzAzMDQwMzAwMDAwMDAwMDAwMDAwMDAwMDAwMDEwMzAyMDAxMTA0MjE0MTkyZDExMzE0YzFlMmZmZGEwMDBjMDMwMTAwMDIxMTAzMTEwMDNmMDAwZjFlYjMxYjY3ODkxYzg2OTFhYTYzMjkzNTBhZGQyNTA5MGExYTJhNzIyOTliOGMyMzc1NmJmN2I2OGEzNmNlZDQ4NmE2ODhjZWE0OTNjNDk3NjJkN2ViMDJlNTE1MDI5YTM0N2IzNThiODFlMjU2OWNjMTFiMjZkZjQ4YTRlYWQ4NzVjYTZhZjY3NmM3MmY4NGYzZDdlNjAxOGEzNzYwZTYyMDgyYWUxNWVjNzZlZjk5ZmZkOQ==";
-        assert.ok(expectedFileBase64 === uploadedFileBase64);
+        assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64);
     });
 
     it('should download source, invoke worker callback and upload rendition', async () => {
-        let sourcePath, renditionPath, renditionDir;
+        MetricsTestHelper.mockNewRelic();
+        const events = testUtil.mockIOEvents();
+        const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
 
-        function batchWorkerFn(source, renditions, outDirectory) {
-            /*assert.equal(typeof source, "object");
+        async function batchWorkerFn(source, renditions, outDirectory) {
+            assert.equal(typeof source, "object");
             assert.equal(typeof source.path, "string");
             assert.ok(fs.existsSync(source.path));
-            assert.equal(fs.readFileSync(source.path), testUtil.SOURCE_CONTENT);
-            sourcePath = source.path;
+            // sourcePath = source.path;
 
             assert.ok(Array.isArray(renditions));
-            assert.equal(renditions.length, 1);
+            assert.equal(renditions.length, 3);
             const rendition = renditions[0];
             assert.equal(typeof rendition.path, "string");
             assert.equal(typeof rendition.name, "string");
@@ -105,14 +106,53 @@ describe("imagePostProcess", () => {
             assert.ok(fs.existsSync(outDirectory));
             assert.ok(fs.statSync(outDirectory).isDirectory());
             assert.ok(!fs.existsSync(rendition.path));
-            renditionPath = rendition.path;
-            renditionDir = rendition.directory;
 
-            fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);*/
+            for (const rendition of renditions) {
+                await fs.copyFile(source.path, rendition.path);
+                rendition.postProcess = true;
+            }
             return Promise.resolve();
         }
 
+        const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
         const main = batchWorker(batchWorkerFn);
-        const result = await main(testUtil.simpleParams());
+        const params = {
+            source: `data:image/png;base64,${base64PngFile}`,
+            renditions: [{
+                fmt: "jpg",
+                target: "https://example.com/MyRendition1.jpeg"
+            },{
+                fmt: "jpg",
+                target: "https://example.com/MyRendition2.jpeg"
+            },{
+                fmt: "jpg",
+                target: "https://example.com/MyRendition3.jpeg"
+            },],
+            requestId: "test-request-id",
+            auth: testUtil.PARAMS_AUTH,
+            newRelicEventsURL: MetricsTestHelper.MOCK_URL,
+            newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
+        };
+
+        const result = await main(params);
+
+        // validate errors
+        assert.ok(result.renditionErrors === undefined);
+
+        assert.equal(events.length, 3);
+        assert.equal(events[0].type, "rendition_created");
+        assert.equal(events[0].rendition.fmt, "jpg");
+        assert.equal(events[1].type, "rendition_created");
+        assert.equal(events[1].rendition.fmt, "jpg");
+        assert.equal(events[2].type, "rendition_created");
+        assert.equal(events[2].rendition.fmt, "jpg");
+
+        const uploadedFileBase64_1 = Buffer.from(uploadedRenditions["/MyRendition1.jpeg"]).toString('base64');
+        const uploadedFileBase64_2 = Buffer.from(uploadedRenditions["/MyRendition2.jpeg"]).toString('base64');
+        const uploadedFileBase64_3 = Buffer.from(uploadedRenditions["/MyRendition3.jpeg"]).toString('base64');
+
+        assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64_1);
+        assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64_2);
+        assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64_3);
     });
 });
