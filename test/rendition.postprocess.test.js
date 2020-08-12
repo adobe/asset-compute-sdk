@@ -85,4 +85,34 @@ describe("imagePostProcess", () => {
         const expectedFileBase64 = "ZmZkOGZmZTAwMDEwNGE0NjQ5NDYwMDAxMDEwMjAwMWMwMDFjMDAwMGZmZGIwMDQzMDAwMzAyMDIwMjAyMDIwMzAyMDIwMjAzMDMwMzAzMDQwNjA0MDQwNDA0MDQwODA2MDYwNTA2MDkwODBhMGEwOTA4MDkwOTBhMGMwZjBjMGEwYjBlMGIwOTA5MGQxMTBkMGUwZjEwMTAxMTEwMGEwYzEyMTMxMjEwMTMwZjEwMTAxMGZmZGIwMDQzMDEwMzAzMDMwNDAzMDQwODA0MDQwODEwMGIwOTBiMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMGZmYzAwMDExMDgwMDA2MDAwYTAzMDExMTAwMDIxMTAxMDMxMTAxZmZjNDAwMTQwMDAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDZmZmM0MDAxZjEwMDAwMTAzMDQwMzAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMzAyMDEwNjA0MDgxMTEyMzEwMDA3ODFmZmM0MDAxNTAxMDEwMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMjA2ZmZjNDAwMjExMTAwMDEwMzAzMDQwMzAwMDAwMDAwMDAwMDAwMDAwMDAwMDEwMzAyMDAxMTA0MjE0MTkyZDExMzE0YzFlMmZmZGEwMDBjMDMwMTAwMDIxMTAzMTEwMDNmMDAwZjFlYjMxYjY3ODkxYzg2OTFhYTYzMjkzNTBhZGQyNTA5MGExYTJhNzIyOTliOGMyMzc1NmJmN2I2OGEzNmNlZDQ4NmE2ODhjZWE0OTNjNDk3NjJkN2ViMDJlNTE1MDI5YTM0N2IzNThiODFlMjU2OWNjMTFiMjZkZjQ4YTRlYWQ4NzVjYTZhZjY3NmM3MmY4NGYzZDdlNjAxOGEzNzYwZTYyMDgyYWUxNWVjNzZlZjk5ZmZkOQ==";
         assert.ok(expectedFileBase64 === uploadedFileBase64);
     });
+
+    it('should download source, invoke worker callback and upload rendition', async () => {
+        let sourcePath, renditionPath, renditionDir;
+
+        function batchWorkerFn(source, renditions, outDirectory) {
+            /*assert.equal(typeof source, "object");
+            assert.equal(typeof source.path, "string");
+            assert.ok(fs.existsSync(source.path));
+            assert.equal(fs.readFileSync(source.path), testUtil.SOURCE_CONTENT);
+            sourcePath = source.path;
+
+            assert.ok(Array.isArray(renditions));
+            assert.equal(renditions.length, 1);
+            const rendition = renditions[0];
+            assert.equal(typeof rendition.path, "string");
+            assert.equal(typeof rendition.name, "string");
+            assert.equal(typeof outDirectory, "string");
+            assert.ok(fs.existsSync(outDirectory));
+            assert.ok(fs.statSync(outDirectory).isDirectory());
+            assert.ok(!fs.existsSync(rendition.path));
+            renditionPath = rendition.path;
+            renditionDir = rendition.directory;
+
+            fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);*/
+            return Promise.resolve();
+        }
+
+        const main = batchWorker(batchWorkerFn);
+        const result = await main(testUtil.simpleParams());
+    });
 });
