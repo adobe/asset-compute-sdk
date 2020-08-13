@@ -25,9 +25,9 @@ const fs = require('fs-extra');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 
 const PNG_FILE = "test/files/fileSmall.png";
-const BMP_FILE = "test/files/file.bmp";
-const GIF_FILE = "test/files/file.gif";
-const JPG_FILE = "test/files/file.jpg";
+// const BMP_FILE = "test/files/file.bmp";
+// const GIF_FILE = "test/files/file.gif";
+// const JPG_FILE = "test/files/file.jpg";
 
 const BASE64_RENDITION_JPG = "ZmZkOGZmZTAwMDEwNGE0NjQ5NDYwMDAxMDEwMjAwMWMwMDFjMDAwMGZmZGIwMDQzMDAwMzAyMDIwMjAyMDIwMzAyMDIwMjAzMDMwMzAzMDQwNjA0MDQwNDA0MDQwODA2MDYwNTA2MDkwODBhMGEwOTA4MDkwOTBhMGMwZjBjMGEwYjBlMGIwOTA5MGQxMTBkMGUwZjEwMTAxMTEwMGEwYzEyMTMxMjEwMTMwZjEwMTAxMGZmZGIwMDQzMDEwMzAzMDMwNDAzMDQwODA0MDQwODEwMGIwOTBiMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMGZmYzAwMDExMDgwMDA2MDAwYTAzMDExMTAwMDIxMTAxMDMxMTAxZmZjNDAwMTQwMDAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDZmZmM0MDAxZjEwMDAwMTAzMDQwMzAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMzAyMDEwNjA0MDgxMTEyMzEwMDA3ODFmZmM0MDAxNTAxMDEwMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMjA2ZmZjNDAwMjExMTAwMDEwMzAzMDQwMzAwMDAwMDAwMDAwMDAwMDAwMDAwMDEwMzAyMDAxMTA0MjE0MTkyZDExMzE0YzFlMmZmZGEwMDBjMDMwMTAwMDIxMTAzMTEwMDNmMDAwZjFlYjMxYjY3ODkxYzg2OTFhYTYzMjkzNTBhZGQyNTA5MGExYTJhNzIyOTliOGMyMzc1NmJmN2I2OGEzNmNlZDQ4NmE2ODhjZWE0OTNjNDk3NjJkN2ViMDJlNTE1MDI5YTM0N2IzNThiODFlMjU2OWNjMTFiMjZkZjQ4YTRlYWQ4NzVjYTZhZjY3NmM3MmY4NGYzZDdlNjAxOGEzNzYwZTYyMDgyYWUxNWVjNzZlZjk5ZmZkOQ==";
 
@@ -50,7 +50,7 @@ describe("imagePostProcess", () => {
     });
 
     it('should convert PNG to JPG - end to end test', async () => {
-        MetricsTestHelper.mockNewRelic();
+        const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
 
@@ -88,10 +88,18 @@ describe("imagePostProcess", () => {
         
         const uploadedFileBase64 = Buffer.from(uploadedRenditions["/MyRendition.jpeg"]).toString('base64');
         assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64);
+
+        // check metrics
+        await MetricsTestHelper.metricsDone();
+        assert.equal(receivedMetrics[0].eventType, "rendition");
+        assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[1].eventType, "activation");
+        assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[1].postProcessingDuration, receivedMetrics[1].processingDuration);
     });
 
+
     it('should download source, invoke worker in batch callback and upload rendition - same rendition', async () => {
-        MetricsTestHelper.mockNewRelic();
+        const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
 
@@ -158,6 +166,18 @@ describe("imagePostProcess", () => {
         assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64_1);
         assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64_2);
         assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64_3);
+
+        // check metrics
+        await MetricsTestHelper.metricsDone();
+        assert.equal(receivedMetrics[0].eventType, "rendition");
+        assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[3].eventType, "activation");
+        assert.equal(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration, receivedMetrics[1].callbackProcessingDuration, receivedMetrics[2].callbackProcessingDuration);
+        assert.equal(receivedMetrics[3].callbackProcessingDuration + receivedMetrics[3].postProcessingDuration, receivedMetrics[3].processingDuration);
+        // Fix when refactor timers: in batch worker, every rendition's currentPostProcessing duration equal to the last rendition's currentPostProcessing duration
+        // fix is to set `this.timers.currentPostProcessing` = `this.timers.postProcessing` after for each rendition loop. 
+        // This is not possible currently because `this.timers.postProcessing` is not a Timer, but a duration
+        assert.equal(receivedMetrics[0].postProcessingDuration, receivedMetrics[1].postProcessingDuration, receivedMetrics[2].postProcessingDuration);
     });
     it('should download source, invoke worker in batch callback and upload rendition - different rendition', async () => {
         MetricsTestHelper.mockNewRelic();
