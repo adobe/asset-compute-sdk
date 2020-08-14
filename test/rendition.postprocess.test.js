@@ -27,9 +27,8 @@ const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 const PNG_FILE = "test/files/fileSmall.png";
 
 const BASE64_RENDITION_JPG = "ZmZkOGZmZTAwMDEwNGE0NjQ5NDYwMDAxMDEwMjAwMWMwMDFjMDAwMGZmZGIwMDQzMDAwMzAyMDIwMjAyMDIwMzAyMDIwMjAzMDMwMzAzMDQwNjA0MDQwNDA0MDQwODA2MDYwNTA2MDkwODBhMGEwOTA4MDkwOTBhMGMwZjBjMGEwYjBlMGIwOTA5MGQxMTBkMGUwZjEwMTAxMTEwMGEwYzEyMTMxMjEwMTMwZjEwMTAxMGZmZGIwMDQzMDEwMzAzMDMwNDAzMDQwODA0MDQwODEwMGIwOTBiMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMGZmYzAwMDExMDgwMDA2MDAwYTAzMDExMTAwMDIxMTAxMDMxMTAxZmZjNDAwMTQwMDAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDZmZmM0MDAxZjEwMDAwMTAzMDQwMzAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMzAyMDEwNjA0MDgxMTEyMzEwMDA3ODFmZmM0MDAxNTAxMDEwMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMjA2ZmZjNDAwMjExMTAwMDEwMzAzMDQwMzAwMDAwMDAwMDAwMDAwMDAwMDAwMDEwMzAyMDAxMTA0MjE0MTkyZDExMzE0YzFlMmZmZGEwMDBjMDMwMTAwMDIxMTAzMTEwMDNmMDAwZjFlYjMxYjY3ODkxYzg2OTFhYTYzMjkzNTBhZGQyNTA5MGExYTJhNzIyOTliOGMyMzc1NmJmN2I2OGEzNmNlZDQ4NmE2ODhjZWE0OTNjNDk3NjJkN2ViMDJlNTE1MDI5YTM0N2IzNThiODFlMjU2OWNjMTFiMjZkZjQ4YTRlYWQ4NzVjYTZhZjY3NmM3MmY4NGYzZDdlNjAxOGEzNzYwZTYyMDgyYWUxNWVjNzZlZjk5ZmZkOQ==";
-const BASE64_RENDITION_PNG = 'ODk1MDRlNDcwZDBhMWEwYTAwMDAwMDBkNDk0ODQ0NTIwMDAwMDAwYTAwMDAwMDA2MDgwMzAwMDAwMGNkMmVmZmY0MDAwMDAwYjQ1MDRjNTQ0NTAyMDIwNDAzMDMwNTA0MDQwNjAzMDMwNzAyMDMwODA0MDUwZTAwMDAwZjAwMDAxNDA4MDgyMTBhMGEyYjAzMDIwZDAyMDEwZjAzMDExNDA1MDMxYjA1MDQyMzAwMDAyNzExMTk0NTE0MjU1NjAwMTE1MTAwMmE2YjA5MGIzNDAyMGQzZjAwMTQ1MTAwMjI2NTA0Mzg3ZDE0NTE5MjRjODRjMTc1YWJkZTcxYWVkOTk0Y2NlZTE1NWE5YjJlN2NiYjUzOWRkMzczYjhlNjhjY2FmM2E3ZGNmY2JjZTNmYmNiZTdmOWQ2ZWFmOWQzZTBmMjk1ZDlmOGFkZTFmYmI1ZGFmM2FmY2VlN2FkYzRkYWFhYmFjZjk5YWRjNTdlOTliZDZkOGJiNzZjODdiNTk0YWNjZTc3OTFiYzY2ODZhZjc4OGVhYTg2OTRhNjdlOGY5ZjdhOGM5ZTY5ODM5YjY3ODA5YjdiOGFhMDU0NjY3OWExMDAwMDAwNDg0OTQ0NDE1NDA4ZDcwNWMxODMwMWMwMDAwYzAwYjBjZWI2NmRkYmZhZmZhZjI1MDAwODhhZTEwNDQ5ZDEwY2IwMWMyZjg4OTJhY2E4MWFlODg2NjlkOThlZWJmOTAxODQ1MTljYTQ1OTVlOTQxNWQ0NGRkYmY1YzMzOGNkMGJhY2RiN2U5Y2Q3ZmRiY2RmMGY5NzRiMDZlYjI5ZTRmMmZiMDAwMDAwMDA0OTQ1NGU0NGFlNDI2MDgy';
-const BASE64_RENDITION_TIFF = 'NDk0OTJhMDBiYzAwMDAwMDAyMDIwNDAzMDMwNTA0MDQwNjAzMDMwNzAyMDMwODA0MDUwZTAwMDAwZjAwMDAxNDA4MDgyMTBhMGEyYjAzMDIwZDAyMDEwZjAzMDExNDA1MDMxYjA1MDQyMzAwMDAyNzExMTk0NTE0MjU1NjAwMTE1MTAwMmE2YjA5MGIzNDAyMGQzZjAwMTQ1MTAwMjI2NTA0Mzg3ZDE0NTE5MjRjODRjMTc1YWJkZTcxYWVkOTk0Y2NlZTE1NWE5YjJlN2NiYjUzOWRkMzczYjhlNjhjY2FmM2E3ZGNmY2JjZTNmYmNiZTdmOWQ2ZWFmOWQzZTBmMjk1ZDlmOGFkZTFmYmI1ZGFmM2FmY2VlN2FkYzRkYWFhYmFjZjk5YWRjNTdlOTliZDZkOGJiNzZjODdiNTk0YWNjZTc3OTFiYzY2ODZhZjc4OGVhYTg2OTRhNjdlOGY5ZjdhOGM5ZTY5ODM5YjY3ODA5YjdiOGFhMDEyMDAwMDAxMDMwMDAxMDAwMDAwMGEwMDAwMDAwMTAxMDMwMDAxMDAwMDAwMDYwMDAwMDAwMjAxMDMwMDAzMDAwMDAwYWEwMTAwMDAwMzAxMDMwMDAxMDAwMDAwMDEwMDAwMDAwNjAxMDMwMDAxMDAwMDAwMDIwMDAwMDAwYTAxMDMwMDAxMDAwMDAwMDEwMDAwMDAxMTAxMDQwMDAxMDAwMDAwMDgwMDAwMDAxMjAxMDMwMDAxMDAwMDAwMDEwMDAwMDAxNTAxMDMwMDAxMDAwMDAwMDMwMDAwMDAxNjAxMDMwMDAxMDAwMDAwMDYwMDAwMDAxNzAxMDQwMDAxMDAwMDAwYjQwMDAwMDAxYTAxMDUwMDAxMDAwMDAwOWEwMTAwMDAxYjAxMDUwMDAxMDAwMDAwYTIwMTAwMDAxYzAxMDMwMDAxMDAwMDAwMDEwMDAwMDAyODAxMDMwMDAxMDAwMDAwMDMwMDAwMDAyOTAxMDMwMDAyMDAwMDAwMDAwMDAxMDAzZTAxMDUwMDAyMDAwMDAwZTAwMTAwMDAzZjAxMDUwMDA2MDAwMDAwYjAwMTAwMDAwMDAwMDAwMGZmZmZmZmZmZWFhYzA3MDlmZmZmZmZmZmVhYWMwNzA5MDgwMDA4MDAwODAwZmYwOWQ3YTNmZmZmZmZmZjdmZTE3YTU0ZmZmZmZmZmZmZmNjY2M0Y2ZmZmZmZmZmZmY5OTk5OTlmZmZmZmZmZjdmNjY2NjI2ZmZmZmZmZmZlZjI4NWMwZmZmZmZmZmZmN2YxYjBkNTBmZmZmZmZmZmZmNTczOTU0ZmZmZmZmZmY=';
-
+const BASE64_RENDITION_PNG = "ODk1MDRlNDcwZDBhMWEwYTAwMDAwMDBkNDk0ODQ0NTIwMDAwMDAwYTAwMDAwMDA2MDgwMzAwMDAwMGNkMmVmZmY0MDAwMDAwYjQ1MDRjNTQ0NTAyMDIwNDAzMDMwNTA0MDQwNjAzMDMwNzAyMDMwODA0MDUwZTAwMDAwZjAwMDAxNDA4MDgyMTBhMGEyYjAzMDIwZDAyMDEwZjAzMDExNDA1MDMxYjA1MDQyMzAwMDAyNzExMTk0NTE0MjU1NjAwMTE1MTAwMmE2YjA5MGIzNDAyMGQzZjAwMTQ1MTAwMjI2NTA0Mzg3ZDE0NTE5MjRjODRjMTc1YWJkZTcxYWVkOTk0Y2NlZTE1NWE5YjJlN2NiYjUzOWRkMzczYjhlNjhjY2FmM2E3ZGNmY2JjZTNmYmNiZTdmOWQ2ZWFmOWQzZTBmMjk1ZDlmOGFkZTFmYmI1ZGFmM2FmY2VlN2FkYzRkYWFhYmFjZjk5YWRjNTdlOTliZDZkOGJiNzZjODdiNTk0YWNjZTc3OTFiYzY2ODZhZjc4OGVhYTg2OTRhNjdlOGY5ZjdhOGM5ZTY5ODM5YjY3ODA5YjdiOGFhMDU0NjY3OWExMDAwMDAwNDg0OTQ0NDE1NDA4ZDcwNWMxODMwMWMwMDAwYzAwYjBjZWI2NmRkYmZhZmZhZjI1MDAwODhhZTEwNDQ5ZDEwY2IwMWMyZjg4OTJhY2E4MWFlODg2NjlkOThlZWJmOTAxODQ1MTljYTQ1OTVlOTQxNWQ0NGRkYmY1YzMzOGNkMGJhY2RiN2U5Y2Q3ZmRiY2RmMGY5NzRiMDZlYjI5ZTRmMmZiMDAwMDAwMDA0OTQ1NGU0NGFlNDI2MDgy";
+const BASE64_RENDITION_TIFF = "NDk0OTJhMDBiYzAwMDAwMDAyMDIwNDAzMDMwNTA0MDQwNjAzMDMwNzAyMDMwODA0MDUwZTAwMDAwZjAwMDAxNDA4MDgyMTBhMGEyYjAzMDIwZDAyMDEwZjAzMDExNDA1MDMxYjA1MDQyMzAwMDAyNzExMTk0NTE0MjU1NjAwMTE1MTAwMmE2YjA5MGIzNDAyMGQzZjAwMTQ1MTAwMjI2NTA0Mzg3ZDE0NTE5MjRjODRjMTc1YWJkZTcxYWVkOTk0Y2NlZTE1NWE5YjJlN2NiYjUzOWRkMzczYjhlNjhjY2FmM2E3ZGNmY2JjZTNmYmNiZTdmOWQ2ZWFmOWQzZTBmMjk1ZDlmOGFkZTFmYmI1ZGFmM2FmY2VlN2FkYzRkYWFhYmFjZjk5YWRjNTdlOTliZDZkOGJiNzZjODdiNTk0YWNjZTc3OTFiYzY2ODZhZjc4OGVhYTg2OTRhNjdlOGY5ZjdhOGM5ZTY5ODM5YjY3ODA5YjdiOGFhMDEyMDAwMDAxMDMwMDAxMDAwMDAwMGEwMDAwMDAwMTAxMDMwMDAxMDAwMDAwMDYwMDAwMDAwMjAxMDMwMDAzMDAwMDAwYWEwMTAwMDAwMzAxMDMwMDAxMDAwMDAwMDEwMDAwMDAwNjAxMDMwMDAxMDAwMDAwMDIwMDAwMDAwYTAxMDMwMDAxMDAwMDAwMDEwMDAwMDAxMTAxMDQwMDAxMDAwMDAwMDgwMDAwMDAxMjAxMDMwMDAxMDAwMDAwMDEwMDAwMDAxNTAxMDMwMDAxMDAwMDAwMDMwMDAwMDAxNjAxMDMwMDAxMDAwMDAwMDYwMDAwMDAxNzAxMDQwMDAxMDAwMDAwYjQwMDAwMDAxYTAxMDUwMDAxMDAwMDAwOWEwMTAwMDAxYjAxMDUwMDAxMDAwMDAwYTIwMTAwMDAxYzAxMDMwMDAxMDAwMDAwMDEwMDAwMDAyODAxMDMwMDAxMDAwMDAwMDMwMDAwMDAyOTAxMDMwMDAyMDAwMDAwMDAwMDAxMDAzZTAxMDUwMDAyMDAwMDAwZTAwMTAwMDAzZjAxMDUwMDA2MDAwMDAwYjAwMTAwMDAwMDAwMDAwMGZmZmZmZmZmZWFhYzA3MDlmZmZmZmZmZmVhYWMwNzA5MDgwMDA4MDAwODAwZmYwOWQ3YTNmZmZmZmZmZjdmZTE3YTU0ZmZmZmZmZmZmZmNjY2M0Y2ZmZmZmZmZmZmY5OTk5OTlmZmZmZmZmZjdmNjY2NjI2ZmZmZmZmZmZlZjI4NWMwZmZmZmZmZmZmN2YxYjBkNTBmZmZmZmZmZmZmNTczOTU0ZmZmZmZmZmY=";
 
 describe("imagePostProcess", () => {
     beforeEach(function () {
@@ -50,7 +49,7 @@ describe("imagePostProcess", () => {
     });
 
     it('should convert PNG to JPG - end to end test', async () => {
-        MetricsTestHelper.mockNewRelic();
+        const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
 
@@ -88,10 +87,18 @@ describe("imagePostProcess", () => {
         
         const uploadedFileBase64 = Buffer.from(uploadedRenditions["/MyRendition.jpeg"]).toString('base64');
         assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64);
+
+        // check metrics
+        await MetricsTestHelper.metricsDone();
+        assert.equal(receivedMetrics[0].eventType, "rendition");
+        assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[1].eventType, "activation");
+        assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[1].postProcessingDuration, receivedMetrics[1].processingDuration);
     });
 
+
     it('should download source, invoke worker in batch callback and upload rendition - same rendition', async () => {
-        MetricsTestHelper.mockNewRelic();
+        const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
 
@@ -158,6 +165,18 @@ describe("imagePostProcess", () => {
         assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64_1);
         assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64_2);
         assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64_3);
+
+        // check metrics
+        await MetricsTestHelper.metricsDone();
+        assert.equal(receivedMetrics[0].eventType, "rendition");
+        assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[3].eventType, "activation");
+        assert.equal(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration, receivedMetrics[1].callbackProcessingDuration, receivedMetrics[2].callbackProcessingDuration);
+        assert.equal(receivedMetrics[3].callbackProcessingDuration + receivedMetrics[3].postProcessingDuration, receivedMetrics[3].processingDuration);
+        // Fix when refactor timers: in batch worker, every rendition's currentPostProcessing duration equal to the last rendition's currentPostProcessing duration
+        // fix is to set `this.timers.currentPostProcessing` = `this.timers.postProcessing` after for each rendition loop. 
+        // This is not possible currently because `this.timers.postProcessing` is not a Timer, but a duration
+        assert.equal(receivedMetrics[0].postProcessingDuration, receivedMetrics[1].postProcessingDuration, receivedMetrics[2].postProcessingDuration);
     });
     it('should download source, invoke worker in batch callback and upload rendition - different rendition', async () => {
         MetricsTestHelper.mockNewRelic();
