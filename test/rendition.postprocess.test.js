@@ -281,6 +281,5 @@ describe("imagePostProcess", () => {
         assert.equal(events[1].rendition.fmt, "bmp");
         assert.equal(events[2].type, "rendition_failed");
         assert.equal(events[2].rendition.fmt, "tiff");
-
     });
 });
