@@ -35,6 +35,10 @@ describe("web action for custom workers", function() {
         testUtil.afterEach();
     });
 
+    after(function() {
+        mockRequire.stopAll();
+    });
+
     function workerWithMockedOpenWhiskInvoke(invokeFn) {
         mockRequire("openwhisk", () => ({
             actions: {
