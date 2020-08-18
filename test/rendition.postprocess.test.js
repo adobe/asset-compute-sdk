@@ -15,14 +15,14 @@
 
 'use strict';
 
-const { worker, batchWorker } = require('../lib/api');
-
-const testUtil = require('./testutil');
-const mockFs = require('mock-fs');
+// const { worker, batchWorker } = require('../lib/api');
+const mockRequire = require("mock-require");
+const { MetricsTestHelper } = mockRequire.reRequire("@adobe/asset-compute-commons");
 const assert = require('assert');
-
+const mockFs = require('mock-fs');
 const fs = require('fs-extra');
-const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
+const testUtil = require('./testutil');
+const { worker, batchWorker } = require('../lib/api');
 
 const PNG_FILE = "test/files/fileSmall.png";
 
@@ -46,9 +46,27 @@ describe("imagePostProcess", () => {
     afterEach(() => {
         testUtil.afterEach();
         delete process.env.WORKER_BASE_DIRECTORY;
+        mockRequire.stop('@adobe/asset-compute-image-processing');
+    });
+
+    after(() => {
+        mockRequire.stop('@adobe/asset-compute-image-processing');
     });
 
     it('should convert PNG to JPG - end to end test', async () => {
+        mockRequire.stopAll();
+        mockRequire("@adobe/asset-compute-image-processing", {
+            imgProcessingEngine: {
+                imageProcess: async function(infile, outfile, instructions) {
+                    console.log('mocked image post processing', outfile, infile);
+                    await fs.copyFile('test/files/fileSmall.jpg',outfile);
+                    console.log('COPIED FILE size', fs.statSync('test/files/fileSmall.jpg').size);
+                    // throw new Error('conversion using image processing lib (imagemagick) failed: Error!, code: 7, signal: null');
+                }
+            }
+        });
+        mockRequire.reRequire('../lib/worker'); // '@adobe/asset-compute-image-processing' is a dependency of lib/worker.js so it must be reloaded
+        const { worker } = mockRequire.reRequire('../lib/api');
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
@@ -84,9 +102,14 @@ describe("imagePostProcess", () => {
         assert.equal(events[0].metadata["tiff:imageWidth"], 10);
         assert.equal(events[0].metadata["tiff:imageHeight"], 6);
         assert.equal(events[0].metadata["dc:format"], "image/jpeg");
-        
+
+
+        const expected_rendtion = Buffer.from(await fs.readFile('test/files/fileSmall.jpg')).toString('base64');
         const uploadedFileBase64 = Buffer.from(uploadedRenditions["/MyRendition.jpeg"]).toString('base64');
-        assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64);
+        console.log('BASE64', uploadedFileBase64.length);
+        console.log('EXPECTED BASE64', expected_rendtion.length);
+        console.log('OLD expected base64', BASE64_RENDITION_JPG.length);
+        assert.ok(expected_rendtion  === uploadedFileBase64);
 
         // check metrics
         await MetricsTestHelper.metricsDone();
@@ -235,4 +258,5 @@ describe("imagePostProcess", () => {
         assert.ok(BASE64_RENDITION_PNG  === uploadedFileBase64_png);        
         assert.ok(BASE64_RENDITION_TIFF  === uploadedFileBase64_tiff);
     });
+
 });

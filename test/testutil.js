@@ -82,9 +82,10 @@ function mockPutFiles(httpUrl) {
         .put(/.*/)
         .optionally()
         .reply(200, (path, requestBody) => {
-            /*console.log('######################')
-            console.log(requestBody);
-            console.log('######################')*/
+            console.log('######################')
+            // console.log(requestBody);
+            console.log(Buffer.from(requestBody).toString('base64').length);
+            console.log('######################')
             files[path] = requestBody;
         })
         .persist();
