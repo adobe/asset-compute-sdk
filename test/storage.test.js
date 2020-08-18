@@ -15,7 +15,7 @@
 
 'use strict';
 
-const {getSource, putRendition} = require('../lib/storage');
+const {getSource, putRendition, getWatermark} = require('../lib/storage');
 const mockFs = require('mock-fs');
 const nock = require('nock');
 const assert = require('assert');
@@ -38,6 +38,7 @@ describe('storage.js', () => {
             delete process.env.WORKER_TEST_MODE;
             delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
         });
+
         it('should download simple png and return a new source object', async () => {
             const paramsSource = {
                 url: 'https://example.com/photo/elephant.png'
@@ -285,6 +286,148 @@ describe('storage.js', () => {
             assert.ok(fs.existsSync(file));
             await putRendition(rendition);
             assert.ok(fs.existsSync(file));
+        });
+    });
+
+    describe('getWatermark', () => {
+
+        beforeEach(() => {
+            mockFs();
+        });
+
+        afterEach(() => {
+            nock.cleanAll();
+            mockFs.restore();
+            delete process.env.WORKER_TEST_MODE;
+            delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
+        });
+
+        it('should download simple png and return a new watermark object', async () => {
+            const params = {
+                watermarkContent: 'https://example.com/photo/elephant.png'
+            };
+            const inDirectory = './in/fakeWatermark/filePath';
+
+            mockFs({ './in/fakeWatermark/filePath': {} });
+            assert.ok(fs.existsSync(inDirectory));
+
+            nock('https://example.com')
+                .get('/photo/elephant.png')
+                .reply(200, 'ok');
+
+            const watermark = await getWatermark(params, inDirectory);
+
+            assert.equal(watermark.name, 'watermark.png');
+            assert.equal(watermark.path, 'in/fakeWatermark/filePath/watermark.png');
+            assert.ok(nock.isDone());
+        });
+
+        it('should download data uri and return new watermark object', async () => {
+            const params = {
+                watermarkContent: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D'
+            };
+            const inDirectory = './in/fakeWatermark/filePath';
+
+            mockFs({ './in/fakeWatermark/filePath': {} });
+            assert.ok(fs.existsSync(inDirectory));
+
+            const watermark = await getWatermark(params, inDirectory);
+
+            assert.equal(watermark.name, 'watermark');
+            assert.equal(watermark.path, 'in/fakeWatermark/filePath/watermark');
+            assert.ok(fs.existsSync(watermark.path));
+            assert.equal(fs.readFileSync(watermark.path).toString(), 'Hello, World!');
+            assert.ok(nock.isDone());
+        });
+
+        it('should fail during download', async () => {
+            process.env.ASSET_COMPUTE_DISABLE_RETRIES = true; // disable retries to test upload failure
+            const params = {
+                watermarkContent: 'https://example.com/photo/elephant.png'
+            };
+            const inDirectory = './in/fakeWatermark/filePath';
+
+            mockFs({ './in/fakeWatermark/filePath': {} });
+            assert.ok(fs.existsSync(inDirectory));
+
+            nock('https://example.com')
+                .get('/photo/elephant.png')
+                .reply(404, 'ok');
+
+            let threw = false;
+            try {
+                await getWatermark(params, inDirectory);
+            } catch (e) {
+                console.log(e);
+                assert.ok(e instanceof GenericError);
+                assert.equal(e.message, "GET 'https://example.com/photo/elephant.png' failed with status 404");
+                threw = true;
+            }
+            assert.ok(threw);
+        });
+
+        it('should not download a file in worker test mode', async () => {
+            process.env.WORKER_TEST_MODE = true;
+
+            const params = {
+                watermarkContent: 'file.png'
+            };
+            const inDirectory = '/in';
+
+            mockFs({ '/in/file.png': 'yo' });
+            const watermark = await getWatermark(params, inDirectory);
+
+            assert.equal(watermark.name, 'file.png'); // in this case source name is actual file path
+            assert.equal(watermark.path, '/in/file.png');
+        });
+
+        it('should fail to download because path ends with /..', async () => {
+            process.env.WORKER_TEST_MODE = true;
+            const params = {
+                watermarkContent: 'file.jpg/..'
+            };
+            const inDirectory = '/in';
+
+            let threw = false;
+            try {
+                await getWatermark(params, inDirectory);
+            } catch (e) {
+                assert.equal(e.message, 'Invalid or missing local file file.jpg/..');
+                threw = true;
+            }
+            assert.ok(threw);
+        });
+
+        it('should fail when path contains traversal notation in worker test mode', async () => {
+            process.env.WORKER_TEST_MODE = true;
+            const params = {
+                watermarkContent: 'file/../../../../evilcode/elephant.jpg'
+            };
+            const inDirectory = '/in';
+            let threw = false;
+            try {
+                await getWatermark(params, inDirectory);
+            } catch (e) {
+                assert.equal(e.message, 'Invalid or missing local file file/../../../../evilcode/elephant.jpg');
+                threw = true;
+            }
+            assert.ok(threw);
+        });
+
+        it('should fail because of missing localfile in worker test mode', async () => {
+            process.env.WORKER_TEST_MODE = true;
+            const params = {
+                watermarkContent: 'elephant.jpg'
+            };
+            const inDirectory = '/in';
+            let threw = false;
+            try {
+                await getWatermark(params, inDirectory);
+            } catch (e) {
+                assert.equal(e.message, 'Invalid or missing local file elephant.jpg');
+                threw = true;
+            }
+            assert.ok(threw);
         });
     });
 });
