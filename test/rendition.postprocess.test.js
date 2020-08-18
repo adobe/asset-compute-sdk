@@ -302,5 +302,4 @@ describe("imagePostProcess", () => {
         assert.ok(receivedMetrics[0].callbackProcessingDuration > 0, receivedMetrics[0].postProcessingDuration > 0, receivedMetrics[0].processingDuration > 0);
         assert.ok(receivedMetrics[1].callbackProcessingDuration > 0, receivedMetrics[1].postProcessingDuration > 0, receivedMetrics[1].processingDuration > 0);
     });
-
 });
