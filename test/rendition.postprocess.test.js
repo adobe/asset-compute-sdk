@@ -33,14 +33,17 @@ mockRequire("@adobe/asset-compute-image-processing", {
     imgProcessingEngine: {
         imageProcess: async function(infile, outfile, instructions) {
             console.log('mocked image post processing', outfile, infile);
-            if (instructions.fmt === 'jpg') {
+            if (instructions.shouldFail) {
+                throw new Error('conversion using image processing lib (imagemagick) failed: Error!, code: 7, signal: null');
+            }
+            else if (instructions.fmt === 'jpg') {
                 await fs.copyFile('test/files/generatedFileSmall.jpg',outfile);
             } else if (instructions.fmt === 'png') {
                 await fs.copyFile('test/files/generatedFileSmall.png',outfile);
             } else if (instructions.fmt === 'tiff') {
                 await fs.copyFile('test/files/generatedFileSmall.tiff',outfile);
             } else {
-                throw new Error('conversion using image processing lib (imagemagick) failed: Error!, code: 7, signal: null');
+                throw new Error('unknown error');
             }
         }
     }
@@ -256,6 +259,48 @@ describe("imagePostProcess", () => {
         assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64_jpg);
         assert.ok(BASE64_RENDITION_PNG  === uploadedFileBase64_png);        
         assert.ok(BASE64_RENDITION_TIFF  === uploadedFileBase64_tiff);
+    });
+
+    it('rendition should fail during post processing', async () => {
+        const receivedMetrics = MetricsTestHelper.mockNewRelic();
+        const events = testUtil.mockIOEvents();
+
+        // will use default image processing engine
+        async function workerFn(source, rendition) {
+            await fs.copyFile(source.path, rendition.path);
+            rendition.postProcess = true;
+        }
+
+        const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
+        const main = worker(workerFn);
+        const params = {
+            source: `data:image/png;base64,${base64PngFile}`,
+            renditions: [{
+                fmt: "jpg",
+                target: "https://example.com/MyRendition.jpeg",
+                shouldFail: true
+            }],
+            requestId: "test-request-id",
+            auth: testUtil.PARAMS_AUTH,
+            newRelicEventsURL: MetricsTestHelper.MOCK_URL,
+            newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
+        };
+        const result = await main(params);
+
+        // validate errors
+        assert.ok(result.renditionErrors);
+        assert.ok(result.renditionErrors[0].message.includes('conversion using image processing lib (imagemagick) failed'));
+
+        assert.equal(events.length, 1);
+        assert.equal(events[0].type, "rendition_failed");
+        assert.equal(events[0].rendition.fmt, "jpg");
+
+        // check metrics
+        await MetricsTestHelper.metricsDone();
+        assert.equal(receivedMetrics[0].eventType, "error");
+        assert.equal(receivedMetrics[1].eventType, "activation");
+        assert.ok(receivedMetrics[0].callbackProcessingDuration > 0, receivedMetrics[0].postProcessingDuration > 0, receivedMetrics[0].processingDuration > 0);
+        assert.ok(receivedMetrics[1].callbackProcessingDuration > 0, receivedMetrics[1].postProcessingDuration > 0, receivedMetrics[1].processingDuration > 0);
     });
 
 });
