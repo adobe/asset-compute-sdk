@@ -59,8 +59,8 @@ describe("imagePostProcess", () => {
             imgProcessingEngine: {
                 imageProcess: async function(infile, outfile, instructions) {
                     console.log('mocked image post processing', outfile, infile);
-                    await fs.copyFile('test/files/fileSmall.jpg',outfile);
-                    console.log('COPIED FILE size', fs.statSync('test/files/fileSmall.jpg').size);
+                    await fs.copyFile('test/files/generatedFileTooSmall.jpg',outfile);
+                    console.log('COPIED FILE size', fs.statSync('test/files/generatedFileTooSmall.jpg').size);
                     // throw new Error('conversion using image processing lib (imagemagick) failed: Error!, code: 7, signal: null');
                 }
             }
@@ -90,7 +90,6 @@ describe("imagePostProcess", () => {
             newRelicEventsURL: MetricsTestHelper.MOCK_URL,
             newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
         };
-
         const result = await main(params);
 
         // validate errors
@@ -103,12 +102,10 @@ describe("imagePostProcess", () => {
         assert.equal(events[0].metadata["tiff:imageHeight"], 6);
         assert.equal(events[0].metadata["dc:format"], "image/jpeg");
 
-
-        const expected_rendtion = Buffer.from(await fs.readFile('test/files/fileSmall.jpg')).toString('base64');
+        const expected_rendtion = 'ZmZkOGZmZTAwMDEwNGE0NjQ5NDYwMDAxMDEwMDAwMDEwMDAxMDAwMGZmZGIwMDQzMDAwYzA4MDkwYjA5MDgwYzBiMGEwYjBlMGQwYzBlMTIxZTE0MTIxMTExMTIyNTFiMWMxNjFlMmMyNzJlMmUyYjI3MmIyYTMxMzc0NjNiMzEzNDQyMzQyYTJiM2Q1MzNlNDI0ODRhNGU0ZjRlMmYzYjU2NWM1NTRjNWI0NjRkNGU0YmZmZGIwMDQzMDEwZDBlMGUxMjEwMTIyNDE0MTQyNDRiMzIyYjMyNGI0YjRiNGI0YjRiNGI0YjRiNGI0YjRiNGI0YjRiNGI0YjRiNGI0YjRiNGI0YjRiNGI0YjRiNGI0YjRiNGI0YjRiNGI0YjRiNGI0YjRiNGI0YjRiNGI0YjRiNGI0YjRiNGI0YmZmYzIwMDExMDgwMDA2MDAwYTAzMDExMTAwMDIxMTAxMDMxMTAxZmZjNDAwMTUwMDAxMDEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDMwNGZmYzQwMDE2MDEwMTAxMDEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA0MDEwMmZmZGEwMDBjMDMwMTAwMDIxMDAzMTAwMDAwMDA4OTY3N2JhZmZmYzQwMDFlMTAwMDAxMDQwMTA1MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAyMDAwMzA0MDYwNTE0MTU1NTgyOTRmZmRhMDAwODAxMDEwMDAxM2YwMDhiNTRjMmIyZjEwM2RhYTk0NjFkMDU2ZDM1ZGUyNGZkMjRiZmZmYzQwMDE0MTEwMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDEwZmZkYTAwMDgwMTAyMDEwMTNmMDAzZmZmYzQwMDE1MTEwMTAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTBmZmRhMDAwODAxMDMwMTAxM2YwMDE5ZmZkOQ==';
+        
         const uploadedFileBase64 = Buffer.from(uploadedRenditions["/MyRendition.jpeg"]).toString('base64');
-        console.log('BASE64', uploadedFileBase64.length);
-        console.log('EXPECTED BASE64', expected_rendtion.length);
-        console.log('OLD expected base64', BASE64_RENDITION_JPG.length);
+        
         assert.ok(expected_rendtion  === uploadedFileBase64);
 
         // check metrics
