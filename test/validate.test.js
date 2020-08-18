@@ -146,6 +146,22 @@ describe('validate.js', () => {
         assert.equal(paramsToValidate.source.url, "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=");
     });
 
+    it('validates parameters - watermark is a data uri', () => {
+        const paramsToValidate = {
+            source: "https://example.com/source.jpg",
+            renditions: [
+                { target: "https://example.com/target.jpg" }
+            ],
+            watermark: {
+                watermarkContent: "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo="
+            }
+        };
+
+        validateParameters(paramsToValidate);
+        assert.equal(typeof paramsToValidate.watermark, "object");
+        assert.equal(paramsToValidate.watermark.watermarkContent, "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=");
+    });
+
     it('throws if source is an invalid data uri', () => {
         const paramsToValidate = {
             source: "data:",
@@ -160,6 +176,20 @@ describe('validate.js', () => {
         };
         assertValidateThrows(paramsToValidate, "SourceCorruptError", "Invalid or missing data url data:");
     });
+
+    it('throws if watermark is an invalid data uri', () => {
+        const paramsToValidate = {
+            source: "https://example.com/source.jpg",
+            renditions: [
+                { target: "https://example.com/target.jpg" }
+            ],
+            watermark: {
+                watermarkContent: "data:"
+            }
+        };
+        assertValidateThrows(paramsToValidate, "SourceCorruptError", "Invalid or missing data url data:");
+    });
+
     it('verifies renditions is an array (1 element)', () => {
         const paramsToValidate = {
             source: "https://example.com/image.jpg",
@@ -291,6 +321,22 @@ describe('validate.js', () => {
         }
     });
 
+    it('throws if watermark is not a valid url', () => {
+        for (const invalidUrl of INVALID_URLS) {
+            assertValidateThrows({
+                source: "https://example.com/source.jpg",
+                renditions: [{
+                    target: "https://example.com/target.jpg"
+                }],
+                watermark: {
+                    watermarkContent: invalidUrl
+                }
+            },
+                "SourceUnsupportedError"
+            );
+        }
+    });
+
     it('throws if source is a http url', () => {
         assertValidateThrows({
             source: "http://example.com/NOT_HTTPS",
@@ -310,6 +356,20 @@ describe('validate.js', () => {
             }]
         },
         "SourceUnsupportedError"
+        );
+    });
+
+    it('throws if watermark is an http url', () => {
+        assertValidateThrows({
+            source: "https://example.com/source.jpg",
+            renditions: [{
+                target: "https://example.com/target.jpg"
+            }],
+            watermark: {
+                watermarkContent: "http://example.com/NOT_HTTPS"
+            }
+        },
+            "SourceUnsupportedError"
         );
     });
 
@@ -398,7 +458,6 @@ describe('validate.js', () => {
             );
         }
     });
-
     it('throws if rendition.target.urls or rendition.url contains http url', () => {
         assertValidateThrows({
             source: "https://example.com/image.jpg",
@@ -456,7 +515,10 @@ describe('validate.js', () => {
                 {
                     fmt: "xml"
                 }
-            ]
+            ],
+            watermark: {
+                watermarkContent: "watermark.png"
+            }
         };
 
         validateParameters(params);
@@ -464,5 +526,4 @@ describe('validate.js', () => {
         assert.equal(params.source.url, "source.jpg");
         assert.equal(params.renditions.length, 2);
     });
-
 });
