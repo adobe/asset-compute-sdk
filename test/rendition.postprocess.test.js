@@ -198,7 +198,7 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[3].eventType, "activation");
         assert.equal(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration, receivedMetrics[1].callbackProcessingDuration, receivedMetrics[2].callbackProcessingDuration);
-        // TODO: assert.equal(receivedMetrics[3].callbackProcessingDuration + receivedMetrics[3].postProcessingDuration, receivedMetrics[3].processingDuration);
+        assert.equal(receivedMetrics[3].callbackProcessingDuration + receivedMetrics[3].postProcessingDuration, receivedMetrics[3].processingDuration);
         // downloadDuration: 0.002481363,
         // callbackProcessingDuration: 0.002246784,
         // postProcessingDuration_id_mean: 449890804.5,
