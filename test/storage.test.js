@@ -377,8 +377,8 @@ describe('storage.js', () => {
             mockFs({ '/in/file.png': 'yo' });
             const watermark = await getWatermark(params, inDirectory);
 
-            assert.equal(watermark.name, 'file.png'); // in this case source name is actual file path
-            assert.equal(watermark.path, '/in/file.png');
+            assert.equal(watermark.name, 'watermark.png'); // in this case source name is actual file path
+            assert.equal(watermark.path, '/in/watermark.png');
         });
 
         it('should fail to download because path ends with /..', async () => {
