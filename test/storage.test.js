@@ -21,7 +21,7 @@ const nock = require('nock');
 const assert = require('assert');
 const fs = require('fs-extra');
 const path = require('path');
-const { GenericError } = require('@adobe/asset-compute-commons');
+const { GenericError, RenditionFormatUnsupportedError } = require('@adobe/asset-compute-commons');
 
 
 const EMBED_LIMIT_MAX = 32 * 1024;
@@ -425,6 +425,18 @@ describe('storage.js', () => {
                 await getWatermark(params, inDirectory);
             } catch (e) {
                 assert.equal(e.message, 'Invalid or missing local file elephant.jpg');
+                threw = true;
+            }
+            assert.ok(threw);
+        });
+
+        it('should fail because watermark asset is not png', async () => {
+            let threw = false;
+            try {
+                await getWatermark({ watermarkContent: "https://example.com/photo/elephant.jpg" });
+            } catch (e) {
+                assert.equal(e.reason, 'RenditionFormatUnsupported');
+                assert.equal(e.message, 'Invalid watermark format https://example.com/photo/elephant.jpg');
                 threw = true;
             }
             assert.ok(threw);
