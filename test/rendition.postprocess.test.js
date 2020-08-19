@@ -316,7 +316,7 @@ describe("imagePostProcess", () => {
         //batchworker multiple rendition all post process eligible
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
-        async function batchWorkerFn(source, renditions, outDirectory) {
+        async function batchWorkerFn(source, renditions) {
             for (const rendition of renditions) {
                 await fs.copyFile(source.path, rendition.path);
                 rendition.postProcess = true;
@@ -366,14 +366,14 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[1].eventType, "activation");
         assert.equal(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        // TODO assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
-        // assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
+        assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
     });
     it('should fail all if some renditions are post process ineligible', async () => {
         //batchworker multiple rendition not all post process eligible
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
-        async function batchWorkerFn(source, renditions, outDirectory) {
+        async function batchWorkerFn(source, renditions) {
             for (const rendition of renditions) {
                 await fs.copyFile(source.path, rendition.path);
                 rendition.postProcess = true;
@@ -407,8 +407,7 @@ describe("imagePostProcess", () => {
 
         // validate errors
         assert.ok(result.renditionErrors);
-        console.log('renditionErrors ---- > ',result.renditionErrors);
-        assert.ok(result.renditionErrors[0].message.includes('batch worker renditions postprocess applies only for all renditions'));
+        assert.ok(result.renditionErrors[0].message.includes('All rendition in batch worker must be postprocess eligible'));
         assert.equal(result.renditionErrors.length, 4);
 
         assert.equal(events.length, 4);
@@ -427,14 +426,14 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[1].eventType, "activation");
         assert.equal(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        // TODO assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
-        // assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
+        assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
     });
     it('should fail all if edge renditions are post process ineligible', async () => {
         // batchworker multiple rendition first, middle, last not post process eligible
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
-        async function batchWorkerFn(source, renditions, outDirectory) {
+        async function batchWorkerFn(source, renditions) {
             for (const rendition of renditions) {
                 await fs.copyFile(source.path, rendition.path);
                 rendition.postProcess = true;
@@ -471,8 +470,7 @@ describe("imagePostProcess", () => {
 
         // validate errors
         assert.ok(result.renditionErrors);
-        console.log('renditionErrors ---- > ',result.renditionErrors);
-        assert.ok(result.renditionErrors[0].message.includes('batch worker renditions postprocess applies only for all renditions'));
+        assert.ok(result.renditionErrors[0].message.includes('All rendition in batch worker must be postprocess eligible'));
         assert.equal(result.renditionErrors.length, 5);
 
         assert.equal(events.length, 5);
@@ -483,14 +481,14 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[1].eventType, "activation");
         assert.equal(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        // TODO assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
-        // assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
+        assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
     });
     it('should generate rendition if only one post processing ineligible rendition', async () => {
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         testUtil.mockPutFiles('https://example.com');
-        async function batchWorkerFn(source, renditions, outDirectory) {
+        async function batchWorkerFn(source, renditions) {
             for (const rendition of renditions) {
                 await fs.copyFile(source.path, rendition.path);
                 rendition.postProcess = true;
@@ -526,14 +524,14 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[1].eventType, "activation");
         assert.equal(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        // TODO assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
-        // assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
+        assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
     });
     it('should generate rendition if only one post processing eligible rendition', async () => {
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         testUtil.mockPutFiles('https://example.com');
-        async function batchWorkerFn(source, renditions, outDirectory) {
+        async function batchWorkerFn(source, renditions) {
             for (const rendition of renditions) {
                 await fs.copyFile(source.path, rendition.path);
                 rendition.postProcess = true;
@@ -569,14 +567,14 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[1].eventType, "activation");
         assert.equal(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        // TODO assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
-        // assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
+        assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
     });
     it('should generate rendition when all rendition are post processing ineligible', async () => {
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         testUtil.mockPutFiles('https://example.com');
-        async function batchWorkerFn(source, renditions, outDirectory) {
+        async function batchWorkerFn(source, renditions) {
             for (const rendition of renditions) {
                 await fs.copyFile(source.path, rendition.path);
                 rendition.postProcess = true;
@@ -621,7 +619,7 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[2].eventType, "activation");
         assert.equal(receivedMetrics[2].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        // TODO assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
-        // assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
+        assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
     });
 });
