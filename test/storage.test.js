@@ -289,7 +289,7 @@ describe('storage.js', () => {
         });
     });
 
-    describe.only('getWatermark', () => {
+    describe('getWatermark', () => {
 
         beforeEach(async function () {
             process.env.WORKER_BASE_DIRECTORY = 'build/work';
