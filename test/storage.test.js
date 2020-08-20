@@ -414,22 +414,6 @@ describe('storage.js', () => {
             assert.ok(threw);
         });
 
-        it('should fail because of missing localfile in worker test mode', async () => {
-            process.env.WORKER_TEST_MODE = true;
-            const params = {
-                watermarkContent: 'elephant.jpg'
-            };
-            const inDirectory = '/in';
-            let threw = false;
-            try {
-                await getWatermark(params, inDirectory);
-            } catch (e) {
-                assert.equal(e.message, 'Invalid or missing local file elephant.jpg');
-                threw = true;
-            }
-            assert.ok(threw);
-        });
-
         it('should fail because watermark asset is not png', async () => {
             let threw = false;
             try {
