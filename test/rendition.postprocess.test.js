@@ -16,7 +16,7 @@
 'use strict';
 
 const mockRequire = require("mock-require");
-const { GenericError, MetricsTestHelper } = mockRequire.reRequire("@adobe/asset-compute-commons");
+const { MetricsTestHelper } = mockRequire.reRequire("@adobe/asset-compute-commons");
 const assert = require('assert');
 const mockFs = require('mock-fs');
 const fs = require('fs-extra');
@@ -43,7 +43,7 @@ mockRequire("@adobe/asset-compute-image-processing", {
             } else if (instructions.fmt === 'tiff') {
                 await fs.copyFile('test/files/generatedFileSmall.tiff',outfile);
             } else {
-                throw new GenericError('batch worker renditions postprocess applies only for all renditions');
+                throw new Error('unknown error');
             }
         }
     }
@@ -122,6 +122,48 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[1].postProcessingDuration, receivedMetrics[1].processingDuration);
     });
 
+    it('should fail if rendition failed in post processing - single rendition ', async () => {
+        //batchworker single rendition post process eligible
+        const receivedMetrics = MetricsTestHelper.mockNewRelic();
+        const events = testUtil.mockIOEvents();
+
+        // will use default image processing engine
+        async function workerFn(source, rendition) {
+            await fs.copyFile(source.path, rendition.path);
+            rendition.postProcess = true;
+        }
+
+        const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
+        const main = worker(workerFn);
+        const params = {
+            source: `data:image/png;base64,${base64PngFile}`,
+            renditions: [{
+                fmt: "jpg",
+                target: "https://example.com/MyRendition.jpeg",
+                shouldFail: true
+            }],
+            requestId: "test-request-id",
+            auth: testUtil.PARAMS_AUTH,
+            newRelicEventsURL: MetricsTestHelper.MOCK_URL,
+            newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
+        };
+        const result = await main(params);
+
+        // validate errors
+        assert.ok(result.renditionErrors);
+        assert.ok(result.renditionErrors[0].message.includes('conversion using image processing lib (imagemagick) failed'));
+
+        assert.equal(events.length, 1);
+        assert.equal(events[0].type, "rendition_failed");
+        assert.equal(events[0].rendition.fmt, "jpg");
+
+        // check metrics
+        await MetricsTestHelper.metricsDone();
+        assert.equal(receivedMetrics[0].eventType, "error");
+        assert.equal(receivedMetrics[1].eventType, "activation");
+        assert.ok(receivedMetrics[0].callbackProcessingDuration > 0, receivedMetrics[0].postProcessingDuration > 0, receivedMetrics[0].processingDuration > 0);
+        assert.ok(receivedMetrics[1].callbackProcessingDuration > 0, receivedMetrics[1].postProcessingDuration > 0, receivedMetrics[1].processingDuration > 0);
+    });
 
     it('should download source, invoke worker in batch callback and upload rendition - same rendition', async () => {
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
@@ -193,23 +235,12 @@ describe("imagePostProcess", () => {
 
         // check metrics
         await MetricsTestHelper.metricsDone();
-        console.log('receivedMetrics---->',receivedMetrics);
         assert.equal(receivedMetrics[0].eventType, "rendition");
         assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[3].eventType, "activation");
         assert.equal(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration, receivedMetrics[1].callbackProcessingDuration, receivedMetrics[2].callbackProcessingDuration);
         assert.equal(receivedMetrics[3].callbackProcessingDuration + receivedMetrics[3].postProcessingDuration, receivedMetrics[3].processingDuration);
-        // downloadDuration: 0.002481363,
-        // callbackProcessingDuration: 0.002246784,
-        // postProcessingDuration_id_mean: 449890804.5,
-        // postProcessingDuration_hrtimeElapsed_mean: 1115159,
-        // processingDuration: '0.002246784[object Object]',
-        // uploadDuration: 0.057330613999999995
-        
-        // Fix when refactor timers: in batch worker, every rendition's currentPostProcessing duration equal to the last rendition's currentPostProcessing duration
-        // fix is to set `this.timers.currentPostProcessing` = `this.timers.postProcessing` after for each rendition loop. 
-        // This is not possible currently because `this.timers.postProcessing` is not a Timer, but a duration
-        assert.equal(receivedMetrics[0].postProcessingDuration, receivedMetrics[1].postProcessingDuration, receivedMetrics[2].postProcessingDuration);
+        assert.equal(receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration + receivedMetrics[2].postProcessingDuration, receivedMetrics[3].postProcessingDuration);
     });
     it('should download source, invoke worker in batch callback and upload rendition - different rendition', async () => {
         MetricsTestHelper.mockNewRelic();
@@ -268,54 +299,11 @@ describe("imagePostProcess", () => {
         assert.ok(BASE64_RENDITION_PNG  === uploadedFileBase64_png);        
         assert.ok(BASE64_RENDITION_TIFF  === uploadedFileBase64_tiff);
     });
-
-    it('should fail if rendition failed in post processing - single rendition ', async () => {
-        //batchworker single rendition post process eligible
-        const receivedMetrics = MetricsTestHelper.mockNewRelic();
-        const events = testUtil.mockIOEvents();
-
-        // will use default image processing engine
-        async function workerFn(source, rendition) {
-            await fs.copyFile(source.path, rendition.path);
-            rendition.postProcess = true;
-        }
-
-        const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = worker(workerFn);
-        const params = {
-            source: `data:image/png;base64,${base64PngFile}`,
-            renditions: [{
-                fmt: "jpg",
-                target: "https://example.com/MyRendition.jpeg",
-                shouldFail: true
-            }],
-            requestId: "test-request-id",
-            auth: testUtil.PARAMS_AUTH,
-            newRelicEventsURL: MetricsTestHelper.MOCK_URL,
-            newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
-        };
-        const result = await main(params);
-
-        // validate errors
-        assert.ok(result.renditionErrors);
-        assert.ok(result.renditionErrors[0].message.includes('conversion using image processing lib (imagemagick) failed'));
-
-        assert.equal(events.length, 1);
-        assert.equal(events[0].type, "rendition_failed");
-        assert.equal(events[0].rendition.fmt, "jpg");
-
-        // check metrics
-        await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics[0].eventType, "error");
-        assert.equal(receivedMetrics[1].eventType, "activation");
-        assert.ok(receivedMetrics[0].callbackProcessingDuration > 0, receivedMetrics[0].postProcessingDuration > 0, receivedMetrics[0].processingDuration > 0);
-        assert.ok(receivedMetrics[1].callbackProcessingDuration > 0, receivedMetrics[1].postProcessingDuration > 0, receivedMetrics[1].processingDuration > 0);
-    });
     
-    it('should fail all if rendition failed in post processing - multiple rendition', async () => {
-        //batchworker multiple rendition all post process eligible
+    it('should fail rendition only for failed post processing but success for others - multiple rendition', async () => {
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
+        testUtil.mockPutFiles('https://example.com');
         async function batchWorkerFn(source, renditions) {
             for (const rendition of renditions) {
                 await fs.copyFile(source.path, rendition.path);
@@ -349,30 +337,33 @@ describe("imagePostProcess", () => {
         // validate errors
         assert.ok(result.renditionErrors);
         assert.ok(result.renditionErrors[0].message.includes('conversion using image processing lib (imagemagick) failed'));
-        assert.equal(result.renditionErrors.length, 3);
+        assert.equal(result.renditionErrors.length, 1);
 
         assert.equal(events.length, 3);
-        assert.equal(events[0].type, "rendition_failed");
+        assert.equal(events[0].type, "rendition_created");
         assert.equal(events[0].rendition.fmt, "jpg");
-        assert.equal(events[1].type, "rendition_failed");
+        assert.equal(events[1].type, "rendition_created");
         assert.equal(events[1].rendition.fmt, "jpg");
         assert.equal(events[2].type, "rendition_failed");
         assert.equal(events[2].rendition.fmt, "jpg");
 
         // check metrics
         await MetricsTestHelper.metricsDone();
-        console.log('receivedMetrics--->', receivedMetrics);
-        assert.equal(receivedMetrics[0].eventType, "error");
+        assert.equal(receivedMetrics[0].eventType, "rendition");
         assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
-        assert.equal(receivedMetrics[1].eventType, "activation");
-        assert.equal(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
-        assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[1].eventType, "rendition");
+        assert.equal(receivedMetrics[2].eventType, "error");
+        assert.equal(receivedMetrics[2].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[3].eventType, "activation");
+        assert.equal(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
+        assert.equal(receivedMetrics[3].postProcessingDuration, receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration
+                                + receivedMetrics[2].postProcessingDuration);
     });
-    it('should fail all if some renditions are post process ineligible', async () => {
+    it('should post process eligible rendition and skip others - multiple rendition', async () => {
         //batchworker multiple rendition not all post process eligible
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
+        testUtil.mockPutFiles('https://example.com');
         async function batchWorkerFn(source, renditions) {
             for (const rendition of renditions) {
                 await fs.copyFile(source.path, rendition.path);
@@ -387,9 +378,6 @@ describe("imagePostProcess", () => {
             renditions: [{
                 fmt: "jpg",
                 target: "https://example.com/MyRendition1.jpeg"
-            },{
-                fmt: "ineligible-fmt",
-                target: "https://example.com/MyRendition2.jpeg"
             },{
                 fmt: "pdf",
                 target: "https://example.com/PostProcessIneligible.jpeg"
@@ -406,84 +394,28 @@ describe("imagePostProcess", () => {
         const result = await main(params);
 
         // validate errors
-        assert.ok(result.renditionErrors);
-        assert.ok(result.renditionErrors[0].message.includes('All rendition in batch worker must be postprocess eligible'));
-        assert.equal(result.renditionErrors.length, 4);
+        assert.ok(result.renditionErrors === undefined);
 
-        assert.equal(events.length, 4);
-        assert.equal(events[0].type, "rendition_failed");
+        assert.equal(events.length, 3);
+        assert.equal(events[0].type, "rendition_created");
         assert.equal(events[0].rendition.fmt, "jpg");
-        assert.equal(events[1].type, "rendition_failed");
-        assert.equal(events[1].rendition.fmt, "ineligible-fmt");
-        assert.equal(events[2].type, "rendition_failed");
-        assert.equal(events[2].rendition.fmt, "pdf");
-        assert.equal(events[3].type, "rendition_failed");
-        assert.equal(events[3].rendition.fmt, "jpg");
+        assert.equal(events[1].type, "rendition_created");
+        assert.equal(events[1].rendition.fmt, "pdf");
+        assert.equal(events[2].type, "rendition_created");
+        assert.equal(events[2].rendition.fmt, "jpg");
 
         // check metrics
         await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics[0].eventType, "error");
+        assert.equal(receivedMetrics[0].eventType, "rendition");
         assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
-        assert.equal(receivedMetrics[1].eventType, "activation");
-        assert.equal(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
-        assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[1].eventType, "rendition");
+        assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[1].postProcessingDuration, receivedMetrics[1].processingDuration);
+        assert.equal(receivedMetrics[3].eventType, "activation");
+        assert.equal(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
+        assert.equal(receivedMetrics[3].postProcessingDuration, receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration
+                            + receivedMetrics[2].postProcessingDuration);
     });
-    it('should fail all if edge renditions are post process ineligible', async () => {
-        // batchworker multiple rendition first, middle, last not post process eligible
-        const receivedMetrics = MetricsTestHelper.mockNewRelic();
-        const events = testUtil.mockIOEvents();
-        async function batchWorkerFn(source, renditions) {
-            for (const rendition of renditions) {
-                await fs.copyFile(source.path, rendition.path);
-                rendition.postProcess = true;
-            }
-        }
-
-        const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = batchWorker(batchWorkerFn);
-        const params = {
-            source: `data:image/png;base64,${base64PngFile}`,
-            renditions: [{
-                fmt: "ineligible-fmt",
-                target: "https://example.com/MyRendition2.jpeg"
-            },{
-                fmt: "jpg",
-                target: "https://example.com/MyRendition1.jpeg"
-            },{
-                fmt: "pdf",
-                target: "https://example.com/PostProcessIneligible.jpeg"
-            },{
-                fmt: "jpg",
-                target: "https://example.com/MyRendition3.jpeg"
-            },{
-                fmt: "pdf",
-                target: "https://example.com/PostProcessIneligible.jpeg"
-            }],
-            requestId: "test-request-id",
-            auth: testUtil.PARAMS_AUTH,
-            newRelicEventsURL: MetricsTestHelper.MOCK_URL,
-            newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
-        };
-
-        const result = await main(params);
-
-        // validate errors
-        assert.ok(result.renditionErrors);
-        assert.ok(result.renditionErrors[0].message.includes('All rendition in batch worker must be postprocess eligible'));
-        assert.equal(result.renditionErrors.length, 5);
-
-        assert.equal(events.length, 5);
-
-        // check metrics
-        await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics[0].eventType, "error");
-        assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
-        assert.equal(receivedMetrics[1].eventType, "activation");
-        assert.equal(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
-        assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
-    });
+    
     it('should generate rendition if only one post processing ineligible rendition', async () => {
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
@@ -619,7 +551,5 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[2].eventType, "activation");
         assert.equal(receivedMetrics[2].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
-        assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
     });
 });
