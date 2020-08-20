@@ -292,34 +292,52 @@ describe('storage.js', () => {
     describe('getWatermark', () => {
 
         beforeEach(() => {
-            mockFs();
+            // mockFs();
         });
 
         afterEach(() => {
             nock.cleanAll();
-            mockFs.restore();
+            // mockFs.restore();
             delete process.env.WORKER_TEST_MODE;
             delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
         });
 
         it('should download simple png and return a new watermark object', async () => {
-            const params = {
-                watermarkContent: 'https://example.com/photo/elephant.png'
-            };
-            const inDirectory = './in/fakeWatermark/filePath';
+            // const params = {
+            //     watermarkContent: 'https://example.com/photo/elephant.png'
+            // };
+            // const inDirectory = './test/files';
 
-            mockFs({ './in/fakeWatermark/filePath': {} });
-            assert.ok(fs.existsSync(inDirectory));
+            // mockFs({ './test/files': {} });
+            // assert.ok(fs.existsSync(inDirectory));
 
-            nock('https://example.com')
-                .get('/photo/elephant.png')
-                .reply(200, 'ok');
+            // nock('https://example.com')
+            //     .get('/photo/elephant.png')
+            //     .reply(200, 'ok');
 
-            const watermark = await getWatermark(params, inDirectory);
+            // const watermark = await getWatermark(params, inDirectory);
 
-            assert.equal(watermark.name, 'watermark.png');
-            assert.equal(watermark.path, 'in/fakeWatermark/filePath/watermark.png');
-            assert.ok(nock.isDone());
+            // assert.equal(watermark.name, 'watermark.png');
+            // assert.equal(watermark.path, 'test/files/watermark.png');
+            // assert.ok(nock.isDone());
+
+            const fs = require('fs-extra');
+            const fileType = require('file-type');
+            const gm = require('gm').subClass({ imageMagick: true });
+
+            const watermark = "/Users/dhendric/working/ADOBE/asset-compute-sdk/test/files/watermark.png"
+            if (fs.pathExistsSync(watermark)) {
+                console.log("File exists")
+            }
+            console.log("IDENTIFY", gm(watermark).identify())
+
+            gm(watermark).identify(function (err, value) {
+                // note : value may be undefined
+                console.log("VALUE",value)
+            })
+
+            const assetType = await fileType.fromFile(watermark);
+            console.log("FFFFF", assetType)
         });
 
         it('should download data uri and return new watermark object', async () => {
