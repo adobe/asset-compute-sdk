@@ -174,7 +174,7 @@ describe('validate.js', () => {
     it('throws if watermark is an invalid data uri', () => {
         const expectedError = {
             name: "RenditionFormatUnsupportedError",
-            message: "Invalid or missing data url data:"
+            message: "Invalid or missing data url for watermark data:"
         }
         const paramsToValidate = {
             watermarkContent: "data:"
