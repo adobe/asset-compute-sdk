@@ -518,7 +518,6 @@ describe('validate.js', () => {
         const params = { watermarkContent: "watermark.png" };
 
         validateWatermark(params);
-        console.log("RESULT:", params)
         assert.equal(typeof params, "object");
         assert.equal(params.watermarkContent, "watermark.png");
     });
