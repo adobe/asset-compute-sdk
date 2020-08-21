@@ -11,7 +11,7 @@
     "url": "adobe/asset-compute-sdk"
   },
   "dependencies": {
-    "@adobe/asset-compute-commons": "^1.1.1",
+    "@adobe/asset-compute-commons": "^1.1.2",
     "@adobe/asset-compute-image-processing": "https://github.com/adobe/asset-compute-image-processing.git",
     "@adobe/cgroup-metrics": "^3.0.1",
     "@adobe/httptransfer": "^1.0.1",
