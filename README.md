@@ -127,9 +127,9 @@ Object containing the following attributes:
 | `name` | `string` | filename of the rendition to create |
 | `path` | `string` | Absolute path to store rendition locally (must put rendition here in order to be uploaded to cloud storage) |
 | `index` | `number` | number used to identify a rendition |
-| `watermark` | `string` | See [watermark](#watermark)
+| `watermark` | `object` | See [watermark](#watermark)
 
-##### **`watermark`**
+###### **`watermark`**
 Object containing the following attributes:
 
 | Name | Type | Description |
