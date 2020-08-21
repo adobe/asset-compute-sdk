@@ -173,7 +173,7 @@ describe('validate.js', () => {
 
     it('throws if watermark is an invalid data uri', () => {
         const expectedError = {
-            name: "SourceCorruptError",
+            name: "RenditionFormatUnsupportedError",
             message: "Invalid or missing data url data:"
         }
         const paramsToValidate = {
@@ -318,7 +318,7 @@ describe('validate.js', () => {
 
     it('throws if watermark is not a valid url', () => {
         const expectedError = {
-            name: "SourceUnsupportedError"
+            name: "RenditionFormatUnsupportedError"
         };
 
         for (const invalidUrl of INVALID_URLS) {
@@ -354,7 +354,7 @@ describe('validate.js', () => {
     it('throws if watermark is an http url', () => {
 
         const expectedError = {
-            name: "SourceUnsupportedError"
+            name: "RenditionFormatUnsupportedError"
         };
 
         assert.throws(() => {
