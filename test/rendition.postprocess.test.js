@@ -551,7 +551,7 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[2].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
     });
 
-    it("should post process after shellScriptWorker()", async () => {
+    it("should post process after shellScriptWorker(), json postProcess is boolean", async () => {
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
@@ -559,6 +559,49 @@ describe("imagePostProcess", () => {
         const script = `
         echo -n $source > $rendition
         echo '{ "postProcess": true }' > $optionsfile
+        `;
+        await fs.writeFile("worker.sh", script);
+
+        const main = shellScriptWorker();
+
+        const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
+        const params = {
+            source: `data:image/png;base64,${base64PngFile}`,
+            renditions: [{
+                fmt: "jpg",
+                target: "https://example.com/MyRendition.jpeg"
+            }],
+            requestId: "test-request-id",
+            auth: testUtil.PARAMS_AUTH,
+            newRelicEventsURL: MetricsTestHelper.MOCK_URL,
+            newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
+        };
+
+        const result = await main(params);
+
+        // validate no errors
+        assert.ok(result.renditionErrors === undefined);
+
+        const uploadedFileBase64 = Buffer.from(uploadedRenditions["/MyRendition.jpeg"]).toString('base64');
+        assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64);
+
+        assert.equal(events.length, 1);
+        assert.equal(events[0].type, "rendition_created");
+        assert.equal(events[0].rendition.fmt, "jpg");
+
+        await MetricsTestHelper.metricsDone();
+        assert.equal(receivedMetrics.length, 2);
+        await fs.remove("worker.sh");
+    });
+
+    it("should post process after shellScriptWorker(), json postProcess is string", async () => {
+        const receivedMetrics = MetricsTestHelper.mockNewRelic();
+        const events = testUtil.mockIOEvents();
+        const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
+
+        const script = `
+        echo -n $source > $rendition
+        echo '{ "postProcess": "true" }' > $optionsfile
         `;
         await fs.writeFile("worker.sh", script);
 
@@ -602,7 +645,6 @@ describe("imagePostProcess", () => {
         const script = `
         echo -n $source > $rendition
         echo 'hello world' > $optionsfile
-        exit 0
         `;
         await fs.writeFile("worker.sh", script);
 
