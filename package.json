@@ -70,7 +70,6 @@
     "beautify": "eslint ./ --fix",
     "unit-test": "nyc --reporter=html --reporter=text mocha test --recursive --exit -- -v",
     "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
-    "semantic-release": "semantic-release",
-    "clean-macos-hidden-files": "find . -name '.DS_Store' -type f -delete"
+    "semantic-release": "semantic-release"
   }
 }
