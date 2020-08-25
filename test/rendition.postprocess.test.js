@@ -591,7 +591,6 @@ describe("imagePostProcess", () => {
 
         await MetricsTestHelper.metricsDone();
         assert.equal(receivedMetrics.length, 2);
-        await fs.remove("worker.sh");
     });
 
     it("should post process after shellScriptWorker(), json postProcess is string", async () => {
@@ -634,7 +633,6 @@ describe("imagePostProcess", () => {
 
         await MetricsTestHelper.metricsDone();
         assert.equal(receivedMetrics.length, 2);
-        await fs.remove("worker.sh");
     });
 
     it("should not post process after shellScriptWorker(), options.json is not formatted correctly", async () => {
@@ -678,6 +676,5 @@ describe("imagePostProcess", () => {
 
         await MetricsTestHelper.metricsDone();
         assert.equal(receivedMetrics.length, 2);
-        await fs.remove("worker.sh");
     });
 });
