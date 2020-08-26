@@ -16,7 +16,7 @@
 'use strict';
 
 const mockRequire = require("mock-require");
-const { MetricsTestHelper, GenericError } = mockRequire.reRequire("@adobe/asset-compute-commons");
+const { MetricsTestHelper } = mockRequire.reRequire("@adobe/asset-compute-commons");
 const assert = require('assert');
 const mockFs = require('mock-fs');
 const fs = require('fs-extra');
