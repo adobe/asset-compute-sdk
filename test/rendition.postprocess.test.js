@@ -31,7 +31,7 @@ const BASE64_RENDITION_TIFF = "NGQ0ZDAwMmEwMDAwMDBmODAxMTYzM2ZmMDExNjMzZmYwMjE1M
 
 
 
-describe.skip("imagePostProcess(--> could be redundant as we have tests in test-worker)", () => {
+describe.skip("imagePostProcess(--> could be redundant as we have tests in test-worker. these tests need ASSET_COMPUTE_NO_METADATA_IN_IMG & img.strip)", () => {
     beforeEach(function () {
         process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS = true;
         process.env.DISABLE_ACTION_TIMEOUT_METRIC = true;
