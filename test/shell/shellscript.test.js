@@ -14,11 +14,11 @@
 
 'use strict';
 
-const { shellScriptWorker } = require('../lib/api');
-const ShellScriptWorker = require("../lib/shell/shellscript");
+const { shellScriptWorker } = require('../../lib/api');
+const ShellScriptWorker = require("../../lib/shell/shellscript");
 const { ClientError } = require('@adobe/asset-compute-commons');
 
-const testUtil = require('./testutil');
+const testUtil = require('../testutil');
 const assert = require('assert');
 const mockFs = require('mock-fs');
 const fs = require('fs');
