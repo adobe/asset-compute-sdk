@@ -105,9 +105,9 @@ describe("imagePostProcess", () => {
         assert.equal(events[0].metadata["tiff:imageWidth"], 10);
         assert.equal(events[0].metadata["tiff:imageHeight"], 6);
         assert.equal(events[0].metadata["dc:format"], "image/jpeg");
-        
+
         const uploadedFileBase64 = Buffer.from(uploadedRenditions["/MyRendition.jpeg"]).toString('base64');
-        
+
         assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64);
 
         // check metrics
@@ -247,7 +247,7 @@ describe("imagePostProcess", () => {
             assert.equal(typeof source, "object");
             assert.ok(Array.isArray(renditions));
             assert.equal(typeof outDirectory, "string");
-            
+
             for (const rendition of renditions) {
                 await fs.copyFile(source.path, rendition.path);
                 rendition.postProcess = true;
@@ -274,7 +274,6 @@ describe("imagePostProcess", () => {
             newRelicEventsURL: MetricsTestHelper.MOCK_URL,
             newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
         };
-        process.env.ASSET_COMPUTE_NO_METADATA_IN_IMG = true;
         const result = await main(params);
 
         // validate errors
@@ -292,10 +291,10 @@ describe("imagePostProcess", () => {
         const uploadedFileBase64_jpg = Buffer.from(uploadedRenditions["/MyRendition2.jpeg"]).toString('base64');
         const uploadedFileBase64_tiff = Buffer.from(uploadedRenditions["/MyRendition3.tiff"]).toString('base64');
         assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64_jpg);
-        assert.ok(BASE64_RENDITION_PNG  === uploadedFileBase64_png);        
+        assert.ok(BASE64_RENDITION_PNG  === uploadedFileBase64_png);
         assert.ok(BASE64_RENDITION_TIFF  === uploadedFileBase64_tiff);
     });
-    
+
     it('should fail rendition only for failed post processing but success for others - multiple rendition', async () => {
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
@@ -411,7 +410,7 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[3].postProcessingDuration, receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration
                             + receivedMetrics[2].postProcessingDuration);
     });
-    
+
     it('should generate rendition if only one post processing ineligible rendition', async () => {
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
@@ -445,7 +444,7 @@ describe("imagePostProcess", () => {
         assert.equal(events.length, 1);
         assert.equal(events[0].type, "rendition_created");
         assert.equal(events[0].rendition.fmt, "pdf");
-        
+
         // check metrics
         await MetricsTestHelper.metricsDone();
         assert.equal(receivedMetrics[0].eventType, "rendition");
@@ -488,7 +487,7 @@ describe("imagePostProcess", () => {
         assert.equal(events.length, 1);
         assert.equal(events[0].type, "rendition_created");
         assert.equal(events[0].rendition.fmt, "jpg");
-        
+
         // check metrics
         await MetricsTestHelper.metricsDone();
         assert.equal(receivedMetrics[0].eventType, "rendition");
@@ -529,7 +528,7 @@ describe("imagePostProcess", () => {
         const result = await main(params);
 
         // validate errors
-        
+
         assert.ok(result.renditionErrors === undefined);
 
         assert.equal(events.length, 2);
@@ -537,7 +536,7 @@ describe("imagePostProcess", () => {
         assert.equal(events[0].rendition.fmt, "pdf");
         assert.equal(events[1].type, "rendition_created");
         assert.equal(events[1].rendition.fmt, "pdf");
-        
+
         // check metrics
         await MetricsTestHelper.metricsDone();
         assert.equal(receivedMetrics.length, 3);
