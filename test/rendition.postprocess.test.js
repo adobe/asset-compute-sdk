@@ -16,7 +16,7 @@
 'use strict';
 
 const mockRequire = require("mock-require");
-const { MetricsTestHelper } = mockRequire.reRequire("@adobe/asset-compute-commons");
+const { MetricsTestHelper, GenericError } = mockRequire.reRequire("@adobe/asset-compute-commons");
 const assert = require('assert');
 const mockFs = require('mock-fs');
 const fs = require('fs-extra');
@@ -32,7 +32,7 @@ const BASE64_RENDITION_TIFF = "NGQ0ZDAwMmEwMDAwMDBmODAxMTYzM2ZmMDExNjMzZmYwMjE1M
 mockRequire("../lib/postprocessing/image", async function(infile, outfile, instructions) {
     console.log('mocked image post processing', outfile, infile);
     if (instructions.shouldFail) {
-        throw new Error('conversion using image processing lib (imagemagick) failed: Error!, code: 7, signal: null');
+        throw new GenericError('post processing failed');
     }
     else if (instructions.fmt === 'jpg') {
         await fs.copyFile('test/files/generatedFileSmall.jpg',outfile);
@@ -41,7 +41,7 @@ mockRequire("../lib/postprocessing/image", async function(infile, outfile, instr
     } else if (instructions.fmt === 'tiff') {
         await fs.copyFile('test/files/generatedFileSmall.tiff',outfile);
     } else {
-        throw new Error('unknown error');
+        throw new GenericError('unknown error');
     }
 }
 );
@@ -147,7 +147,7 @@ describe("imagePostProcess", () => {
 
         // validate errors
         assert.ok(result.renditionErrors);
-        assert.ok(result.renditionErrors[0].message.includes('conversion using image processing lib (imagemagick) failed'));
+        assert.ok(result.renditionErrors[0].message.includes('post processing failed'));
 
         assert.equal(events.length, 1);
         assert.equal(events[0].type, "rendition_failed");
@@ -331,7 +331,7 @@ describe("imagePostProcess", () => {
 
         // validate errors
         assert.ok(result.renditionErrors);
-        assert.ok(result.renditionErrors[0].message.includes('conversion using image processing lib (imagemagick) failed'));
+        assert.ok(result.renditionErrors[0].message.includes('post processing failed'));
         assert.equal(result.renditionErrors.length, 1);
 
         assert.equal(events.length, 3);
@@ -405,6 +405,8 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[1].eventType, "rendition");
         assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[1].postProcessingDuration, receivedMetrics[1].processingDuration);
+        assert.equal(receivedMetrics[2].eventType, "rendition");
+        assert.equal(receivedMetrics[2].callbackProcessingDuration + receivedMetrics[2].postProcessingDuration, receivedMetrics[2].processingDuration);
         assert.equal(receivedMetrics[3].eventType, "activation");
         assert.equal(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
         assert.equal(receivedMetrics[3].postProcessingDuration, receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration
