@@ -28,7 +28,8 @@ describe("image-info.js", function (){
     });
 
     it("returns image information for png file", async function(){
-        const filePath = "test/files/file.png";
+        console.log('__dirname--->',__dirname);
+        const filePath = "./test/files/file.png";
         const result = ImageInfo.getImageInfoFromFile(filePath);
         assert.equal(result.width, 512);
         assert.equal(result.height, 288);
@@ -36,7 +37,7 @@ describe("image-info.js", function (){
     });
 
     it("returns image information for svg file", async function(){
-        const filePath = "test/files/negative/file.svg";
+        const filePath = "./test/files/negative/file.svg";
         const result = ImageInfo.getImageInfoFromFile(filePath);
         assert.equal(result.width, 512);
         assert.equal(result.height, 288);
@@ -44,7 +45,7 @@ describe("image-info.js", function (){
     });
 
     it("returns image information for tiff file", async function () {
-        const filePath = "test/files/file.tif";
+        const filePath = "./test/files/file.tif";
         const result = ImageInfo.getImageInfoFromFile(filePath);
         assert.equal(result.width, 512);
         assert.equal(result.height, 288);
@@ -52,7 +53,7 @@ describe("image-info.js", function (){
     });
 
     it("fails to return image information for nonexistent file", async function () {
-        const filePath = "test/files/NoSuchFile.tif";
+        const filePath = "./test/files/NoSuchFile.tif";
         let errThrown = false;
         try {
             ImageInfo.getImageInfoFromFile(filePath);
@@ -63,7 +64,7 @@ describe("image-info.js", function (){
     });
 
     it("fails to return image information for non-image", async function () {
-        const filePath = "test/files/file.txt";
+        const filePath = "./test/files/file.txt";
         let errThrown = false;
         try {
             ImageInfo.getImageInfoFromFile(filePath);
@@ -74,8 +75,8 @@ describe("image-info.js", function (){
     });
 
     it("return image information for jpeg image from url", async function () {
-        const fstat = await fs.stat('test/files/file.jpg');
-        const data = await readChunk('test/files/file.jpg', 0, fstat.size);
+        const fstat = await fs.stat('./test/files/file.jpg');
+        const data = await readChunk('./test/files/file.jpg', 0, fstat.size);
         const url = 'https://example.com/file.jpg';
         nock('https://example.com')
             .get('/file.jpg')
@@ -89,7 +90,7 @@ describe("image-info.js", function (){
     });
 
     it("return image information for jpeg image from url with orientation", async function () {
-        const data = await readChunk('test/files/fOrientation5.jpg', 0, bytesToRead);
+        const data = await readChunk('./test/files/fOrientation5.jpg', 0, bytesToRead);
         const url = 'https://example.com/fOrientation5.jpg';
         nock('https://example.com')
             .get('/fOrientation5.jpg')
@@ -103,7 +104,7 @@ describe("image-info.js", function (){
     });
 
     it("return image information for gif image from url", async function () {
-        const data = await readChunk('test/files/file.gif', 0, bytesToRead);
+        const data = await readChunk('./test/files/file.gif', 0, bytesToRead);
         const url = 'https://example.com/file.gif';
         nock('https://example.com')
             .get('/file.gif')
@@ -116,7 +117,7 @@ describe("image-info.js", function (){
     });
 
     it("return image information for bmp image from url", async function () {
-        const data = await readChunk('test/files/file.bmp', 0, bytesToRead);
+        const data = await readChunk('./test/files/file.bmp', 0, bytesToRead);
         const url = 'https://example.com/file.bmp';
         nock('https://example.com')
             .get('/file.bmp')
@@ -129,7 +130,7 @@ describe("image-info.js", function (){
     });
 
     it("return image information for small png image from url", async function () {
-        const data = await readChunk('test/files/fileSmall.png', 0, bytesToRead);
+        const data = await readChunk('./test/files/fileSmall.png', 0, bytesToRead);
         const url = 'https://example.com/fileSmall.png';
         nock('https://example.com')
             .get('/fileSmall.png')
@@ -143,7 +144,7 @@ describe("image-info.js", function (){
 
 
     it("image information for tiff image from url throws", async function () {
-        const data = await readChunk('test/files/file.tif', 0, bytesToRead);
+        const data = await readChunk('./test/files/file.tif', 0, bytesToRead);
         const url = 'https://example.com/file.tif';
         nock('https://example.com')
             .get('/file.tif')
@@ -159,7 +160,7 @@ describe("image-info.js", function (){
     });
 
     it("gracefully handles not being able to get data from the image url", async function () {
-        const data = await readChunk('test/files/fileSmall.png', 0, bytesToRead);
+        const data = await readChunk('./test/files/fileSmall.png', 0, bytesToRead);
         const url = 'https://example.com/fileSmall.png';
         nock('https://example.com')
             .get('/fileSmall.png')
