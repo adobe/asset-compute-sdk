@@ -28,7 +28,6 @@ describe("image-info.js", function (){
     });
 
     it("returns image information for png file", async function(){
-        console.log('__dirname--->',__dirname);
         const filePath = "./test/files/file.png";
         const result = ImageInfo.getImageInfoFromFile(filePath);
         assert.equal(result.width, 512);
