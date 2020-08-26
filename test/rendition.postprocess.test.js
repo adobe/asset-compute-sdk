@@ -32,7 +32,7 @@ const BASE64_RENDITION_TIFF = "NGQ0ZDAwMmEwMDAwMDBmODAxMTYzM2ZmMDExNjMzZmYwMjE1M
 mockRequire("../lib/postprocessing/image", async function(infile, outfile, instructions) {
     console.log('mocked image post processing', outfile, infile);
     if (instructions.shouldFail) {
-        throw new GenericError('post processing failed');
+        throw new Error('mocked failure');
     }
     else if (instructions.fmt === 'jpg') {
         await fs.copyFile('test/files/generatedFileSmall.jpg',outfile);
@@ -41,7 +41,7 @@ mockRequire("../lib/postprocessing/image", async function(infile, outfile, instr
     } else if (instructions.fmt === 'tiff') {
         await fs.copyFile('test/files/generatedFileSmall.tiff',outfile);
     } else {
-        throw new GenericError('unknown error');
+        throw new Error('unknown error');
     }
 }
 );
@@ -147,7 +147,7 @@ describe("imagePostProcess", () => {
 
         // validate errors
         assert.ok(result.renditionErrors);
-        assert.ok(result.renditionErrors[0].message.includes('post processing failed'));
+        assert.ok(result.renditionErrors[0].message.includes('Post-processing of image rendition failed'));
 
         assert.equal(events.length, 1);
         assert.equal(events[0].type, "rendition_failed");
@@ -331,7 +331,8 @@ describe("imagePostProcess", () => {
 
         // validate errors
         assert.ok(result.renditionErrors);
-        assert.ok(result.renditionErrors[0].message.includes('post processing failed'));
+        console.log(result.renditionErrors[0].message);
+        assert.ok(result.renditionErrors[0].message.includes('Post-processing of image rendition failed'));
         assert.equal(result.renditionErrors.length, 1);
 
         assert.equal(events.length, 3);
