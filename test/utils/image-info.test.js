@@ -22,7 +22,7 @@ const readChunk = require('read-chunk');
 const ImageInfo = require('../../lib/utils/image-info.js');
 const bytesToRead = 10000;
 
-describe("image-info.js", function (){
+describe.skip("image-info.js", function (){
     afterEach(() => {
         nock.cleanAll();
     });

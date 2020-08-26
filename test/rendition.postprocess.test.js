@@ -464,7 +464,7 @@ describe("imagePostProcess negative tests", () => {
         mockRequire("../lib/postprocessing/image", async function(infile, outfile, instructions) {
             console.log('mocked image post processing', outfile, infile);
             if (instructions.shouldFail) {
-                throw new Error('conversion using image processing lib (imagemagick) failed: Error!, code: 7, signal: null');
+                throw new Error('mocked failure');
             }
             else if (instructions.fmt === 'jpg') {
                 await fs.copyFile('test/files/generatedFileSmall.jpg',outfile);
@@ -477,8 +477,8 @@ describe("imagePostProcess negative tests", () => {
             }
         }
         );
-      mockRequire.reRequire('../lib/worker'); // '../lib/postprocessing/image.js' is a dependency of lib/worker.js so it must be reloaded
-      mockRequire.reRequire('../lib/shell/shellscript');
+        mockRequire.reRequire('../lib/worker'); // '../lib/postprocessing/image.js' is a dependency of lib/worker.js so it must be reloaded
+        mockRequire.reRequire('../lib/shell/shellscript');
     });
 
     after(() => {
@@ -565,7 +565,7 @@ describe("imagePostProcess negative tests", () => {
 
         // validate errors
         assert.ok(result.renditionErrors);
-        assert.ok(result.renditionErrors[0].message.includes('conversion using image processing lib (imagemagick) failed'));
+        assert.ok(result.renditionErrors[0].message.includes('Post-processing of image rendition failed'));
 
         assert.equal(events.length, 1);
         assert.equal(events[0].type, "rendition_failed");
@@ -616,7 +616,7 @@ describe("imagePostProcess negative tests", () => {
 
         // validate errors
         assert.ok(result.renditionErrors);
-        assert.ok(result.renditionErrors[0].message.includes('conversion using image processing lib (imagemagick) failed'));
+        assert.ok(result.renditionErrors[0].message.includes('Post-processing of image rendition failed'));
         assert.equal(result.renditionErrors.length, 1);
 
         assert.equal(events.length, 3);
@@ -641,6 +641,7 @@ describe("imagePostProcess negative tests", () => {
     });
 
     it("should post process after shellScriptWorker(), json postProcess is boolean", async () => {
+        const { shellScriptWorker } = mockRequire.reRequire('../lib/api');
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
@@ -683,6 +684,7 @@ describe("imagePostProcess negative tests", () => {
     });
 
     it("should post process after shellScriptWorker(), json postProcess is string", async () => {
+        const { shellScriptWorker } = mockRequire.reRequire('../lib/api');
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
@@ -725,6 +727,7 @@ describe("imagePostProcess negative tests", () => {
     });
 
     it("should not post process after shellScriptWorker(), options.json is not formatted correctly", async () => {
+        const { shellScriptWorker } = mockRequire.reRequire('../lib/api');
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
