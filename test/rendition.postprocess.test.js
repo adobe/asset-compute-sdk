@@ -88,9 +88,9 @@ describe.skip("imagePostProcess(--> could be redundant as we have tests in test-
         assert.equal(events[0].metadata["tiff:imageWidth"], 10);
         assert.equal(events[0].metadata["tiff:imageHeight"], 6);
         assert.equal(events[0].metadata["dc:format"], "image/jpeg");
-        
+
         const uploadedFileBase64 = Buffer.from(uploadedRenditions["/MyRendition.jpeg"]).toString('base64');
-        
+
         assert.ok(BASE64_RENDITION_JPG  === uploadedFileBase64);
 
         // check metrics
@@ -271,7 +271,6 @@ describe.skip("imagePostProcess(--> could be redundant as we have tests in test-
             newRelicEventsURL: MetricsTestHelper.MOCK_URL,
             newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
         };
-
         const result = await main(params);
 
         // validate errors
@@ -341,6 +340,7 @@ describe.skip("imagePostProcess(--> could be redundant as we have tests in test-
         assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
         assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
     });
+
     it('should generate rendition if only one post processing eligible rendition', async () => {
         const { batchWorker } = require('../lib/api');
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
@@ -385,7 +385,8 @@ describe.skip("imagePostProcess(--> could be redundant as we have tests in test-
         assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
         assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
     });
-    it('should generate rendition when all rendition are post processing ineligible', async () => {
+
+  it('should generate rendition when all rendition are post processing ineligible', async () => {
         const { batchWorker } = require('../lib/api');
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
