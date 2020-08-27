@@ -13,11 +13,11 @@
 # exit when any command fails
 set -e
 
-# check for equal dpi
-imgDpiExpected=$(identify -format "%x x %y" "$1")
-imgDpiActual=$(identify -format "%x x %y" "$2")
-if [[ "$imgDpiActual" != "$imgDpiExpected" ]]; then
-    echo "dpi not equal: $imgDpiActual instead of expected $imgDpiExpected"
+# check orientation flag is same (or removed)
+expected=$(identify -format "%[orientation]" "$1")
+actual=$(identify -format "%[orientation]" "$2")
+if [[ "$actual" != "$expected" ]]; then
+    echo "orientation not equal: $actual instead of expected $expected"
     exit 4
 fi
 

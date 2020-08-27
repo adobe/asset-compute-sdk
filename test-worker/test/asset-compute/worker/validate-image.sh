@@ -13,6 +13,9 @@
 # exit when any command fails
 set -e
 
+# echo all commands for verbose logs
+set -x
+
 # check for equal type
 mimeTypeExpected=$(file -b --mime-type $1)
 mimeTypeActual=$(file -b --mime-type $2)

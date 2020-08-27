@@ -13,9 +13,6 @@
 # exit when any command fails
 set -e
 
-# reuse basic image validation
-"$(dirname $0)/../validate-image.sh" "$1" "$2"
-
 # check for equal interlace
 expected=$(identify -format "%[interlace]" "$1")
 actual=$(identify -format "%[interlace]" "$2")
@@ -23,3 +20,6 @@ if [[ "$actual" != "$expected" ]]; then
     echo "interlace not equal: $actual instead of expected $expected"
     exit 4
 fi
+
+# reuse basic image validation
+"$(dirname $0)/../validate-image.sh" "$1" "$2"
