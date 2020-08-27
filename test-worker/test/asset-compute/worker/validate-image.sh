@@ -10,9 +10,6 @@
 # OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.
 
-# echo all commands for verbose logs
-set -x
-
 # exit when any command fails
 set -e
 
@@ -34,7 +31,19 @@ fi
 
 # check for pixel equality with some slight accepted color value difference
 # will exit with 1 if images differ
-compare -metric AE -fuzz 5% $1 $2 null:
+FUZZ="5%"
+if ! compare -metric AE -fuzz $FUZZ $1 $2 null: ; then
+
+    # generate diff image on error
+    testCase=$(basename $(dirname $1))
+    resultDir=$(dirname $(dirname $2))
+    dir="$resultDir/failed/$testCase"
+    mkdir -p "$dir"
+
+    compare -fuzz $FUZZ "$1" "$2" "$dir/diff.png" || true
+
+    exit 1
+fi
 
 # no newline after compare output
 echo

@@ -10,17 +10,15 @@
 # OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.
 
-# echo all commands for verbose logs
-set -x
-
 # exit when any command fails
 set -e
 
-$(dirname $0)/../validate-image.sh $1 $2
+# reuse basic image validation
+"$(dirname $0)/../validate-image.sh" "$1" "$2"
 
 # check for equal dpi
-imgDpiExpected=$(identify -format "%x x %y" $1)
-imgDpiActual=$(identify -format "%x x %y" $2)
+imgDpiExpected=$(identify -format "%x x %y" "$1")
+imgDpiActual=$(identify -format "%x x %y" "$2")
 if [[ "$imgDpiActual" != "$imgDpiExpected" ]]; then
     echo "dpi not equal: $imgDpiActual instead of expected $imgDpiExpected"
     exit 4

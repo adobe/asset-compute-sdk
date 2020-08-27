@@ -10,17 +10,15 @@
 # OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.
 
-# echo all commands for verbose logs
-set -x
-
 # exit when any command fails
 set -e
 
-$(dirname $0)/../validate-image.sh $1 $2
+# reuse basic image validation
+"$(dirname $0)/../validate-image.sh" "$1" "$2"
 
 # check for equal interlace
-expected=$(identify -format "%[interlace]" $1)
-actual=$(identify -format "%[interlace]" $2)
+expected=$(identify -format "%[interlace]" "$1")
+actual=$(identify -format "%[interlace]" "$2")
 if [[ "$actual" != "$expected" ]]; then
     echo "interlace not equal: $actual instead of expected $expected"
     exit 4
