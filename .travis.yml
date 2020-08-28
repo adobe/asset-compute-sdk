@@ -25,7 +25,7 @@ install:
 jobs:
   include:
     - stage: Test
-      script: "npm test -- -v"
+      script: npm test
     - stage: Release
       if: branch = master
       node_js: "12"
