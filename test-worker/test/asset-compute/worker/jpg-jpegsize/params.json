@@ -1,5 +1,5 @@
 {
     "fmt": "jpg",
-    "quality": 50,
+    "qlt": 50,
     "jpegSize": 100000
 }
