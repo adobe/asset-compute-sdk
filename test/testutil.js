@@ -82,7 +82,7 @@ function mockPutFiles(httpUrl) {
         .put(/.*/)
         .optionally()
         .reply(200, (path, requestBody) => {
-            files[path] = requestBody;
+            files[path] = Buffer.from(requestBody, 'hex');
         })
         .persist();
     return files;

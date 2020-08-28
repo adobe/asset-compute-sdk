@@ -15,11 +15,30 @@
 // This is a simple dummy worker used to test the worker
 
 const { worker } = require('../index');
+const gm = require("../lib/postprocessing/gm-promisify");
 
 const fs = require('fs').promises;
 
+process.env.OPENWHISK_NEWRELIC_DISABLE_METRICS = true;
+
 exports.main = worker(async (source, rendition) => {
-    // copy source to rendition to transfer 1:1
-    await fs.copyFile(source.path, rendition.path);
+    // run custom imagemagick convert command to simulate a tool creating an intermediate rendition
+    if (rendition.instructions.imagemagick) {
+        console.log(`[test worker] imagemagick: convert ${source.path} ${rendition.instructions.imagemagick} ${rendition.path}`);
+        const img = gm(source.path);
+        for (const arg of rendition.instructions.imagemagick.split(" ")) {
+            if (arg.length > 0) {
+                img.out(arg);
+            }
+        }
+        await img.write(rendition.path);
+
+    } else {
+        console.log(`[test worker] copying source to rendition: ${source.path} to ${rendition.path}`);
+        // simple case where post processing just runs on the source files for basic tests
+        // copy source to rendition to transfer 1:1
+        await fs.copyFile(source.path, rendition.path);
+    }
+
     rendition.postProcess = true;
 });
