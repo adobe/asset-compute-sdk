@@ -4,6 +4,7 @@ coverage
 coverage.lcov
 .nyc_output
 test/
+test-worker/
 .circleci
 .travis.yml
 Jenkinsfile
