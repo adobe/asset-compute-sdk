@@ -1,5 +1,5 @@
 {
     "imagemagick": "-resize 20x11",
     "width": 20,
-    "height": 11
+    "height": 20
 }
