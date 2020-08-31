@@ -60,6 +60,7 @@ function afterEach() {
     delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
     delete process.env.__OW_ACTION_NAME;
     delete process.env.__OW_DEADLINE;
+    delete process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS;
 }
 
 function nockGetFile(httpUrl) {
@@ -69,9 +70,22 @@ function nockGetFile(httpUrl) {
 
 function nockPutFile(httpUrl, content, status=200) {
     const uri = url.parse(httpUrl);
-    nock(`${uri.protocol}//${uri.host}`)
+    return nock(`${uri.protocol}//${uri.host}`)
         .put(uri.path, content)
         .reply(status);
+}
+
+function mockPutFiles(httpUrl) {
+    const uri = url.parse(httpUrl);
+    const files = {};
+    nock(`${uri.protocol}//${uri.host}`)
+        .put(/.*/)
+        .optionally()
+        .reply(200, (path, requestBody) => {
+            files[path] = Buffer.from(requestBody, 'hex');
+        })
+        .persist();
+    return files;
 }
 
 function parseIoEventPayload(event) {
@@ -91,6 +105,20 @@ function nockIOEvent(expectedPayload, status=200) {
                 && (!expectedPayload || lodash.matches(expectedPayload)(payload)));
         })
         .reply(status);
+}
+
+function mockIOEvents() {
+    const ioEvents = [];
+    nock("https://eg-ingress.adobe.io")
+        .post("/api/events", body => {
+            ioEvents.push(parseIoEventPayload(body.event));
+            return true;
+        })
+        .optionally()
+        .reply(200)
+        .persist();
+
+    return ioEvents;
 }
 
 const PARAMS_AUTH = {
@@ -307,9 +335,12 @@ module.exports = {
     simpleParams,
     paramsWithMultipleRenditions,
     nockIOEvent,
+    mockIOEvents,
     assertNockDone,
     assertThrowsAndAwait,
     PARAMS_AUTH,
     assertSimpleParamsMetrics,
-    assertParamsWithMultipleRenditions
+    assertParamsWithMultipleRenditions,
+    nockPutFile,
+    mockPutFiles
 };

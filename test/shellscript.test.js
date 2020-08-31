@@ -415,12 +415,12 @@ describe("api.js (shell)", () => {
                 function process() {
                     echo $@
                 }
-                process --width $rendition_wid $source $rendition
+                process --width $rendition_width $source $rendition
             `);
 
             const params = testUtil.simpleParams({noSourceDownload: true, noPut: true});
             // injection attack on argument (kind of...)
-            params.renditions[0].wid = "; exit 66 #";
+            params.renditions[0].width = "; exit 66 #";
 
             const scriptWorker = new ShellScriptWorker(params);
             await scriptWorker.processWithScript(mockSource(), mockRendition());
@@ -434,7 +434,7 @@ describe("api.js (shell)", () => {
 
             const rendition = {
                 target: "https://example.com/MyRendition.png",
-                wid: 100,
+                width: 100,
                 fmt: "png",
                 foobar: "correct",
                 crop: {
@@ -454,7 +454,7 @@ describe("api.js (shell)", () => {
             assert.equal(env.rendition, `${process.cwd()}/out/rendition0.png`);
             assert.equal(env.typefile, `${process.cwd()}/out/errors/type.txt`);
             assert.equal(env.rendition_target, "https://example.com/MyRendition.png");
-            assert.equal(env.rendition_wid, rendition.wid);
+            assert.equal(env.rendition_width, rendition.width);
             assert.equal(env.rendition_fmt, rendition.fmt);
             assert.equal(env.rendition_foobar, rendition.foobar);
             assert.equal(env.rendition_crop_x, rendition.crop.x);
@@ -472,7 +472,7 @@ describe("api.js (shell)", () => {
             const source = mockSource('\u001B[4msource.jpg\u001B[0m');
             const rendition = {
                 target: 'https://example.com/image.jpg',
-                wid: '\u001B[4mUnicorn\u001B[0m',
+                width: '\u001B[4mUnicorn\u001B[0m',
                 fmt: '\u001B[4mUnicorn\u001B[0m',
                 foobar: '\u001B[4mUnicorn\u001B[0m',
                 crop: {
@@ -490,7 +490,7 @@ describe("api.js (shell)", () => {
             assert.equal(env.typefile, `${process.cwd()}/out/errors/type.txt`);
             assert.equal(env.rendition, `${process.cwd()}/out/rendition0.png`);
             assert.equal(env.rendition_target, "https://example.com/image.jpg");
-            assert.equal(env.rendition_wid, "Unicorn");
+            assert.equal(env.rendition_width, "Unicorn");
             assert.equal(env.rendition_fmt, "Unicorn");
             assert.equal(env.rendition_foobar, "Unicorn");
             assert.equal(env.rendition_crop_x, "Unicorn");
