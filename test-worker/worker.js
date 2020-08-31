@@ -20,6 +20,7 @@ const gm = require("../lib/postprocessing/gm-promisify");
 const fs = require('fs').promises;
 
 process.env.OPENWHISK_NEWRELIC_DISABLE_METRICS = true;
+process.env.SDK_POST_PROCESSING_TEST_MODE = true;
 
 exports.main = worker(async (source, rendition) => {
     // run custom imagemagick convert command to simulate a tool creating an intermediate rendition
