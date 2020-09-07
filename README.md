@@ -19,6 +19,7 @@ This library is required for all custom workers for the Adobe Asset Compute Serv
       - [Parameters](#parameters)
         - [**`source`**](#source)
         - [**`rendition`**](#rendition)
+        - [**`watermark`**](#watermark)
         - [**`params`**](#params)
       - [Examples](#examples-1)
     - [Rendition Callback for `batchWorker` (required)](#rendition-callback-for-batchworker-required)
@@ -130,6 +131,15 @@ Object containing the following attributes:
 | `name` | `string` | filename of the rendition to create |
 | `path` | `string` | Absolute path to store rendition locally (must put rendition here in order to be uploaded to cloud storage) |
 | `index` | `number` | number used to identify a rendition |
+| `watermark` | `object` | See [watermark](#watermark)
+
+###### **`watermark`**
+Object containing the following attributes:
+
+| Name | Type | Description |
+|------|------|-------------|
+| `watermarkContent` | https or data URL of a PNG asset used to watermark the rendition |
+| `widthPercent` | Percent to reduce watermark size in comparison to the rendition size |
 
 ##### **`params`**
 original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://docs.adobe.com/content/help/en/asset-compute/using/api.html#process-request))
