@@ -17,7 +17,7 @@
 
 const assert = require('assert');
 
-const { validateParameters, validateRendition } = require('../lib/validate');
+const { validateParameters, validateRendition, validateWatermark } = require('../lib/validate');
 
 function assertValidateThrows(params, name="GenericError", message) {
     const expectedError = {};
@@ -146,6 +146,15 @@ describe('validate.js', () => {
         assert.equal(paramsToValidate.source.url, "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=");
     });
 
+    it('validates parameters - watermark is a data uri', () => {
+        const paramsToValidate = {
+            watermarkContent: "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo="
+        };
+
+        validateWatermark(paramsToValidate);
+        assert.equal(typeof paramsToValidate, "object");
+        assert.equal(paramsToValidate.watermarkContent, "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=");
+    });
     it('throws if source is an invalid data uri', () => {
         const paramsToValidate = {
             source: "data:",
@@ -159,6 +168,19 @@ describe('validate.js', () => {
             ]
         };
         assertValidateThrows(paramsToValidate, "SourceCorruptError", "Invalid or missing data url data:");
+    });
+    it('throws if watermark is an invalid data uri', () => {
+        const expectedError = {
+            name: "RenditionFormatUnsupportedError",
+            message: "Invalid or missing data url for watermark data:"
+        };
+        const paramsToValidate = {
+            watermarkContent: "data:"
+        };
+
+        assert.throws(() => {
+            validateWatermark(paramsToValidate);
+        }, expectedError);
     });
     it('verifies renditions is an array (1 element)', () => {
         const paramsToValidate = {
@@ -290,6 +312,18 @@ describe('validate.js', () => {
             );
         }
     });
+    it('throws if watermark is not a valid url', () => {
+        const expectedError = {
+            name: "RenditionFormatUnsupportedError"
+        };
+
+        for (const invalidUrl of INVALID_URLS) {
+
+            assert.throws(() => {
+                validateWatermark({ watermarkContent: invalidUrl });
+            }, expectedError);
+        }
+    });
 
     it('throws if source is a http url', () => {
         assertValidateThrows({
@@ -311,6 +345,17 @@ describe('validate.js', () => {
         },
         "SourceUnsupportedError"
         );
+    });
+
+    it('throws if watermark is an http url', () => {
+
+        const expectedError = {
+            name: "RenditionFormatUnsupportedError"
+        };
+
+        assert.throws(() => {
+            validateWatermark({ watermarkContent: "http://example.com/NOT_HTTPS" });
+        }, expectedError);
     });
 
     it('throws if rendition.target or rendition.url is not a valid url', () => {
@@ -464,5 +509,12 @@ describe('validate.js', () => {
         assert.equal(params.source.url, "source.jpg");
         assert.equal(params.renditions.length, 2);
     });
+    it('allows file paths if WORKER_TEST_MODE env var is set - watermark', () => {
+        process.env.WORKER_TEST_MODE = true;
+        const params = { watermarkContent: "watermark.png" };
 
+        validateWatermark(params);
+        assert.equal(typeof params, "object");
+        assert.equal(params.watermarkContent, "watermark.png");
+    });
 });
