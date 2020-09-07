@@ -57,6 +57,7 @@ These are the high-level steps done by the Adobe Asset Compute Worker SDK:
 ### Simple javascript worker
 
 Calls rendition function (renditionCallback) for each rendition
+
 ```js
 const { worker } = require('@adobe/asset-compute-sdk');
 
@@ -70,6 +71,7 @@ await main(params);
 ### Batch processing javascript worker
 
 Calls rendition function once with all the renditions
+
 ```js
 const { batchWorker } = require('@adobe/asset-compute-sdk');
 
@@ -83,6 +85,7 @@ await main(params);
 ### ShellScript worker
 
 Processes renditions using from a worker written in shellscript
+
 ```js
 const { shellScriptWorker } = require('../lib/api');
 
@@ -91,6 +94,7 @@ await main(params);
 ```
 
 Shellscript worker with custom script name
+
 ```js
 const { shellScriptWorker } = require('../lib/api');
 
@@ -147,6 +151,7 @@ _Note: This argument is usually not needed, as a callback should take its inform
 At the bare minimum, the rendition callback function must write something to the `rendition.path`.
 
 Simplest example (copying the source file):
+
 ```js
 async function renditionCallback(source, rendition) => {
     // Check for unsupported file
@@ -182,6 +187,7 @@ directory to put renditions produced in batch workers
 At the bare minimum, the rendition callback function must write something to the `rendition.path`.
 
 Simplest example (copying the source file):
+
 ```js
 async function renditionCallback(source, renditions, outdir, params) => {
     // Check for unsupported file
@@ -198,10 +204,14 @@ async function renditionCallback(source, renditions, outdir, params) => {
 
 ### Worker Options (optional)
 Optional parameters to pass into workers
-- disableSourceDownload: Boolean used to disable the source download (defaults to false).
-- disableRenditionUpload: Boolean used to disable the rendition upload (defaults to false).  WARNING: Use this flag only if no rendition should be uploaded. This will make the worker activation fail since the asset compute SDK expects a rendition output.
+
+- `disableSourceDownload`: Boolean used to disable the source download (defaults to false).
+- `disableRenditionUpload`: Boolean used to disable the rendition upload (defaults to false).
+  
+  WARNING: Use this flag only if no rendition should be uploaded. This will make the worker activation fail since the asset compute SDK expects a rendition output. 
 
 Disable source download example:
+
 ```js
 const { worker } = require('@adobe/asset-compute-sdk');
 
@@ -217,6 +227,7 @@ await main(params);
 ```
 
 Disable rendition upload example:
+
 ```js
 const { worker } = require('@adobe/asset-compute-sdk');
 const options = {
@@ -225,6 +236,40 @@ const options = {
 const main = worker(renditionCallback, options);
 await main(params);
 ```
+
+## Post processing
+
+_Note: this feature is not available for custom workers of the Adobe Asset Compute service_.
+
+Image post processing is available since version `2.4.0` and must be enabled by the worker by setting
+
+```
+rendition.postProcess = true;
+```
+
+in the processing callback.
+
+For shell script workers, they can create a JSON file whose path is given to the script by the env var `optionsfile` and include this in the file:
+
+```json
+{
+    "postProcess": true
+}
+```
+
+### Post processing features
+
+These instructions are supported:
+
+- `fmt` with png, jpg/jpeg, tif/tiff and gif
+- `width` and `height`
+- `quality` for jpeg and gif
+- `interlace` for png
+- `jpegSize` for jpeg
+- `dpi`
+- `convertToDpi`
+- `crop`
+
 
 ## Contribution guidelines
 
