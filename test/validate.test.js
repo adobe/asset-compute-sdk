@@ -146,14 +146,15 @@ describe('validate.js', () => {
         assert.equal(paramsToValidate.source.url, "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=");
     });
 
-    it('validates parameters - watermark is a data uri', () => {
+    it('validates parameters - watermark is a png data uri', () => {
+        const PNG_DATA_URI = "ODk1MDRlNDcwZDBhMWEwYTAwMDAwMDBkNDk0ODQ0NTIwMDAwMDAwYTAwMDAwMDA2MDgwNjAwMDAwMGZhZjAwZmM2MDAwMDAwMDE3MzUyNDc0MjAwYWVjZTF";
         const paramsToValidate = {
-            watermarkContent: "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo="
+            watermarkContent: `data:image/png;base64,${PNG_DATA_URI}`
         };
 
         validateWatermark(paramsToValidate);
         assert.equal(typeof paramsToValidate, "object");
-        assert.equal(paramsToValidate.watermarkContent, "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=");
+        assert.equal(paramsToValidate.watermarkContent, `data:image/png;base64,${PNG_DATA_URI}`);
     });
     it('throws if source is an invalid data uri', () => {
         const paramsToValidate = {
