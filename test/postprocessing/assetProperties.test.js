@@ -17,7 +17,6 @@
 
 const assert = require('assert');
 const fs = require("fs-extra");
-const path = require("path");
 
 const { getDimensions } = require('../../lib/postprocessing/assetProperties');
 

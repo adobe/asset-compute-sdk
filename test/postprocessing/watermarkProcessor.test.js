@@ -258,7 +258,7 @@ describe("watermarkProcessor.js", () => {
                 }
             };
 
-            const assetResized = new WatermarkProcessor(renditionInstructions);
+            const assetResized = new WatermarkProcessor(renditionInstructions, path);
             await assetResized.fitWatermark(destination);
 
             const dimensions = getDimensions(destination);
@@ -336,7 +336,7 @@ describe("watermarkProcessor.js", () => {
             try {
                 await assetResized.fitWatermark("./testXXXXX/files/watermark.png");
             } catch (err) {
-console.log("ERR", err)
+                console.log("ERR", err);
 
             }
 
