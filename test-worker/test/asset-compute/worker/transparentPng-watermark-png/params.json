@@ -1,9 +1,8 @@
 {
 	"fmt": "png",
     "watermark": {
-        "name": "watermark",
-        "watermarkContent": "watermark.png",
-        "widthPercent": 72
+        "image": "watermark.png",
+        "scale": 0.72
     },
     "width": 128,
     "height": 72
