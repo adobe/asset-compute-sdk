@@ -296,18 +296,25 @@ describe('storage.js', () => {
 
         afterEach(() => {
             delete process.env.WORKER_BASE_DIRECTORY;
+            mockFs.restore();
         });
 
         it('should download simple png and return a new watermark object', async () => {
-            const inDirectory = './test/files';
+            const inDirectory = './in/fakeWatermark/filePath';
             const params = {
                 watermarkContent: 'https://example.com/photo/elephant.png'
             };
+            mockFs({ './in/fakeWatermark/filePath': {} });
 
-            const watermark = await getWatermark(params, inDirectory, true);
+            nock('https://example.com')
+                .get('/photo/elephant.png')
+                .reply(200, 'ok');
 
-            assert.equal(watermark.name, 'watermark.png');
-            assert.equal(watermark.path, 'test/files/watermark.png');
+            const watermark = await getWatermark(params, inDirectory);
+
+            assert.equal(watermark.name, 'watermark.png', watermark.name);
+            assert.equal(watermark.path, 'in/fakeWatermark/filePath/watermark.png', watermark.path);
+            assert.ok(nock.isDone());
         });
 
         it('should download data uri and return new watermark object', async () => {
