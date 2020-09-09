@@ -15,7 +15,7 @@
 
 'use strict';
 
-const {getSource, putRendition, getWatermark} = require('../lib/storage');
+const {getSource, putRendition } = require('../lib/storage');
 const mockFs = require('mock-fs');
 const nock = require('nock');
 const assert = require('assert');
@@ -304,7 +304,7 @@ describe('storage.js', () => {
                 watermarkContent: 'https://example.com/photo/elephant.png'
             };
 
-            const watermark = await getWatermark(params, inDirectory, true);
+            const watermark = await getSource(params, inDirectory, true, 'watermark');
 
             assert.equal(watermark.name, 'watermark.png');
             assert.equal(watermark.path, 'test/files/watermark.png');
@@ -319,7 +319,7 @@ describe('storage.js', () => {
             const workDirectory = path.join(process.env.WORKER_BASE_DIRECTORY, 'valid-data-uri');
             await fs.mkdirs(workDirectory, { recursive: true });
 
-            const watermark = await getWatermark(instructions, workDirectory);
+            const watermark = await getSource(instructions, workDirectory, false, 'watermark');
 
             assert.ok(watermark);
 
@@ -349,7 +349,7 @@ describe('storage.js', () => {
 
             let threw = false;
             try {
-                await getWatermark(params, inDirectory);
+                await getSource(params, inDirectory, false, 'watermark');
             } catch (e) {
                 console.log(e);
                 assert.ok(e instanceof GenericError);
@@ -362,7 +362,7 @@ describe('storage.js', () => {
         it('should fail because watermark asset is not png', async () => {
             let threw = false;
             try {
-                await getWatermark({ watermarkContent: "https://example.com/photo/elephant.jpg" });
+                await getSource({ watermarkContent: "https://example.com/photo/elephant.jpg" }, './', false, 'watermark');
             } catch (e) {
                 assert.equal(e.reason, 'RenditionFormatUnsupported');
                 assert.equal(e.message, 'Invalid watermark format https://example.com/photo/elephant.jpg');

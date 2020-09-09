@@ -16,24 +16,26 @@
 'use strict';
 
 const assert = require('assert');
-const Watermark = require('../lib/watermark');
+const Source = require('../lib/source');
 
 describe("watermark.js", () => {
 
     it('verifies name with watermark a url', function() {
         const watermark = { };
         watermark.watermarkContent = 'https://server.name/file.jpg?queryPortion';
-        assert.strictEqual(new Watermark(watermark).name, `watermark.jpg`);
+        assert.strictEqual(new Source(watermark, './', "watermark").name, `watermark.jpg`);
         watermark.watermarkContent = 'http://server.name/directory/file%20.png?query';
-        assert.strictEqual(new Watermark(watermark).name, `watermark.png`);
+        assert.strictEqual(new Source(watermark, './', "watermark").name, `watermark.png`);
         watermark.watermarkContent = 'http://server.name/directory/file%20.png?';
-        assert.strictEqual(new Watermark(watermark).name, `watermark.png`);
+        assert.strictEqual(new Source(watermark, './', "watermark").name, `watermark.png`);
         watermark.watermarkContent = 'xxx://server.name/directory/file.png?query';
-        assert.strictEqual(new Watermark(watermark).name, `watermark.png`);
-        assert.strictEqual(new Watermark("NotAUrl").name, 'watermark');
-        assert.strictEqual(new Watermark("").name, 'watermark');
+        assert.strictEqual(new Source(watermark, './', "watermark").name, `watermark.png`);
+        watermark.watermarkContent = 'NotAUrl';
+        assert.strictEqual(new Source(watermark, './', "watermark").name, 'watermark');
+        watermark.watermarkContent = '';
+        assert.strictEqual(new Source(watermark, './', "watermark").name, 'watermark');
     });
     it('verifies name with empty watermark object', function() {
-        assert.strictEqual(new Watermark({}).name, 'watermark');
+        assert.strictEqual(new Source({}, './', "watermark").name, 'watermark');
     });
 });
