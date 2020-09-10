@@ -108,8 +108,8 @@ describe("math.js", function () {
         assert.equal(scaledDimensions.height, 0);
 
         scaledDimensions = dimensions.scale();
-        assert.equal(scaledDimensions.width, undefined);
-        assert.equal(scaledDimensions.height, undefined);
+        assert.ok(Number.isNaN(scaledDimensions.width));
+        assert.ok(Number.isNaN(scaledDimensions.height));
     });
 
     it("scales properly when one of more of the dimensions are not defined", () => {
@@ -119,23 +119,23 @@ describe("math.js", function () {
 
         let scaledDimensions = dimensions.scale(1.0);
         assert.equal(scaledDimensions.width, 100);
-        assert.equal(scaledDimensions.height, undefined);
+        assert.ok(Number.isNaN(scaledDimensions.height));
 
         scaledDimensions = dimensions.scale(0.0);
         assert.equal(scaledDimensions.width, 0);
-        assert.equal(scaledDimensions.height, undefined);
+        assert.ok(Number.isNaN(scaledDimensions.height));
 
         dimensions = new Dimensions();
         assert.equal(dimensions.width, undefined);
         assert.equal(dimensions.height, undefined);
 
         scaledDimensions = dimensions.scale(1.0);
-        assert.equal(scaledDimensions.width, undefined);
-        assert.equal(scaledDimensions.height, undefined);
+        assert.ok(Number.isNaN(scaledDimensions.width));
+        assert.ok(Number.isNaN(scaledDimensions.height));
 
         scaledDimensions = dimensions.scale(0.0);
-        assert.equal(scaledDimensions.width, undefined);
-        assert.equal(scaledDimensions.height, undefined);
+        assert.ok(Number.isNaN(scaledDimensions.width));
+        assert.ok(Number.isNaN(scaledDimensions.height));
 
     });
 
@@ -267,21 +267,21 @@ describe("math.js", function () {
         let dimensions = new Dimensions(100);
         let boundingBox = new Dimensions(50, 50);
         let fitDimensions = dimensions.fitBoundingBox(boundingBox);
-        assert.equal(fitDimensions.width, undefined);
-        assert.equal(fitDimensions.height, undefined);
+        assert.ok(Number.isNaN(fitDimensions.width));
+        assert.ok(Number.isNaN(fitDimensions.height));
 
         // missing width
         dimensions = new Dimensions(undefined, 200);
         boundingBox = new Dimensions(50, 50);
         fitDimensions = dimensions.fitBoundingBox(boundingBox);
-        assert.equal(fitDimensions.width, undefined);
-        assert.equal(fitDimensions.height, undefined);
+        assert.ok(Number.isNaN(fitDimensions.width));
+        assert.ok(Number.isNaN(fitDimensions.height));
 
         // missing both
         dimensions = new Dimensions();
         boundingBox = new Dimensions(50, 50);
         fitDimensions = dimensions.fitBoundingBox(boundingBox);
-        assert.equal(fitDimensions.width, undefined);
-        assert.equal(fitDimensions.height, undefined);
+        assert.ok(Number.isNaN(fitDimensions.width));
+        assert.ok(Number.isNaN(fitDimensions.height));
     });
 });
