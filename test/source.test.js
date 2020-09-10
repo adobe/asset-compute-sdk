@@ -21,37 +21,37 @@ const Source = require('../lib/source');
 describe("source.js", () => {
     it('verifies name and path with source as string and with no directory', function() {
         const sourceName = 'test-source.png';
-        const source = new Source(sourceName);
+        const source = new Source({}, undefined, sourceName);
         assert.strictEqual(source.name, 'test-source.png');
         assert.strictEqual(source.path, 'test-source.png');
     });
 
     it('verifies name and path with source as string and with a directory with trailing slash', function () {
         const sourceName = 'test-source.png';
-        const source = new Source(sourceName, "/");
+        const source = new Source({}, "/", sourceName);
         assert.strictEqual(source.name, 'test-source.png');
         assert.strictEqual(source.path, '/test-source.png');
     });
 
     it('verifies name and path with source as string and with a directory with no trailing slash', function () {
         const sourceName = 'test-source.png';
-        const source = new Source(sourceName, "/tmp");
+        const source = new Source({}, "/tmp", sourceName);
         assert.strictEqual(source.name, 'test-source.png');
         assert.strictEqual(source.path, '/tmp/test-source.png');
     });
 
     it('verifies name and path with source as empty string', function () {
         const sourceName = '';
-        const source = new Source(sourceName);
+        const source = new Source({}, undefined, sourceName);
         assert.strictEqual(source.name, '');
     });
     it('verifies name with source as an object', function() {
         const source = {};
-        assert.strictEqual(new Source(source).name, 'source');
+        assert.strictEqual(new Source(source, undefined, 'source').name, 'source');
         source.name = 'abcdz-AZ1234567890.jpg';
-        assert.strictEqual(new Source(source).name, `source.jpg`);
-        source.name =  `  %789.PSD`;
-        assert.strictEqual(new Source(source).name, `source.PSD`);
+        assert.strictEqual(new Source(source, undefined, 'source').name, `source.jpg`);
+        source.url =  `  %789.PSD`;
+        assert.strictEqual(new Source(source, undefined, 'source').name, `source.PSD`);
         source.name =  `!@#$%^&*().png`;
         assert.strictEqual(new Source(source).name, `source.png`);
         source.name = '';
