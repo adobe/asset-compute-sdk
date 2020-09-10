@@ -78,47 +78,4 @@ describe("source.js", () => {
         assert.strictEqual(source.url, 'https://example.com');
         assert.strictEqual(source.type, 'type');
     });
-    it.skip('verifies name with source as an object', function() {
-        const source = {};
-        assert.strictEqual(new Source(source, undefined, 'source').name, 'source');
-        source.name = 'abcdz-AZ1234567890.jpg';
-        assert.strictEqual(new Source(source, undefined, 'source').name, `source.jpg`);
-        source.url =  `  %789.PSD`;
-        assert.strictEqual(new Source(source, undefined, 'source').name, `source.PSD`);
-        source.name =  `!@#$%^&*().png`;
-        assert.strictEqual(new Source(source).name, `source.png`);
-        source.name = '';
-        assert.strictEqual(new Source(source).name, 'source');
-    });
-
-    // TODO: this logic moved to storage.js so we will move these tests there
-    it.skip('verifies name using mimeType', function() {
-        const source = { };
-        source.name = 'abcdz-AZ1234567890';
-        source.mimeType = 'image/jpeg';
-        assert.strictEqual(new Source(source).name, `source.jpeg`);
-        source.name =  '';
-        source.mimeType = 'unknown mimeType';
-        assert.strictEqual(new Source(source).name, 'source');
-        source.name = 'foo.png';
-        source.mimeType = 'image/jpeg';
-        assert.strictEqual(new Source(source).name, `source.png`);
-    });
-    it.skip('verifies name with source a url', function() {
-        const source = { url: ''};
-        source.url = 'https://server.name/file.jpg?queryPortion';
-        assert.strictEqual(new Source(source).name, `source.jpg`);
-        source.url = 'http://server.name/directory/file%20.png?query';
-        assert.strictEqual(new Source(source).name, `source.png`);
-        source.url = 'http://server.name/directory/file%20.png?';
-        assert.strictEqual(new Source(source).name, `source.png`);
-        source.url = 'xxx://server.name/directory/file.png?query';
-        assert.strictEqual(new Source(source).name, `source.png`);
-        source.url = 'NotAUrl';
-        assert.strictEqual(new Source(source).name, 'source');
-        source.url='';
-        assert.strictEqual(new Source(source).name, 'source');
-        source.mimeType ='image/png';
-        assert.strictEqual(new Source(source).name, `source.png`);
-    });
 });
