@@ -142,7 +142,7 @@ describe("math.js", function () {
     it("properly fits dimensions in bounding box", () => {
         // bounding box is smaller than original dimensions
 
-        // portrait fitting in square
+        // 1:2 fitting in 1:1
         let dimensions = new Dimensions(100, 200);
         let boundingBox = new Dimensions(50, 50);
         let fitDimensions = dimensions.fitBoundingBox(boundingBox);
@@ -151,7 +151,7 @@ describe("math.js", function () {
         // check aspect ratio did not change
         assert.equal(dimensions.width / dimensions.height, fitDimensions.width / fitDimensions.height);
 
-        // landscape fitting in square
+        // 2:1 fitting in 1:1
         dimensions = new Dimensions(200, 100);
         fitDimensions = dimensions.fitBoundingBox(boundingBox);
         assert.equal(fitDimensions.width, 50);
@@ -159,7 +159,7 @@ describe("math.js", function () {
         // check aspect ratio did not change
         assert.equal(dimensions.width / dimensions.height, fitDimensions.width / fitDimensions.height);
 
-        // same aspect ratio
+        // same aspect ratio: 1:1 fitting in 1:1
         dimensions = new Dimensions(100, 100);
         fitDimensions = dimensions.fitBoundingBox(boundingBox);
         assert.equal(fitDimensions.width, 50);
@@ -167,7 +167,7 @@ describe("math.js", function () {
         // check aspect ratio did not change
         assert.equal(dimensions.width / dimensions.height, fitDimensions.width / fitDimensions.height);
 
-        // square fitting in portrait
+        // 1:1 fitting in 1:2
         dimensions = new Dimensions(100, 100);
         boundingBox = new Dimensions(50, 100);
         fitDimensions = dimensions.fitBoundingBox(boundingBox);
@@ -176,7 +176,7 @@ describe("math.js", function () {
         // check aspect ratio did not change
         assert.equal(dimensions.width / dimensions.height, fitDimensions.width / fitDimensions.height);
 
-        // square fitting in landscape
+        // 1:1 fitting in 2:1
         dimensions = new Dimensions(100, 100);
         boundingBox = new Dimensions(100, 50);
         fitDimensions = dimensions.fitBoundingBox(boundingBox);
@@ -185,7 +185,7 @@ describe("math.js", function () {
         // check aspect ratio did not change
         assert.equal(dimensions.width / dimensions.height, fitDimensions.width / fitDimensions.height);
 
-        // landscape fitting in portrait
+        // 2:1 fitting in 1:2
         dimensions = new Dimensions(200, 100);
         boundingBox = new Dimensions(50, 100);
         fitDimensions = dimensions.fitBoundingBox(boundingBox);
@@ -194,7 +194,7 @@ describe("math.js", function () {
         // check aspect ratio did not change
         assert.equal(dimensions.width / dimensions.height, fitDimensions.width / fitDimensions.height);
 
-        // portrait fitting in landscape
+        // 1:2 fitting in 2:1
         dimensions = new Dimensions(100, 200);
         boundingBox = new Dimensions(100, 50);
         fitDimensions = dimensions.fitBoundingBox(boundingBox);
