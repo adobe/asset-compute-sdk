@@ -1,0 +1,10 @@
+{
+	"fmt": "jpg",
+    "watermark": {
+        "image": "watermark.png",
+        "scale": 1.0
+    },
+    "errorReason": "GenericError",
+    "width": 512,
+    "height": 288
+}
