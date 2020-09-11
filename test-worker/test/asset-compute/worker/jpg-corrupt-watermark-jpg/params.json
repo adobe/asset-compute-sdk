@@ -1,5 +1,5 @@
 {
-	"fmt": "jpg",
+    "fmt": "jpg",
     "watermark": {
         "image": "watermark.png",
         "scale": 1.0
