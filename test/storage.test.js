@@ -15,7 +15,7 @@
 
 'use strict';
 
-const {getSource, putRendition} = require('../lib/storage');
+const {getSource, putRendition, getAsset} = require('../lib/storage');
 const mockFs = require('mock-fs');
 const nock = require('nock');
 const assert = require('assert');
@@ -26,6 +26,87 @@ const { GenericError } = require('@adobe/asset-compute-commons');
 
 const EMBED_LIMIT_MAX = 32 * 1024;
 describe('storage.js', () => {
+
+    describe ('getAsset', () => {
+        beforeEach(() => {
+            mockFs();
+        });
+
+        afterEach( () => {
+            nock.cleanAll();
+            mockFs.restore();
+            delete process.env.WORKER_TEST_MODE;
+            delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
+        });
+
+        it('should download simple png and return a new source object', async () => {
+            const assetReference = {
+                url: 'https://example.com/photo/elephant.png'
+            };
+            const directory = './in/fakeSource/filePath';
+            const name = 'source.png';
+
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(directory));
+
+            nock('https://example.com')
+                .get('/photo/elephant.png')
+                .reply(200, 'ok');
+
+            const source = await getAsset(assetReference, directory, name);
+
+            assert.equal(source.name, 'source.png');
+            assert.equal(source.path, 'in/fakeSource/filePath/source.png');
+            assert.ok(nock.isDone());
+        });
+
+        it('should download data uri and return new source object', async () => {
+            const assetReference = {
+                url: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D'
+            };
+            const directory = './in/fakeSource/filePath';
+            const name = 'source';
+
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(directory));
+
+            const source = await getAsset(assetReference, directory, name);
+
+            assert.equal(source.name, 'source');
+            assert.equal(source.path, 'in/fakeSource/filePath/source');
+            assert.ok(fs.existsSync(source.path));
+            assert.equal(fs.readFileSync(source.path).toString(), 'Hello, World!');
+            assert.ok(nock.isDone());
+        });
+
+        it('should fail to download, no asset reference', async () => {
+            try {
+                await getAsset();
+                assert.fail('Should fail');
+            } catch (error) {
+                assert.equal(error.message, 'Missing assetReference');
+            }
+        });
+
+        it('asset reference is a string, should be turned into an object', async () => {
+            const assetReference = 'https://example.com/photo/elephant.png';
+            const directory = './in/fakeSource/filePath';
+            const name = 'source.png';
+
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(directory));
+
+            nock('https://example.com')
+                .get('/photo/elephant.png')
+                .reply(200, 'ok');
+
+            const source = await getAsset(assetReference, directory, name);
+
+            assert.equal(source.name, 'source.png');
+            assert.equal(source.path, 'in/fakeSource/filePath/source.png');
+            assert.ok(nock.isDone());
+        });
+    });
     describe('getSource', () => {
 
         beforeEach(() => {
@@ -164,6 +245,143 @@ describe('storage.js', () => {
                 threw = true;
             }
             assert.ok(threw);
+        });
+
+        it('paramsSource has source name, but will still be called `source.png` internally', async () => {
+            const paramsSource = {
+                url: 'https://example.com/photo/elephant.png',
+                name: '!@#$%^&*().png'
+            };
+            const inDirectory = './in/fakeSource/filePath';
+
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(inDirectory));
+
+            nock('https://example.com')
+                .get('/photo/elephant.png')
+                .reply(200, 'ok');
+
+            const source = await getSource(paramsSource, inDirectory);
+
+            assert.equal(source.name, 'source.png');
+            assert.equal(source.path, 'in/fakeSource/filePath/source.png');
+            assert.ok(nock.isDone());
+        });
+
+        it('paramsSource object will use url over mimeType to determine extension', async () => {
+            const paramsSource = {
+                url: 'https://example.com/photo/elephant.png',
+                mimeType: 'image/jpeg'
+            };
+            const inDirectory = './in/fakeSource/filePath';
+
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(inDirectory));
+
+            nock('https://example.com')
+                .get('/photo/elephant.png')
+                .reply(200, 'ok');
+
+            const source = await getSource(paramsSource, inDirectory);
+
+            assert.equal(source.name, 'source.png');
+            assert.equal(source.path, 'in/fakeSource/filePath/source.png');
+            assert.ok(nock.isDone());
+        });
+
+        it('paramsSource object will use mimeType over url to determine extension if source name is defined', async () => {
+            const paramsSource = {
+                url: 'https://example.com/photo/elephant.png',
+                mimeType: 'image/jpeg',
+                name: 'file'
+            };
+            const inDirectory = './in/fakeSource/filePath';
+
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(inDirectory));
+
+            nock('https://example.com')
+                .get('/photo/elephant.png')
+                .reply(200, 'ok');
+
+            const source = await getSource(paramsSource, inDirectory);
+
+            assert.equal(source.name, 'source.jpeg');
+            assert.equal(source.path, 'in/fakeSource/filePath/source.jpeg');
+            assert.ok(nock.isDone());
+        });
+
+        it('paramsSource object will not fail if invalid mimetype', async () => {
+            const paramsSource = {
+                url: 'https://example.com/photo/elephant.jpeg',
+                mimeType: 'not a valid mimetype',
+                name: 'file'
+            };
+            const inDirectory = './in/fakeSource/filePath';
+
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(inDirectory));
+
+            nock('https://example.com')
+                .get('/photo/elephant.jpeg')
+                .reply(200, 'ok');
+
+            const source = await getSource(paramsSource, inDirectory);
+
+            assert.equal(source.name, 'source');
+            assert.equal(source.path, 'in/fakeSource/filePath/source');
+            assert.ok(nock.isDone());
+        });
+
+        it('paramsSource object will take extension in name over mimetype', async () => {
+            const paramsSource = {
+                url: 'https://example.com/photo/elephant.jpeg',
+                mimeType: 'image/jpeg',
+                name: 'file.png'
+            };
+            const inDirectory = './in/fakeSource/filePath';
+
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(inDirectory));
+
+            nock('https://example.com')
+                .get('/photo/elephant.jpeg')
+                .reply(200, 'ok');
+
+            const source = await getSource(paramsSource, inDirectory);
+
+            assert.equal(source.name, 'source.png');
+            assert.equal(source.path, 'in/fakeSource/filePath/source.png');
+            assert.ok(nock.isDone());
+        });
+        it('paramsSource is a string, but will be turned into an object', async () => {
+            const paramsSource = 'https://example.com/photo/elephant.png';
+            const inDirectory = './in/fakeSource/filePath';
+
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(inDirectory));
+
+            nock('https://example.com')
+                .get('/photo/elephant.png')
+                .reply(200, 'ok');
+
+            const source = await getSource(paramsSource, inDirectory);
+
+            assert.equal(source.name, 'source.png');
+            assert.equal(source.path, 'in/fakeSource/filePath/source.png');
+            assert.ok(nock.isDone());
+        });
+        it('paramsSource is a string, but will be turned into an object in worker test mode', async () => {
+            process.env.WORKER_TEST_MODE = true;
+            const paramsSource = 'file.jpg';
+            const inDirectory = '/in';
+
+            mockFs({ '/in/file.jpg': 'yo' });
+
+            const source = await getSource(paramsSource, inDirectory);
+
+            assert.equal(source.name, 'file.jpg'); // in this case source name is actual file path
+            assert.equal(source.path, '/in/file.jpg');
         });
     });
 
