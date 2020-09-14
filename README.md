@@ -97,7 +97,7 @@ Shellscript worker with custom script name
 ```js
 const { shellScriptWorker } = require('../lib/api');
 
-const main = shellScriptWorker('custom-worker-name.sh'); // assumes script is in `worker.sh`
+const main = shellScriptWorker('custom-worker-name.sh'); // assumes script is in `custom-worker-name.sh`
 await main(params);
 ```
 
@@ -133,7 +133,7 @@ Object containing the following attributes:
 | `index` | `number` | number used to identify a rendition |
 
 ##### **`params`**
-original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://docs.adobe.com/content/help/en/asset-compute/using/api.html#process-request))
+Original parameters passed into the worker (see full [Asset Compute prcoessing API Doc](https://docs.adobe.com/content/help/en/asset-compute/using/api.html#process-request))
 
 _Note: This argument is usually not needed, as a callback should take its information from the `rendition.instructions` which are the specific rendition parameters from the request._
 
