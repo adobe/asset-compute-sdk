@@ -55,8 +55,58 @@ describe('storage.js', () => {
 
             const source = await getAsset(assetReference, directory, name);
 
-            assert.equal(source.name, 'source.png');
-            assert.equal(source.path, 'in/fakeSource/filePath/source.png');
+            assert.strictEqual(source.name, 'source.png');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source.png');
+            assert.ok(nock.isDone());
+        });
+
+        it('should download png and use basic auth headers', async () => {
+            const assetReference = {
+                url: 'https://example.com/photo/elephant.png',
+                headers: {
+                    'Authorization': 'Basic base64stringGoesHere'
+                }
+            };
+            const directory = './in/fakeSource/filePath';
+            const name = 'source.png';
+
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(directory));
+
+            nock('https://example.com')
+                .get('/photo/elephant.png')
+                .matchHeader('Authorization', 'Basic base64stringGoesHere')
+                .reply(200, 'ok');
+
+            const source = await getAsset(assetReference, directory, name);
+
+            assert.strictEqual(source.name, 'source.png');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source.png');
+            assert.ok(nock.isDone());
+        });
+
+        it('should download png and use bearer token auth auth headers', async () => {
+            const assetReference = {
+                url: 'https://example.com/photo/elephant.png',
+                headers: {
+                    'Authorization': 'Bearer thereGoesTheToken'
+                }
+            };
+            const directory = './in/fakeSource/filePath';
+            const name = 'source.png';
+
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(directory));
+
+            nock('https://example.com')
+                .get('/photo/elephant.png')
+                .matchHeader('Authorization', 'Bearer thereGoesTheToken')
+                .reply(200, 'ok');
+
+            const source = await getAsset(assetReference, directory, name);
+
+            assert.strictEqual(source.name, 'source.png');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source.png');
             assert.ok(nock.isDone());
         });
 
@@ -72,10 +122,10 @@ describe('storage.js', () => {
 
             const source = await getAsset(assetReference, directory, name);
 
-            assert.equal(source.name, 'source');
-            assert.equal(source.path, 'in/fakeSource/filePath/source');
+            assert.strictEqual(source.name, 'source');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source');
             assert.ok(fs.existsSync(source.path));
-            assert.equal(fs.readFileSync(source.path).toString(), 'Hello, World!');
+            assert.strictEqual(fs.readFileSync(source.path).toString(), 'Hello, World!');
             assert.ok(nock.isDone());
         });
 
@@ -84,7 +134,7 @@ describe('storage.js', () => {
                 await getAsset();
                 assert.fail('Should fail');
             } catch (error) {
-                assert.equal(error.message, 'Missing assetReference');
+                assert.strictEqual(error.message, 'Missing assetReference');
             }
         });
 
@@ -102,8 +152,8 @@ describe('storage.js', () => {
 
             const source = await getAsset(assetReference, directory, name);
 
-            assert.equal(source.name, 'source.png');
-            assert.equal(source.path, 'in/fakeSource/filePath/source.png');
+            assert.strictEqual(source.name, 'source.png');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source.png');
             assert.ok(nock.isDone());
         });
     });
@@ -134,8 +184,8 @@ describe('storage.js', () => {
 
             const source = await getSource(paramsSource, inDirectory);
 
-            assert.equal(source.name, 'source.png');
-            assert.equal(source.path, 'in/fakeSource/filePath/source.png');
+            assert.strictEqual(source.name, 'source.png');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source.png');
             assert.ok(nock.isDone());
         });
 
@@ -150,10 +200,10 @@ describe('storage.js', () => {
 
             const source = await getSource(paramsSource, inDirectory);
 
-            assert.equal(source.name, 'source');
-            assert.equal(source.path, 'in/fakeSource/filePath/source');
+            assert.strictEqual(source.name, 'source');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source');
             assert.ok(fs.existsSync(source.path));
-            assert.equal(fs.readFileSync(source.path).toString(), 'Hello, World!');
+            assert.strictEqual(fs.readFileSync(source.path).toString(), 'Hello, World!');
             assert.ok(nock.isDone());
         });
 
@@ -177,7 +227,7 @@ describe('storage.js', () => {
             } catch (e) {
                 console.log(e);
                 assert.ok(e instanceof GenericError);
-                assert.equal(e.message, "GET 'https://example.com/photo/elephant.png' failed with status 404");
+                assert.strictEqual(e.message, "GET 'https://example.com/photo/elephant.png' failed with status 404");
                 threw = true;
             }
             assert.ok(threw);
@@ -194,8 +244,8 @@ describe('storage.js', () => {
 
             const source = await getSource(paramsSource, inDirectory);
 
-            assert.equal(source.name, 'file.jpg'); // in this case source name is actual file path
-            assert.equal(source.path, '/in/file.jpg');
+            assert.strictEqual(source.name, 'file.jpg'); // in this case source name is actual file path
+            assert.strictEqual(source.path, '/in/file.jpg');
         });
 
         it('should fail to download because path ends with /..', async () => {
@@ -209,7 +259,7 @@ describe('storage.js', () => {
             try {
                 await getSource(paramsSource, inDirectory);
             } catch (e) {
-                assert.equal(e.message, 'Invalid or missing local file file.jpg/..');
+                assert.strictEqual(e.message, 'Invalid or missing local file file.jpg/..');
                 threw = true;
             }
             assert.ok(threw);
@@ -225,7 +275,7 @@ describe('storage.js', () => {
             try {
                 await getSource(paramsSource, inDirectory);
             } catch (e) {
-                assert.equal(e.message, 'Invalid or missing local file file/../../../../evilcode/elephant.jpg');
+                assert.strictEqual(e.message, 'Invalid or missing local file file/../../../../evilcode/elephant.jpg');
                 threw = true;
             }
             assert.ok(threw);
@@ -241,7 +291,7 @@ describe('storage.js', () => {
             try {
                 await getSource(paramsSource, inDirectory);
             } catch (e) {
-                assert.equal(e.message, 'Invalid or missing local file elephant.jpg');
+                assert.strictEqual(e.message, 'Invalid or missing local file elephant.jpg');
                 threw = true;
             }
             assert.ok(threw);
@@ -263,8 +313,8 @@ describe('storage.js', () => {
 
             const source = await getSource(paramsSource, inDirectory);
 
-            assert.equal(source.name, 'source.png');
-            assert.equal(source.path, 'in/fakeSource/filePath/source.png');
+            assert.strictEqual(source.name, 'source.png');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source.png');
             assert.ok(nock.isDone());
         });
 
@@ -284,8 +334,8 @@ describe('storage.js', () => {
 
             const source = await getSource(paramsSource, inDirectory);
 
-            assert.equal(source.name, 'source.png');
-            assert.equal(source.path, 'in/fakeSource/filePath/source.png');
+            assert.strictEqual(source.name, 'source.png');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source.png');
             assert.ok(nock.isDone());
         });
 
@@ -306,8 +356,8 @@ describe('storage.js', () => {
 
             const source = await getSource(paramsSource, inDirectory);
 
-            assert.equal(source.name, 'source.jpeg');
-            assert.equal(source.path, 'in/fakeSource/filePath/source.jpeg');
+            assert.strictEqual(source.name, 'source.jpeg');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source.jpeg');
             assert.ok(nock.isDone());
         });
 
@@ -328,8 +378,8 @@ describe('storage.js', () => {
 
             const source = await getSource(paramsSource, inDirectory);
 
-            assert.equal(source.name, 'source');
-            assert.equal(source.path, 'in/fakeSource/filePath/source');
+            assert.strictEqual(source.name, 'source');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source');
             assert.ok(nock.isDone());
         });
 
@@ -350,8 +400,8 @@ describe('storage.js', () => {
 
             const source = await getSource(paramsSource, inDirectory);
 
-            assert.equal(source.name, 'source.png');
-            assert.equal(source.path, 'in/fakeSource/filePath/source.png');
+            assert.strictEqual(source.name, 'source.png');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source.png');
             assert.ok(nock.isDone());
         });
         it('paramsSource is a string, but will be turned into an object', async () => {
@@ -367,8 +417,8 @@ describe('storage.js', () => {
 
             const source = await getSource(paramsSource, inDirectory);
 
-            assert.equal(source.name, 'source.png');
-            assert.equal(source.path, 'in/fakeSource/filePath/source.png');
+            assert.strictEqual(source.name, 'source.png');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source.png');
             assert.ok(nock.isDone());
         });
         it('paramsSource is a string, but will be turned into an object in worker test mode', async () => {
@@ -380,8 +430,8 @@ describe('storage.js', () => {
 
             const source = await getSource(paramsSource, inDirectory);
 
-            assert.equal(source.name, 'file.jpg'); // in this case source name is actual file path
-            assert.equal(source.path, '/in/file.jpg');
+            assert.strictEqual(source.name, 'file.jpg'); // in this case source name is actual file path
+            assert.strictEqual(source.path, '/in/file.jpg');
         });
     });
 
