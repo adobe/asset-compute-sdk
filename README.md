@@ -120,6 +120,7 @@ Object containing the following attributes:
 | `url` | `string` | URL pointing to the source binary. | `"http://example.com/image.jpg"` |
 | `path`| `string` |  Absolute path to local copy of source file | `"/tmp/image.jpg"` |
 | `name` | `string` | File name. File extension in the name might be used if no mime type can be detected. Takes precedence over filename in URL path or filename in content-disposition header of the binary resource. Defaults to "file". | `"image.jpg"` |
+| `headers` | `object` | Object containining additional headers to use when doing a HTTP(S) request towards the `url` | `headers: { 'Authorization': 'auth-headers' }` |
 ##### **`rendition`**
 Object containing the following attributes:
 
