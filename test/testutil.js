@@ -209,6 +209,8 @@ async function assertSimpleParamsMetrics(receivedMetrics, options={}) {
     MetricsTestHelper.assertArrayContains(receivedMetrics, [{
         eventType: "activation",
     }]);
+
+    assertDurationMetrics(receivedMetrics);
 }
 
 function paramsWithMultipleRenditions(options={}) {
@@ -306,6 +308,48 @@ async function assertParamsWithMultipleRenditions(receivedMetrics) {
     },{
         eventType: "activation"
     }]);
+
+    assertDurationMetrics(receivedMetrics);
+}
+
+function assertDurationMetrics(receivedMetrics) {
+    receivedMetrics.filter(metric => metric.eventType === "rendition").forEach(metric => {
+        // must be positive values
+        assert.ok(metric.downloadDuration > 0.0);
+        assert.ok(metric.callbackProcessingDuration > 0.0);
+        assert.ok(metric.postProcessingDuration > 0.0);
+        assert.ok(metric.processingDuration > 0.0);
+        assert.ok(metric.uploadDuration > 0.0);
+
+        // processing has two sub measurements
+        assert.ok(metric.processingDuration >= metric.callbackProcessingDuration + metric.postProcessingDuration);
+    });
+
+    const metric = receivedMetrics.find(metric => metric.eventType === "activation");
+    if (metric) {
+        // must be positive values
+        assert.ok(metric.duration > 0.0);
+        assert.ok(metric.downloadDuration > 0.0);
+        assert.ok(metric.callbackProcessingDuration > 0.0);
+        assert.ok(metric.postProcessingDuration > 0.0);
+        assert.ok(metric.processingDuration > 0.0);
+        assert.ok(metric.uploadDuration > 0.0);
+
+        // processing has two sub measurements
+        assert.ok(metric.processingDuration >= metric.callbackProcessingDuration + metric.postProcessingDuration);
+
+        // duration is the entire activation duration - everything else must be shorter
+        assert.ok(metric.downloadDuration < metric.duration);
+        assert.ok(metric.callbackProcessingDuration < metric.duration);
+        assert.ok(metric.postProcessingDuration < metric.duration);
+        assert.ok(metric.processingDuration < metric.duration);
+        assert.ok(metric.uploadDuration < metric.duration);
+
+        // download + process + upload are the main parts that make up the total activation
+        assert.ok(metric.downloadDuration +
+                  metric.processingDuration +
+                  metric.uploadDuration <= metric.duration);
+    }
 }
 
 function assertNockDone(nockScope) {
