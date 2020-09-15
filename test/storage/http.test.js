@@ -50,7 +50,6 @@ describe('http.js', () => {
             mockFs({ './storeFiles/jpg': {} });
 
             nock("https://example.com")
-                .matchHeader('content-type', 'image/jpeg')
                 .get("/fakeEarth.jpg")
                 .reply(200, "ok");
 
@@ -75,9 +74,9 @@ describe('http.js', () => {
             try {
                 await download(source, file);
             } catch (e) {
-                assert.equal(e.name, 'GenericError');
-                assert.equal(e.message, 'ERRRR. GET \'https://example.com/fakeEarth.jpg\' failed with status 404.');
-                assert.equal(e.location, 'test_action_download');
+                assert.strictEqual(e.name, 'GenericError');
+                assert.strictEqual(e.message, 'ERRRR. GET \'https://example.com/fakeEarth.jpg\' failed with status 404.');
+                assert.strictEqual(e.location, 'test_action_download');
             }
             assert.ok(! fs.existsSync(file));
         });
@@ -93,18 +92,17 @@ describe('http.js', () => {
             mockFs({ "./storeFiles/jpg": {} });
 
             nock("https://example.com")
-                .matchHeader('content-type', 'image/jpeg')
                 .get("/fakeEarth.jpg")
                 .reply(404, "error");
 
             try {
                 await download(source, file);
             } catch (e) {
-                assert.equal(e.name, "GenericError");
-                assert.equal(e.message, "GET 'https://example.com/fakeEarth.jpg' failed with status 404");
-                assert.equal(e.location, "test_action_download");
+                assert.strictEqual(e.name, "GenericError");
+                assert.strictEqual(e.message, "GET 'https://example.com/fakeEarth.jpg' failed with status 404");
+                assert.strictEqual(e.location, "test_action_download");
             }
-            assert.equal(fs.statSync(file).size, 0); // should error on createReadStream
+            assert.strictEqual(fs.statSync(file).size, 0); // should error on createReadStream
         });
 
         it("should fail downloading once before succeeding", async () => {
@@ -175,9 +173,9 @@ describe('http.js', () => {
             try {
                 await upload(rendition);
             } catch (e) {
-                assert.equal(e.name, "GenericError");
+                assert.strictEqual(e.name, "GenericError");
                 assert.ok(e.message.includes("failed: request to https://example.com/fakeEarth.jpg failed, reason: 504"));
-                assert.equal(e.location, "test_action_upload");
+                assert.strictEqual(e.location, "test_action_upload");
             }
             assert.ok(nock.isDone());
         });
@@ -229,9 +227,9 @@ describe('http.js', () => {
             try {
                 await upload(rendition);
             } catch (e) {
-                assert.equal(e.name, "GenericError");
-                assert.equal(e.message, "PUT 'https://example.com/fakeEarth.jpg' failed with status 404");
-                assert.equal(e.location, "test_action_upload");
+                assert.strictEqual(e.name, "GenericError");
+                assert.strictEqual(e.message, "PUT 'https://example.com/fakeEarth.jpg' failed with status 404");
+                assert.strictEqual(e.location, "test_action_upload");
             }
             assert.ok(nock.isDone());
         });
@@ -257,9 +255,9 @@ describe('http.js', () => {
                 await upload(rendition);
                 assert.fail('Should have failed during upload');
             } catch (e) {
-                assert.equal(e.name, 'GenericError');
-                assert.equal(e.message, 'rendition 1234 does not have a file path: undefined');
-                assert.equal(e.location, 'test_action_upload');
+                assert.strictEqual(e.name, 'GenericError');
+                assert.strictEqual(e.message, 'rendition 1234 does not have a file path: undefined');
+                assert.strictEqual(e.location, 'test_action_upload');
             }
             assert.ok( ! nock.isDone());
         });
