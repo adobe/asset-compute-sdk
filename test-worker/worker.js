@@ -15,7 +15,7 @@
 // This is a simple dummy worker used to test the worker
 
 const { worker } = require('../index');
-const gm = require("../lib/postprocessing/gm-promisify");
+const gm = require('../lib/postprocessing/gm-promisify');
 
 const fs = require('fs').promises;
 
