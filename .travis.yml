@@ -26,8 +26,6 @@ jobs:
   include:
     - stage: Test
       script: npm test
-    - stage: Print test.log
-      script: cat test-worker/build/test-results/test-worker/test.log
     - stage: Release
       if: branch = master
       node_js: "12"
@@ -40,6 +38,9 @@ jobs:
           condition:  $TRAVIS_OS_NAME == linux
         provider: script
         script: npm run semantic-release
+
+after_script:
+  - cat test-worker/build/test-results/test-worker/test.log
 
 after_success:
   - npm run report-coverage
