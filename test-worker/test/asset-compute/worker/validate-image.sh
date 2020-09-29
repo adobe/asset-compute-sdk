@@ -16,6 +16,15 @@ set -e
 # echo all commands for verbose logs
 set -x
 
+# run known imagemagick version from a docker image to support e.g. webp
+IMAGEMAGICK_DOCKER=alexkli/nodejs10-action-centos:2.1.0
+
+function identify() {
+    # pipe image file using cat (last argument)
+    # and replace last argument for identify with - to read from stdin
+    cat "${@: -1}" | docker run -i $IMAGEMAGICK_DOCKER identify "${@:1:$(($#-1))}" -
+}
+
 # check for equal type
 mimeTypeExpected=$(file -b --mime-type $1)
 mimeTypeActual=$(file -b --mime-type $2)
