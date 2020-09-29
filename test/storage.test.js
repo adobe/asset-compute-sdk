@@ -521,7 +521,7 @@ describe('storage.js', () => {
                 .reply(200);
 
             assert.ok(fs.existsSync(file));
-            await putRendition(rendition);
+            await putRendition(rendition, {});
             assert.ok(fs.existsSync(file));
             assert.ok(fs.existsSync(requestedFile));
             assert.ok(! nock.isDone());
