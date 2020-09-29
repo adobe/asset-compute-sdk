@@ -19,10 +19,18 @@ set -x
 # run known imagemagick version from a docker image to support e.g. webp
 IMAGEMAGICK_DOCKER=alexkli/nodejs10-action-centos:2.1.0
 
-function identify() {
-    # pipe image file using cat (last argument)
-    # and replace last argument for identify with - to read from stdin
-    cat "${@: -1}" | docker run -i $IMAGEMAGICK_DOCKER identify "${@:1:$(($#-1))}" -
+function im_identify() {
+    local file="${@: -1}"
+    # file formats that aren't supported with older imagemagicks need to use a docker image with a newer imagemagick
+    if [[ "$file" == *".webp" ]]; then
+        # pipe image file using cat (last argument)
+        # and replace last argument for identify with - to read from stdin
+        cat $file | docker run --rm -i $IMAGEMAGICK_DOCKER identify "${@:1:$(($#-1))}" -
+    else
+        # but since it's 3x faster and doesn't create weird "socket hang up" issues
+        # we try and stick to a local imagemagick as much as possible
+        identify $@
+    fi
 }
 
 # check for equal type
@@ -34,8 +42,8 @@ if [[ "$mimeTypeActual" != "$mimeTypeExpected" ]]; then
 fi
 
 # compare for equal size
-imgSizeExpected=$(identify -format "%wx%h" $1)
-imgSizeActual=$(identify -format "%wx%h" $2)
+imgSizeExpected=$(im_identify -format "%wx%h" $1)
+imgSizeActual=$(im_identify -format "%wx%h" $2)
 if [[ "$imgSizeActual" != "$imgSizeExpected" ]]; then
     echo "Size not equal: $imgSizeActual instead of expected $imgSizeExpected"
     exit 3
