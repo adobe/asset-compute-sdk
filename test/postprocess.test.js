@@ -43,8 +43,8 @@ describe("imagePostProcess", () => {
                 const instructions = rendition.instructions;
                 if (instructions.shouldFail) {
                     throw new Error('mocked failure');
-                }
-                else if (instructions.fmt === 'jpg') {
+
+                } else if (instructions.fmt === 'jpg') {
                     await fs.copyFile(RENDITION_JPG_PATH, rendition.path);
                 } else if (instructions.fmt === 'png') {
                     await fs.copyFile(RENDITION_PNG_PATH, rendition.path);
