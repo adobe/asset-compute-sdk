@@ -131,7 +131,7 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[1].eventType, "activation");
         assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[1].postProcessingDuration, receivedMetrics[1].processingDuration);
-    });
+    }).timeout(5000);
 
     it('should fail if rendition failed in post processing - single rendition ', async () => {
         //batchworker single rendition post process eligible
