@@ -588,13 +588,13 @@ describe("api.js", () => {
             const main = worker(async function(source, rendition) {
                 if (rendition.index === 2) {
                     console.log('waiting...');
-                    await sleep(5000);
+                    await sleep(400);
                     return;
                 }
                 fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
             });
             assert.equal(typeof main, "function");
-            process.env.__OW_DEADLINE = Date.now() + 20000;
+            process.env.__OW_DEADLINE = Date.now() + 300;
             await main(testUtil.paramsWithMultipleRenditions({noPut3:true}));
 
             testUtil.assertNockDone();

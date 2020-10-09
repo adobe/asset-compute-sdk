@@ -22,6 +22,9 @@ const mockFs = require('mock-fs');
 const fs = require('fs-extra');
 const testUtil = require('./testutil');
 
+// mock-required below in before()
+let worker, batchWorker, shellScriptWorker;
+
 const PNG_FILE = "test/files/fileSmall.png";
 
 const RENDITION_JPG_PATH = "test/files/generatedFileSmall.jpg";
@@ -31,31 +34,37 @@ const RENDITION_JPG = fs.readFileSync(RENDITION_JPG_PATH);
 const RENDITION_PNG = fs.readFileSync(RENDITION_PNG_PATH);
 const RENDITION_TIFF = fs.readFileSync(RENDITION_TIFF_PATH);
 
-const { needsImagePostProcess } = require("../lib/postprocessing/image");
-mockRequire("../lib/postprocessing/image", {
-    imagePostProcess: async function(rendition, outfile) {
-        console.log('mocked image post processing', outfile, rendition.path);
-        const instructions = rendition.instructions;
-        if (instructions.shouldFail) {
-            throw new Error('mocked failure');
-        }
-        else if (instructions.fmt === 'jpg') {
-            await fs.copyFile(RENDITION_JPG_PATH, outfile);
-        } else if (instructions.fmt === 'png') {
-            await fs.copyFile(RENDITION_PNG_PATH, outfile);
-        } else if (instructions.fmt === 'tiff') {
-            await fs.copyFile(RENDITION_TIFF_PATH, outfile);
-        } else {
-            throw new Error('unknown error');
-        }
-    },
-    needsImagePostProcess: needsImagePostProcess
-});
-mockRequire.reRequire('../lib/worker'); // '../lib/postprocessing/image.js' is a dependency of lib/worker.js so it must be reloaded
-mockRequire.reRequire('../lib/shell/shellscript');
-const { worker, batchWorker, shellScriptWorker } = mockRequire.reRequire('../lib/api');
-
 describe("imagePostProcess", () => {
+    before(() => {
+        const { needsImagePostProcess, prepareImagePostProcess } = require("../lib/postprocessing/image");
+        mockRequire("../lib/postprocessing/image", {
+            imagePostProcess: async function(intermediateRendition, rendition) {
+                console.log('mocked image post processing', intermediateRendition.path, rendition.path);
+                const instructions = rendition.instructions;
+                if (instructions.shouldFail) {
+                    throw new Error('mocked failure');
+
+                } else if (instructions.fmt === 'jpg') {
+                    await fs.copyFile(RENDITION_JPG_PATH, rendition.path);
+                } else if (instructions.fmt === 'png') {
+                    await fs.copyFile(RENDITION_PNG_PATH, rendition.path);
+                } else if (instructions.fmt === 'tiff') {
+                    await fs.copyFile(RENDITION_TIFF_PATH, rendition.path);
+                } else {
+                    throw new Error('unknown error');
+                }
+            },
+            needsImagePostProcess: needsImagePostProcess,
+            prepareImagePostProcess: prepareImagePostProcess
+        });
+        mockRequire.reRequire('../lib/worker'); // '../lib/postprocessing/image.js' is a dependency of lib/worker.js so it must be reloaded
+        mockRequire.reRequire('../lib/shell/shellscript');
+        const api = mockRequire.reRequire('../lib/api');
+        worker = api.worker;
+        batchWorker = api.batchWorker;
+        shellScriptWorker = api.shellScriptWorker;
+    });
+
     beforeEach(function () {
         process.env.ASSET_COMPUTE_SDK_DISABLE_CGROUP_METRICS = true;
         process.env.DISABLE_ACTION_TIMEOUT_METRIC = true;
@@ -68,14 +77,14 @@ describe("imagePostProcess", () => {
         process.env.WORKER_BASE_DIRECTORY = 'build/work';
     });
 
+    after(() => {
+        mockRequire.stop('../lib/postprocessing/image');
+    });
+
     afterEach(() => {
         testUtil.afterEach();
         delete process.env.WORKER_BASE_DIRECTORY;
         fs.removeSync("worker.sh");
-    });
-
-    after(() => {
-        mockRequire.stop('../lib/postprocessing/image');
     });
 
     it('should convert PNG to JPG - end to end test', async () => {
@@ -153,7 +162,7 @@ describe("imagePostProcess", () => {
 
         // validate errors
         assert.ok(result.renditionErrors);
-        assert.ok(result.renditionErrors[0].message.includes('Post-processing of image rendition failed'));
+        assert.ok(result.renditionErrors[0].message.includes('mocked failure'));
 
         assert.equal(events.length, 1);
         assert.equal(events[0].type, "rendition_failed");
@@ -331,7 +340,7 @@ describe("imagePostProcess", () => {
         // validate errors
         assert.ok(result.renditionErrors);
         console.log(result.renditionErrors[0].message);
-        assert.ok(result.renditionErrors[0].message.includes('Post-processing of image rendition failed'));
+        assert.ok(result.renditionErrors[0].message.includes('mocked failure'));
         assert.equal(result.renditionErrors.length, 1);
 
         assert.equal(events.length, 3);
@@ -632,7 +641,7 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics.length, 2);
     });
 
-    it("should not post process after shellScriptWorker(), options.json is not formatted correctly", async () => {
+    it("should fail if options.json from shellScriptWorker() is not formatted correctly", async () => {
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
@@ -658,16 +667,17 @@ describe("imagePostProcess", () => {
             newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
         };
 
-        const result = await main(params);
+        const result = await main(params, {supportedRenditionFormats: ["jpg"]});
 
         // validate no errors
-        assert.ok(result.renditionErrors === undefined);
+        assert.strictEqual(result.renditionErrors.length, 1);
 
         // make sure it did not do post processing
-        assert.ok(!RENDITION_JPG.equals(uploadedRenditions["/MyRendition.jpeg"]));
+        assert.deepEqual(uploadedRenditions, {});
+        // assert.ok(!RENDITION_JPG.equals(uploadedRenditions["/MyRendition.jpeg"]));
 
         assert.equal(events.length, 1);
-        assert.equal(events[0].type, "rendition_created");
+        assert.equal(events[0].type, "rendition_failed");
         assert.equal(events[0].rendition.fmt, "jpg");
 
         await MetricsTestHelper.metricsDone();
