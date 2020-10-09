@@ -83,8 +83,7 @@ describe("type.js", () => {
             const detectContentType = mockRequire.reRequire("../lib/utils/type");
 
             assert.deepStrictEqual(await detectContentType('./test/files/file.jpg'), {
-                mime: "image/jpeg",
-                encoding: undefined
+                mime: "image/jpeg"
             });
         });
     });
