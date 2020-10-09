@@ -27,6 +27,15 @@ process.env.SDK_POST_PROCESSING_TEST_MODE = true;
 exports.main = worker(async (source, rendition) => {
     const instructions = rendition.instructions;
 
+    // simulate a worker that might defer to post-processing
+    if (instructions.skipProcess) {
+        await fs.symlink(source.path, rendition.path);
+        rendition.postProcess = {
+            skippedProcessing: true
+        };
+        return;
+    }
+
     // simulate a worker that can only handle PNG and TIFF output itself
     // (but don't check if source == rendition type since we pass it through below)
     if (source.path.split('.').pop() !== instructions.fmt && !SUPPORTED_FMT.includes(instructions.fmt)) {
