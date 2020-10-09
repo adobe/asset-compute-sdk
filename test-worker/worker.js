@@ -14,20 +14,39 @@
 
 // This is a simple dummy worker used to test the worker
 
-const { worker } = require('../index');
+const { worker, GenericError } = require('../index');
 const gm = require("../lib/postprocessing/gm-promisify");
 
 const fs = require('fs').promises;
+
+const SUPPORTED_FMT = ["png", "jpg"];
 
 process.env.OPENWHISK_NEWRELIC_DISABLE_METRICS = true;
 process.env.SDK_POST_PROCESSING_TEST_MODE = true;
 
 exports.main = worker(async (source, rendition) => {
+    const instructions = rendition.instructions;
+
+    // simulate a worker that might defer to post-processing
+    if (instructions.skipProcess) {
+        await fs.symlink(source.path, rendition.path);
+        rendition.postProcess = {
+            skippedProcessing: true
+        };
+        return;
+    }
+
+    // simulate a worker that can only handle PNG and TIFF output itself
+    // (but don't check if source == rendition type since we pass it through below)
+    if (source.path.split('.').pop() !== instructions.fmt && !SUPPORTED_FMT.includes(instructions.fmt)) {
+        throw new GenericError(`[test worker] Unsupported fmt in worker callback: ${instructions.fmt}`);
+    }
+
     // run custom imagemagick convert command to simulate a tool creating an intermediate rendition
-    if (rendition.instructions.imagemagick) {
-        console.log(`[test worker] imagemagick: convert ${source.path} ${rendition.instructions.imagemagick} ${rendition.path}`);
+    if (instructions.imagemagick) {
+        console.log(`[test worker] imagemagick: convert ${source.path} ${instructions.imagemagick} ${rendition.path}`);
         const img = gm(source.path);
-        for (const arg of rendition.instructions.imagemagick.split(" ")) {
+        for (const arg of instructions.imagemagick.split(" ")) {
             if (arg.length > 0) {
                 img.out(arg);
             }
@@ -42,4 +61,6 @@ exports.main = worker(async (source, rendition) => {
     }
 
     rendition.postProcess = true;
+}, {
+    supportedRenditionFormats: SUPPORTED_FMT
 });

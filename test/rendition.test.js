@@ -99,7 +99,7 @@ describe("rendition.js", () => {
             assert.ok(err.toString().includes("creating sha1 hash failed"));
         }
     });
-    
+
     it('verifies method id works properly', function () {
         const instructions = { "fmt": "png", "target": "TargetName" };
         const directory = "/";
@@ -133,6 +133,8 @@ describe("rendition.js", () => {
         assert.strictEqual(metadata["repo:sha1"], "fe16bfbff4e31fcf726c18fe4051b71ee8c96150");
         assert.strictEqual(metadata["tiff:imageWidth"], 512);
         assert.strictEqual(metadata["tiff:imageHeight"], 288);
+        assert.strictEqual(metadata["dc:format"], "image/png");
+        assert.ok(metadata["repo:encoding"] === undefined);
 
         // now not a real image so getting the image width and height will fail
         fs.writeFileSync("/rendition11.png", 'hello world');
@@ -149,7 +151,7 @@ describe("rendition.js", () => {
         const metadata = await rendition.metadata();
         assert.deepStrictEqual(metadata, {});
     });
-    
+
     it('verifies function renditionFilename', function () {
         let extension;
         let index;
@@ -271,7 +273,7 @@ describe("rendition.js", () => {
 
         const mime = await rendition.mimeType();
         assert.strictEqual(mime, null);
-        
+
         const encoding = await rendition.encoding();
         assert.strictEqual(encoding, null);
 
@@ -349,5 +351,85 @@ describe("rendition.js", () => {
         } catch (e) {
             assert.ok(e instanceof GenericError);
         }
+    });
+
+    describe("content type", function() {
+        beforeEach(function () {
+            // we need the real file system here
+            mockFs.restore();
+        });
+
+        it('returns mimetype of an existing an accessible file', async function () {
+            const instructions = { "fmt": "png", "target": "TargetName" };
+            const directory = "/";
+
+            const rendition = new Rendition(instructions, directory, 12);
+            // overwrite path to point to test files
+            rendition.path = './test/files/file.bmp';
+            const result = await rendition.mimeType();
+            assert.strictEqual(result, 'image/x-ms-bmp');
+        });
+
+        it('gracefully handles not finding files when identifying mimetype', async function () {
+            const instructions = { "fmt": "png", "target": "TargetName" };
+            const directory = "/";
+            let rendition = new Rendition(instructions, directory, 12);
+
+            // overwrite path to point to test files
+            rendition.path = './test/files/file-that-does-not-exist-and-should-therefore-not-be-here.bmp';
+            let result = await rendition.mimeType();
+            assert.strictEqual(result, null);
+
+            rendition = new Rendition(instructions, directory, 12);
+            rendition.path = '';
+            result = await rendition.mimeType();
+            assert.strictEqual(result, null);
+
+            rendition = new Rendition(instructions, directory, 12);
+            rendition.path = '  ';
+            result = await rendition.mimeType();
+            assert.strictEqual(result, null);
+
+            rendition = new Rendition(instructions, directory, 12);
+            rendition.path = '\n\n';
+            result = await rendition.mimeType();
+            assert.strictEqual(result, null);
+        });
+
+        it('detects encoding of an existing an accessible file', async function () {
+            const instructions = { "fmt": "png", "target": "TargetName" };
+            const directory = "/";
+            const rendition = new Rendition(instructions, directory, 12);
+
+            rendition.path = './test/files/file.txt';
+            const result = await rendition.encoding();
+            assert.strictEqual(result, 'us-ascii');
+        });
+
+        it('gracefully handles not finding files when identifying encoding', async function () {
+            const instructions = { "fmt": "png", "target": "TargetName" };
+            const directory = "/";
+            let rendition = new Rendition(instructions, directory, 12);
+
+            // overwrite path to point to test files
+            rendition.path = './test/files/file-that-does-not-exist-and-should-therefore-not-be-here.bmp';
+            let result = await rendition.encoding();
+            assert.ok(result === null);
+
+            rendition = new Rendition(instructions, directory, 12);
+            rendition.path = '';
+            result = await rendition.encoding();
+            assert.ok(result === null);
+
+            rendition = new Rendition(instructions, directory, 12);
+            rendition.path = '  ';
+            result = await rendition.encoding();
+            assert.ok(result === null);
+
+            rendition = new Rendition(instructions, directory, 12);
+            rendition.path = '\n\n';
+            result = await rendition.encoding();
+            assert.ok(result === null);
+        });
     });
 });
