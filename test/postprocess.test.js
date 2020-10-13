@@ -99,7 +99,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = worker(workerFn);
+        const main = worker(workerFn, { supportedRenditionFormats: ["jpg"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -145,7 +145,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = worker(workerFn);
+        const main = worker(workerFn, { supportedRenditionFormats: ["jpg"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -203,7 +203,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = batchWorker(batchWorkerFn);
+        const main = batchWorker(batchWorkerFn, { supportedRenditionFormats: ["jpg"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -266,7 +266,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = batchWorker(batchWorkerFn);
+        const main = batchWorker(batchWorkerFn, { supportedRenditionFormats: ["jpg", "png", "tiff"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -315,7 +315,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = batchWorker(batchWorkerFn);
+        const main = batchWorker(batchWorkerFn, { supportedRenditionFormats: ["jpg"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -376,7 +376,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = batchWorker(batchWorkerFn);
+        const main = batchWorker(batchWorkerFn, { supportedRenditionFormats: ["jpg", "pdf"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -477,7 +477,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = batchWorker(batchWorkerFn);
+        const main = batchWorker(batchWorkerFn, { supportedRenditionFormats: ["jpg"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -570,7 +570,7 @@ describe("imagePostProcess", () => {
         `;
         await fs.writeFile("worker.sh", script);
 
-        const main = shellScriptWorker();
+        const main = shellScriptWorker("worker.sh", { supportedRenditionFormats: ["jpg"] });
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
         const params = {
@@ -611,7 +611,7 @@ describe("imagePostProcess", () => {
         `;
         await fs.writeFile("worker.sh", script);
 
-        const main = shellScriptWorker();
+        const main = shellScriptWorker("worker.sh", { supportedRenditionFormats: ["jpg"] });
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
         const params = {
