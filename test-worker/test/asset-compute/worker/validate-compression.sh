@@ -17,7 +17,7 @@ set -e
 expected=$(identify -format "%[compression]" "$1")
 actual=$(identify -format "%[compression]" "$2")
 if [[ "$actual" != "$expected" ]]; then
-    echo "interlace not equal: $actual instead of expected $expected"
+    echo "compression algorithm used not equal: $actual instead of expected $expected"
     exit 4
 fi
 

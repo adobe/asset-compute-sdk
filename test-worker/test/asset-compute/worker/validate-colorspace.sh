@@ -17,7 +17,7 @@ set -e
 expected=$(identify -format "%[colorspace]" "$1")
 actual=$(identify -format "%[colorspace]" "$2")
 if [[ "$actual" != "$expected" ]]; then
-    echo "interlace not equal: $actual instead of expected $expected"
+    echo "colorspace not equal: $actual instead of expected $expected"
     exit 4
 fi
 
