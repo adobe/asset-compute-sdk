@@ -131,7 +131,7 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[1].eventType, "activation");
         assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[1].postProcessingDuration, receivedMetrics[1].processingDuration);
-    });
+    }).timeout(5000);
 
     it('should fail if rendition failed in post processing - single rendition ', async () => {
         //batchworker single rendition post process eligible
@@ -162,7 +162,7 @@ describe("imagePostProcess", () => {
 
         // validate errors
         assert.ok(result.renditionErrors);
-        assert.ok(result.renditionErrors[0].message.includes('Post-processing of image rendition failed'));
+        assert.ok(result.renditionErrors[0].message.includes('mocked failure'));
 
         assert.equal(events.length, 1);
         assert.equal(events[0].type, "rendition_failed");
@@ -340,7 +340,7 @@ describe("imagePostProcess", () => {
         // validate errors
         assert.ok(result.renditionErrors);
         console.log(result.renditionErrors[0].message);
-        assert.ok(result.renditionErrors[0].message.includes('Post-processing of image rendition failed'));
+        assert.ok(result.renditionErrors[0].message.includes('mocked failure'));
         assert.equal(result.renditionErrors.length, 1);
 
         assert.equal(events.length, 3);
