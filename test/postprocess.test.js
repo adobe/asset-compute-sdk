@@ -99,7 +99,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = worker(workerFn);
+        const main = worker(workerFn, { supportedRenditionFormats: ["jpg"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -131,6 +131,8 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[1].eventType, "activation");
         assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[1].postProcessingDuration, receivedMetrics[1].processingDuration);
+        assert.equal(receivedMetrics[0].imagePostProcess, true);
+        assert.equal(receivedMetrics[1].imagePostProcess, true);
     }).timeout(5000);
 
     it('should fail if rendition failed in post processing - single rendition ', async () => {
@@ -145,7 +147,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = worker(workerFn);
+        const main = worker(workerFn, { supportedRenditionFormats: ["jpg"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -174,6 +176,8 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[1].eventType, "activation");
         assert.ok(receivedMetrics[0].callbackProcessingDuration > 0, receivedMetrics[0].postProcessingDuration > 0, receivedMetrics[0].processingDuration > 0);
         assert.ok(receivedMetrics[1].callbackProcessingDuration > 0, receivedMetrics[1].postProcessingDuration > 0, receivedMetrics[1].processingDuration > 0);
+        assert.equal(receivedMetrics[0].imagePostProcess, true);
+        assert.equal(receivedMetrics[1].imagePostProcess, true);
     });
 
     it('should download source, invoke worker in batch callback and upload rendition - same rendition', async () => {
@@ -203,7 +207,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = batchWorker(batchWorkerFn);
+        const main = batchWorker(batchWorkerFn, { supportedRenditionFormats: ["jpg"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -247,6 +251,11 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration, receivedMetrics[1].callbackProcessingDuration, receivedMetrics[2].callbackProcessingDuration);
         assert.equal(receivedMetrics[3].callbackProcessingDuration + receivedMetrics[3].postProcessingDuration, receivedMetrics[3].processingDuration);
         assert.equal(receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration + receivedMetrics[2].postProcessingDuration, receivedMetrics[3].postProcessingDuration);
+
+        assert.equal(receivedMetrics[0].imagePostProcess, true);
+        assert.equal(receivedMetrics[1].imagePostProcess, true);
+        assert.equal(receivedMetrics[2].imagePostProcess, true);
+        assert.equal(receivedMetrics[3].imagePostProcess, true);
     });
 
     it('should download source, invoke worker in batch callback and upload rendition - different rendition', async () => {
@@ -266,7 +275,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = batchWorker(batchWorkerFn);
+        const main = batchWorker(batchWorkerFn, { supportedRenditionFormats: ["jpg", "png", "tiff"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -315,7 +324,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = batchWorker(batchWorkerFn);
+        const main = batchWorker(batchWorkerFn, { supportedRenditionFormats: ["jpg"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -362,7 +371,13 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
         assert.equal(receivedMetrics[3].postProcessingDuration, receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration
                                 + receivedMetrics[2].postProcessingDuration);
+
+        assert.equal(receivedMetrics[0].imagePostProcess, true);
+        assert.equal(receivedMetrics[1].imagePostProcess, true);
+        assert.equal(receivedMetrics[2].imagePostProcess, true);
+        assert.equal(receivedMetrics[3].imagePostProcess, true);
     });
+
     it('should post process eligible rendition and skip others - multiple rendition', async () => {
         //batchworker multiple rendition not all post process eligible
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
@@ -376,7 +391,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = batchWorker(batchWorkerFn);
+        const main = batchWorker(batchWorkerFn, { supportedRenditionFormats: ["jpg", "pdf"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -420,6 +435,11 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
         assert.equal(receivedMetrics[3].postProcessingDuration, receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration
                             + receivedMetrics[2].postProcessingDuration);
+
+        assert.equal(receivedMetrics[0].imagePostProcess, true);
+        assert.ok(!receivedMetrics[1].imagePostProcess);
+        assert.equal(receivedMetrics[2].imagePostProcess, true);
+        assert.equal(receivedMetrics[3].imagePostProcess, true);
     });
 
     it('should generate rendition if only one post processing ineligible rendition', async () => {
@@ -464,7 +484,10 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
         assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
         assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
+        assert.ok(!receivedMetrics[0].imagePostProcess);
+        assert.ok(!receivedMetrics[1].imagePostProcess);
     });
+
     it('should generate rendition if only one post processing eligible rendition', async () => {
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
@@ -477,7 +500,7 @@ describe("imagePostProcess", () => {
         }
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
-        const main = batchWorker(batchWorkerFn);
+        const main = batchWorker(batchWorkerFn, { supportedRenditionFormats: ["jpg"] });
         const params = {
             source: `data:image/png;base64,${base64PngFile}`,
             renditions: [{
@@ -507,7 +530,10 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
         assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
         assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
+        assert.equal(receivedMetrics[0].imagePostProcess, true);
+        assert.equal(receivedMetrics[1].imagePostProcess, true);
     });
+
     it('should generate rendition when all rendition are post processing ineligible', async () => {
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
@@ -557,6 +583,9 @@ describe("imagePostProcess", () => {
         assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
         assert.equal(receivedMetrics[2].eventType, "activation");
         assert.equal(receivedMetrics[2].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
+        assert.ok(!receivedMetrics[0].imagePostProcess);
+        assert.ok(!receivedMetrics[1].imagePostProcess);
+        assert.ok(!receivedMetrics[2].imagePostProcess);
     });
 
     it("should post process after shellScriptWorker(), json postProcess is boolean", async () => {
@@ -570,7 +599,7 @@ describe("imagePostProcess", () => {
         `;
         await fs.writeFile("worker.sh", script);
 
-        const main = shellScriptWorker();
+        const main = shellScriptWorker("worker.sh", { supportedRenditionFormats: ["jpg"] });
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
         const params = {
@@ -598,6 +627,8 @@ describe("imagePostProcess", () => {
 
         await MetricsTestHelper.metricsDone();
         assert.equal(receivedMetrics.length, 2);
+        assert.equal(receivedMetrics[0].imagePostProcess, true);
+        assert.equal(receivedMetrics[1].imagePostProcess, true);
     });
 
     it("should post process after shellScriptWorker(), json postProcess is string", async () => {
@@ -611,7 +642,7 @@ describe("imagePostProcess", () => {
         `;
         await fs.writeFile("worker.sh", script);
 
-        const main = shellScriptWorker();
+        const main = shellScriptWorker("worker.sh", { supportedRenditionFormats: ["jpg"] });
 
         const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE)).toString('base64');
         const params = {
@@ -639,6 +670,8 @@ describe("imagePostProcess", () => {
 
         await MetricsTestHelper.metricsDone();
         assert.equal(receivedMetrics.length, 2);
+        assert.equal(receivedMetrics[0].imagePostProcess, true);
+        assert.equal(receivedMetrics[1].imagePostProcess, true);
     });
 
     it("should fail if options.json from shellScriptWorker() is not formatted correctly", async () => {
@@ -682,5 +715,7 @@ describe("imagePostProcess", () => {
 
         await MetricsTestHelper.metricsDone();
         assert.equal(receivedMetrics.length, 2);
+        assert.ok(!receivedMetrics[0].imagePostProcess);
+        assert.ok(!receivedMetrics[1].imagePostProcess);
     });
 });
