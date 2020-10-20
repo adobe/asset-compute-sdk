@@ -37,6 +37,7 @@ jobs:
           branch: master
           condition:  $TRAVIS_OS_NAME == linux
         provider: script
+        skip_cleanup: true
         script: npm run semantic-release
 
 after_script:
