@@ -12,6 +12,7 @@ Jenkinsfile
 .eslintignore
 stryker.conf.js
 build/
+codecov.yml
 
 # npm pack leftovers
 *.tgz
