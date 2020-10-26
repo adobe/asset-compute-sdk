@@ -15,7 +15,7 @@
     "@adobe/cgroup-metrics": "^3.0.1",
     "@adobe/httptransfer": "^1.0.1",
     "@adobe/metrics-sampler": "^1.0.0",
-    "@adobe/node-fetch-retry": "^1.0.1",
+    "@adobe/node-fetch-retry": "^1.1.0",
     "ajv": "6.12.3",
     "clone": "^2.1.2",
     "content-type": "^1.0.4",
