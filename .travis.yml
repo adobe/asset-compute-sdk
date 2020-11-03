@@ -42,6 +42,7 @@ jobs:
 
 after_script:
   - cat test-worker/build/test-results/test-worker/test.log
+  - npx @adobe/sizewatcher
 
 after_success:
   - npm run report-coverage
