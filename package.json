@@ -28,6 +28,7 @@
     "jsonwebtoken": "^8.5.1",
     "mime-types": "^2.1.27",
     "openwhisk": "^3.21.2",
+    "simple-exiftool": "^1.1.0",
     "strip-ansi": "^6.0.0",
     "valid-data-url": "^3.0.1",
     "valid-url": "^1.0.9"
