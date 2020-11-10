@@ -113,8 +113,6 @@ describe("postprocessing/image.js", () => {
         };
         const result = await main(params);
 
-        console.log(result);
-
         // validate errors
         assert.ok(result.renditionErrors === undefined);
 
