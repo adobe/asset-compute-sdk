@@ -4,4 +4,4 @@ packages:
     actions:
       worker:
         function: worker.js
-        docker: 'docker-senseiwins-release.dr-uw2.adobeitc.com/nui/nodejs12-action-centos8:1.0.0'
+        docker: 'alexkli/nodejs10-action-centos:2.4.1'
