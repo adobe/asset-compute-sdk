@@ -109,6 +109,39 @@ describe('http.js (multipart)', function() {
             assert(nock.isDone());
         });
 
+        it('should fail on twice with connection error then succeed', async () => {
+            const rendition  = _buildMultipartData(0, 33, 1);
+            nock('http://unittest')
+                .matchHeader('content-length', 33)
+                .matchHeader('content-type', 'image/jpeg')
+                .put('/rendition_1', 'hello multipart uploading world!\n')
+                .replyWithError({
+                    code: 'ECONNRESET',
+                    message: 'read ECONNRESET'
+                });
+            nock('http://unittest')
+                .matchHeader('content-length', 33)
+                .matchHeader('content-type', 'image/jpeg')
+                .put('/rendition_1', 'hello multipart uploading world!\n')
+                .replyWithError({
+                    code: 'ECONNRESET',
+                    message: 'read ECONNRESET'
+                });
+            nock('http://unittest')
+                .matchHeader('content-length', 33)
+                .matchHeader('content-type', 'image/jpeg')
+                .put('/rendition_1', 'hello multipart uploading world!\n')
+                .reply(201);
+
+            try {
+                await http.upload(rendition);
+            } catch (err) {
+                console.log(err);
+                assert(false);
+            }
+            assert(nock.isDone());
+        });
+
         it('single upload_no_target', async () => {
             const rendition = _buildMultipartData(0, 10, 1);
             delete rendition.target;
