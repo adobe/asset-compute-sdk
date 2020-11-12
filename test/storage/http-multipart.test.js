@@ -160,20 +160,20 @@ describe('http.js (multipart)', function() {
         it('test renditions with failure', async function() {
             const rendition = _buildMultipartData(5, 20, 2);
             nock('http://unittest')
-                .matchHeader('content-length',17)
+                .matchHeader('content-length',20)
                 .matchHeader('content-type', 'image/jpeg')
-                .put('/rendition_1', 'hello multipart u')
+                .put('/rendition_1', 'hello multipart uplo')
                 .thrice()
                 .reply(500); // invokes retry
             nock('http://unittest')
-                .matchHeader('content-length',17)
+                .matchHeader('content-length',20)
                 .matchHeader('content-type', 'image/jpeg')
-                .put('/rendition_1', 'hello multipart u')
+                .put('/rendition_1', 'hello multipart uplo')
                 .reply(201); // retry succeeds
             nock('http://unittest')
-                .matchHeader('content-length', 16)
+                .matchHeader('content-length', 13)
                 .matchHeader('content-type', 'image/jpeg')
-                .put('/rendition_2', 'ploading world!\n')
+                .put('/rendition_2', 'ading world!\n')
                 .reply(201);
             await http.upload(rendition);
             assert(nock.isDone());
@@ -214,16 +214,11 @@ describe('http.js (multipart)', function() {
             assert.ok(threw);
         });
 
-        it('test min part size', async () => {
+        it('test max part size', async () => {
             nock('http://unittest')
-                .matchHeader('content-length',20)
+                .matchHeader('content-length',33)
                 .matchHeader('content-type', 'image/jpeg')
-                .put('/rendition_1', 'hello multipart uplo')
-                .reply(201);
-            nock('http://unittest')
-                .matchHeader('content-length',13)
-                .matchHeader('content-type', 'image/jpeg')
-                .put('/rendition_2', 'ading world!\n')
+                .put('/rendition_1', 'hello multipart uploading world!\n')
                 .reply(201);
 
             const rendition = _buildMultipartData(20, 100);
