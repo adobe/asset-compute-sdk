@@ -11,7 +11,9 @@ on:
 
 jobs:
   build:
-
+    container:
+      image: alexkli/nodejs10-action-centos:2.1.0
+      
     runs-on: ubuntu-latest
 
     strategy:
