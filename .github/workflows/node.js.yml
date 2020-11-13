@@ -11,10 +11,10 @@ on:
 
 jobs:
   build:
-    container:
-      image: alexkli/nodejs10-action-centos:2.1.0
       
     runs-on: ubuntu-latest
+    container:
+      image: alexkli/nodejs10-action-centos:2.1.0
 
     strategy:
       matrix:
@@ -26,8 +26,13 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: uname -a
-    - run: npm install @adobe/aio-cli
-    - run: npm install
-    - run: npm test
-    - run: npm run report-coverage
+    - name: Log used OS
+      run: uname -a
+    - name: Install aio
+      run: npm install @adobe/aio-cli
+    - name: Install dependencies (all)
+      run: npm install
+    - name: Run unit tests
+      run: npm test
+    - name: Report coverage
+      run: npm run report-coverage
