@@ -35,6 +35,7 @@ describe('http.js (multipart)', function() {
             nock.cleanAll();
             mockFs.restore();
             delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
+            delete process.env.ASSET_COMPUTE_TEST_RETRY_DURATION;
             try {
                 await removeFiles("rendition*");
             } catch (err) {
@@ -86,6 +87,27 @@ describe('http.js (multipart)', function() {
             }
             assert(nock.isDone());
         });
+
+        it('test rendition with timeout failure, custom maxRetryDuration', async function() {
+            process.env.ASSET_COMPUTE_TEST_RETRY_DURATION = 10; // retry is only 1s
+            const rendition  = _buildMultipartData(0, 33, 1);
+            nock('http://unittest')
+                .matchHeader('content-length', 33)
+                .matchHeader('content-type', 'image/jpeg')
+                .put('/rendition_1', 'hello multipart uploading world!\n')
+                .replyWithError({
+                    code: 'ECONNRESET',
+                    message: 'read ECONNRESET'
+                });
+            let threw = false;
+            try {
+                await http.upload(rendition);
+            } catch (err) {
+                assert.strictEqual(err.name, 'GenericError');
+                threw = true;
+            }
+            assert.ok(threw);
+        }).timeout(5000);
 
         it('should fail on first attempt then succeed', async () => {
             const rendition  = _buildMultipartData(0, 33, 1);
