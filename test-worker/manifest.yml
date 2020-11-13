@@ -4,4 +4,4 @@ packages:
     actions:
       worker:
         function: worker.js
-        docker: 'alexkli/nodejs10-action-centos:2.1.0'
+        docker: 'alexkli/nodejs10-action-centos:2.4.1'
