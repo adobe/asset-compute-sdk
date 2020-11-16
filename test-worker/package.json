@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "adobe-asset-compute test-worker -u"
+    "test": "adobe-asset-compute test-worker"
   },
   "devDependencies": {
     "@adobe/aio-cli-plugin-asset-compute": "^1.4.5"
