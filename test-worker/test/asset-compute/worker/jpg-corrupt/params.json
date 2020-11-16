@@ -1,4 +1,4 @@
 {
   "fmt": "png",
-  "errorReason": "GenericError"
+  "errorReason": "SourceCorruptError"
 }

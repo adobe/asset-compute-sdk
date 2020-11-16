@@ -34,7 +34,7 @@ const RENDITION_JPG = fs.readFileSync(RENDITION_JPG_PATH);
 const RENDITION_PNG = fs.readFileSync(RENDITION_PNG_PATH);
 const RENDITION_TIFF = fs.readFileSync(RENDITION_TIFF_PATH);
 
-describe("imagePostProcess", () => {
+describe("postprocessing/image.js", () => {
     before(() => {
         const { needsImagePostProcess, prepareImagePostProcess } = require("../lib/postprocessing/image");
         mockRequire("../lib/postprocessing/image", {
