@@ -2,7 +2,7 @@
   "name": "@adobe/asset-compute-sdk",
   "description": "Adobe Asset Compute Worker SDK",
   "license": "Apache-2.0",
-  "version": "2.10.0",
+  "version": "2.10.1",
   "author": {
     "name": "Adobe Inc."
   },
@@ -28,7 +28,7 @@
     "image-size": "^0.9.3",
     "jsonwebtoken": "^8.5.1",
     "mime-types": "^2.1.27",
-    "openwhisk": "^3.21.2",
+    "openwhisk": "^3.21.3",
     "strip-ansi": "^6.0.0",
     "valid-data-url": "^3.0.1",
     "valid-url": "^1.0.9"
@@ -53,7 +53,7 @@
     "nyc": "^15.1.0",
     "read-chunk": "^3.2.0",
     "rimraf": "^3.0.2",
-    "semantic-release": "^17.1.1",
+    "semantic-release": "^17.2.3",
     "sinon": "^9.2.1"
   },
   "keywords": [
