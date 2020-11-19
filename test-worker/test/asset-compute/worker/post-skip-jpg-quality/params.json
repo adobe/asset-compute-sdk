@@ -1,5 +1,5 @@
 {
     "imagemagick": "-quality 10",
     "fmt": "jpg",
-    "quality": 10
+    "quality": 99
 }
