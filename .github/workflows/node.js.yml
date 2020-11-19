@@ -27,12 +27,14 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - name: Log used OS
-      run: uname -a
+      run: pwd
     - name: Install aio
       run: npm install @adobe/aio-cli
     - name: Install dependencies (all)
       run: npm install
     - name: Run unit tests
       run: npm test
+    - name: Show logs
+      run: cat build/mocha.test.log
     - name: Report coverage
       run: npm run report-coverage
