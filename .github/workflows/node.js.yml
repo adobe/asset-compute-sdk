@@ -21,7 +21,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Setup unit test environment
-      run: sudo apt-get install librsvg2-bin imagemagick
+      run: sudo apt-get install librsvg2-bin imagemagick exiftool
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
