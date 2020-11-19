@@ -29,7 +29,7 @@ jobs:
     - name: Log used OS
       run: pwd
     - name: Install aio
-      run: npm install @adobe/aio-cli
+      run: npm install @adobe/aio-cli && aio info
     - name: Install dependencies (all)
       run: npm install
     - name: Run unit tests
