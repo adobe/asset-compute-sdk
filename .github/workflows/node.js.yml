@@ -28,10 +28,6 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: Log used OS
       run: pwd
-    - name: Install aio
-      run: npm install -g @adobe/aio-cli@4.0.0
-    - name: Log aio details
-      run: aio info
     - name: Install dependencies (all)
       run: npm install
     - name: Run unit tests
