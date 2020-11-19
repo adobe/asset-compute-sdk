@@ -33,6 +33,6 @@ jobs:
     - name: Install dependencies (all)
       run: npm install
     - name: Run unit tests
-      run: npm test
+      run: npm test -- -v
     - name: Report coverage
       run: npm run report-coverage
