@@ -27,7 +27,13 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - name: Log used OS
+      run: uname -a
+    - name: Run directory
       run: pwd
+    - name: Install aio
+      run: npm install -g @adobe/aio-cli
+    - name: Log aio details
+      run: aio info
     - name: Install dependencies (all)
       run: npm install
     - name: Run unit tests
