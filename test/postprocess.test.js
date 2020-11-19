@@ -114,7 +114,7 @@ describe("postprocessing/image.js", () => {
 
         // validate errors
         console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors)
+        console.log(result.renditionErrors);
         console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
@@ -232,7 +232,7 @@ describe("postprocessing/image.js", () => {
 
         // validate errors
         console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors)
+        console.log(result.renditionErrors);
         console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
@@ -303,7 +303,7 @@ describe("postprocessing/image.js", () => {
 
         // validate errors
         console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors)
+        console.log(result.renditionErrors);
         console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
@@ -422,7 +422,7 @@ describe("postprocessing/image.js", () => {
 
         // validate errors
         console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors)
+        console.log(result.renditionErrors);
         console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
@@ -482,7 +482,7 @@ describe("postprocessing/image.js", () => {
 
         // validate errors
         console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors)
+        console.log(result.renditionErrors);
         console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
@@ -531,7 +531,7 @@ describe("postprocessing/image.js", () => {
 
         // validate errors
         console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors)
+        console.log(result.renditionErrors);
         console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
@@ -583,7 +583,7 @@ describe("postprocessing/image.js", () => {
 
         // validate errors
         console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors)
+        console.log(result.renditionErrors);
         console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
@@ -637,7 +637,7 @@ describe("postprocessing/image.js", () => {
 
         // validate no errors
         console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors)
+        console.log(result.renditionErrors);
         console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
@@ -683,7 +683,7 @@ describe("postprocessing/image.js", () => {
 
         // validate no errors
         console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors)
+        console.log(result.renditionErrors);
         console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
