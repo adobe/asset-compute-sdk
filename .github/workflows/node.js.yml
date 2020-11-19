@@ -13,8 +13,6 @@ jobs:
   build:
       
     runs-on: ubuntu-latest
-    container:
-      image: alexkli/nodejs10-action-centos:2.1.0
 
     strategy:
       matrix:
@@ -22,6 +20,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Setup unit test environment
+      run: sudo apt-get install librsvg2-bin imagemagick
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
