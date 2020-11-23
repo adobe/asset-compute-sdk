@@ -113,9 +113,6 @@ describe("postprocessing/image.js", () => {
         const result = await main(params);
 
         // validate errors
-        console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors);
-        console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
         assert.equal(events.length, 1);
@@ -231,9 +228,6 @@ describe("postprocessing/image.js", () => {
         const result = await main(params);
 
         // validate errors
-        console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors);
-        console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
         assert.equal(events.length, 3);
@@ -302,9 +296,6 @@ describe("postprocessing/image.js", () => {
         const result = await main(params);
 
         // validate errors
-        console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors);
-        console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
         assert.equal(events.length, 3);
@@ -421,9 +412,6 @@ describe("postprocessing/image.js", () => {
         const result = await main(params);
 
         // validate errors
-        console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors);
-        console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
         assert.equal(events.length, 3);
@@ -481,9 +469,6 @@ describe("postprocessing/image.js", () => {
         const result = await main(params);
 
         // validate errors
-        console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors);
-        console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
         assert.equal(events.length, 1);
@@ -530,9 +515,6 @@ describe("postprocessing/image.js", () => {
         const result = await main(params);
 
         // validate errors
-        console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors);
-        console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
         assert.equal(events.length, 1);
@@ -582,9 +564,6 @@ describe("postprocessing/image.js", () => {
         const result = await main(params);
 
         // validate errors
-        console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors);
-        console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
         assert.equal(events.length, 2);
@@ -636,9 +615,6 @@ describe("postprocessing/image.js", () => {
         const result = await main(params);
 
         // validate no errors
-        console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors);
-        console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
         assert.ok(RENDITION_JPG.equals(uploadedRenditions["/MyRendition.jpeg"]));
@@ -682,9 +658,6 @@ describe("postprocessing/image.js", () => {
         const result = await main(params);
 
         // validate no errors
-        console.log('~~~~~~~~ Rendition errors ~~~~~~~~~~~~~~~~~~~~~~`');
-        console.log(result.renditionErrors);
-        console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`');
         assert.ok(result.renditionErrors === undefined);
 
         assert.ok(RENDITION_JPG.equals(uploadedRenditions["/MyRendition.jpeg"]));
