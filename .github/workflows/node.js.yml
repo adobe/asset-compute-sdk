@@ -40,3 +40,11 @@ jobs:
       run: npm test
     - name: Report coverage
       run: npm run report-coverage
+
+  sizewatcher:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - run: npx @adobe/sizewatcher
