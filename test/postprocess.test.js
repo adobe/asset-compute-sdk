@@ -43,7 +43,6 @@ describe("postprocessing/image.js", () => {
                 const instructions = rendition.instructions;
                 if (instructions.shouldFail) {
                     throw new Error('mocked failure');
-
                 } else if (instructions.fmt === 'jpg') {
                     await fs.copyFile(RENDITION_JPG_PATH, rendition.path);
                 } else if (instructions.fmt === 'png') {
@@ -565,7 +564,6 @@ describe("postprocessing/image.js", () => {
         const result = await main(params);
 
         // validate errors
-
         assert.ok(result.renditionErrors === undefined);
 
         assert.equal(events.length, 2);
