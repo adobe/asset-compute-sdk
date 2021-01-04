@@ -113,6 +113,10 @@ describe("postprocessing/image.js", () => {
         const result = await main(params);
 
         // validate errors
+        if (result.renditionErrors !== undefined) {
+            console.log('Test failed,', result.renditionErrors);
+            console.log('DEBUG LOGS:', JSON.stringify(result, null, 2));
+        }
         assert.ok(result.renditionErrors === undefined);
 
         assert.equal(events.length, 1);
