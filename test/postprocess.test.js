@@ -116,6 +116,7 @@ describe("postprocessing/image.js", () => {
         if (result.renditionErrors !== undefined) {
             console.log('Test failed,', result.renditionErrors);
             console.log('DEBUG LOGS:', JSON.stringify(result, null, 2));
+            throw Error(result.renditionErrors);
         }
         assert.ok(result.renditionErrors === undefined);
 
