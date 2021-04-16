@@ -1,18 +1,42 @@
 {
-  "name": "@adobe/asset-compute-sdk",
-  "description": "Adobe Asset Compute Worker SDK",
-  "license": "Apache-2.0",
-  "version": "2.10.3",
+  "_args": [
+    [
+      "@adobe/asset-compute-sdk@2.10.3",
+      "/Users/mathern/Desktop/git/@nui-workers/worker-flite/action"
+    ]
+  ],
+  "_from": "@adobe/asset-compute-sdk@2.10.3",
+  "_id": "@adobe/asset-compute-sdk@2.10.3",
+  "_inBundle": false,
+  "_integrity": "sha512-UuAarP0+4MUxj8HoDVhLPmZ7ebXAkLpfq2YnmesQ+7QSYtsYhgLGhTWgCMlVh/5lrwA+LkrR+UUsiQ85t6AF4w==",
+  "_location": "/@adobe/asset-compute-sdk",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "version",
+    "registry": true,
+    "raw": "@adobe/asset-compute-sdk@2.10.3",
+    "name": "@adobe/asset-compute-sdk",
+    "escapedName": "@adobe%2fasset-compute-sdk",
+    "scope": "@adobe",
+    "rawSpec": "2.10.3",
+    "saveSpec": null,
+    "fetchSpec": "2.10.3"
+  },
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/@adobe/asset-compute-sdk/-/asset-compute-sdk-2.10.3.tgz",
+  "_spec": "2.10.3",
+  "_where": "/Users/mathern/Desktop/git/@nui-workers/worker-flite/action",
   "author": {
     "name": "Adobe Inc."
   },
-  "repository": {
-    "type": "git",
-    "url": "adobe/asset-compute-sdk"
+  "bugs": {
+    "url": "https://github.com/adobe/asset-compute-sdk/issues"
   },
   "dependencies": {
     "@adobe/asset-compute-commons": "^1.1.2",
-    "@adobe/cgroup-metrics": "^3.0.1",
+    "@adobe/cgroup-metrics": "^3.0.3",
     "@adobe/httptransfer": "^2.0.3",
     "@adobe/metrics-sampler": "^1.0.1",
     "@adobe/node-fetch-retry": "^1.1.0",
@@ -22,17 +46,18 @@
     "css-unit-converter": "^1.1.2",
     "data-uri-to-buffer": "^3.0.1",
     "deprecation": "^2.3.1",
-    "file-type": "^16.2.0",
-    "fs-extra": "^9.0.1",
+    "file-type": "^16.3.0",
+    "fs-extra": "^9.1.0",
     "gm": "^1.23.1",
-    "image-size": "^0.9.3",
+    "image-size": "^0.9.7",
     "jsonwebtoken": "^8.5.1",
-    "mime-types": "^2.1.28",
+    "mime-types": "^2.1.30",
     "openwhisk": "^3.21.3",
     "strip-ansi": "^6.0.0",
     "valid-data-url": "^3.0.1",
     "valid-url": "^1.0.9"
   },
+  "description": "Adobe Asset Compute Worker SDK",
   "devDependencies": {
     "@adobe/aio-cli-plugin-asset-compute": "^1.4.6",
     "@adobe/eslint-config-asset-compute": "^1.3.1",
@@ -56,6 +81,7 @@
     "semantic-release": "^17.3.2",
     "sinon": "^9.2.3"
   },
+  "homepage": "https://github.com/adobe/asset-compute-sdk#readme",
   "keywords": [
     "scripts",
     "openwhisk",
@@ -63,13 +89,20 @@
     "sdk",
     "adobe"
   ],
+  "license": "Apache-2.0",
+  "name": "@adobe/asset-compute-sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adobe/asset-compute-sdk.git"
+  },
   "scripts": {
-    "test": "nyc -r=text -r=lcov mocha test --file test/logfile.setup.js --recursive --exit && npm run post-processing-test",
+    "beautify": "eslint ./ --fix",
     "post-processing-test": "cd test-worker && rm -rf build dist && npm install && npm test && ! grep -i 'conversion using image processing lib (imagemagick) failed' build/test-results/test-worker/test.log",
     "posttest": "eslint ./ && license-checker --summary && ./node_modules/lockfile-lint/bin/lockfile-lint.js --path package-lock.json —type npm --allowed-hosts npm artifactory.corp.adobe.com --allowed-schemes \"https:\" \"file:\" --empty-hostname true",
-    "beautify": "eslint ./ --fix",
-    "unit-test": "nyc --reporter=html --reporter=text mocha test --recursive --exit -- -v",
     "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
-    "semantic-release": "semantic-release"
-  }
+    "semantic-release": "semantic-release",
+    "test": "nyc -r=text -r=lcov mocha test --file test/logfile.setup.js --recursive --exit && npm run post-processing-test",
+    "unit-test": "nyc --reporter=html --reporter=text mocha test --recursive --exit -- -v"
+  },
+  "version": "2.10.3"
 }
