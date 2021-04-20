@@ -21,10 +21,9 @@ const mockRequire = require("mock-require");
 
 describe("type.js", () => {
     it('detects mimetypes and encodings', async function () {
-        assert.deepStrictEqual(await detectContentType('./test/files/file.bmp'), {
-            mime: 'image/bmp',
-            encoding: "binary"
-        });
+        const result = await detectContentType('./test/files/file.bmp');
+        assert.ok(result.mime === 'image/bmp' || result.mime === 'image/x-ms-bmp');
+        assert.ok(result.encoding === 'binary');
 
         assert.deepStrictEqual(await detectContentType('./test/files/file.tif'), {
             mime: 'image/tiff',
