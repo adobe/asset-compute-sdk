@@ -1,0 +1,8 @@
+{
+    "inputs": {
+        "type": ["image/jpeg", "image/png"]
+    },
+    "outputs": {
+        "type": ["image/jpeg", "image/png"]
+    }
+}
