@@ -66,5 +66,6 @@ exports.main = worker(async (source, rendition) => {
 
     rendition.postProcess = true;
 }, {
-    supportedRenditionFormats: SUPPORTED_FMT
+    supportedRenditionFormats: SUPPORTED_FMT,
+    manifest: require("./pipeline-manifest.json")
 });
