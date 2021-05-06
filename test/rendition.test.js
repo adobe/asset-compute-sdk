@@ -367,7 +367,7 @@ describe("rendition.js", () => {
             // overwrite path to point to test files
             rendition.path = './test/files/file.bmp';
             const result = await rendition.mimeType();
-            assert.strictEqual(result, 'image/x-ms-bmp');
+            assert.ok(result === 'image/bmp' || result === 'image/x-ms-bmp');
         });
 
         it('gracefully handles not finding files when identifying mimetype', async function () {
