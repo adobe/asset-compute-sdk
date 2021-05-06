@@ -332,7 +332,7 @@ describe("rendition.js", () => {
 
         await fs.writeFile("/rendition11.txt", DATA_URI_CONTENTS);
         const dataUri = await rendition.asDataUri();
-        assert.equal(dataUri, DATA_URI);
+        assert.strictEqual(dataUri, DATA_URI);
     });
 
     it('should not create a data uri because the rendition is too large', async function () {

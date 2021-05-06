@@ -249,7 +249,7 @@ describe('http.js (multipart)', function() {
             try {
                 await http.upload(rendition);
             } catch (err) {
-                assert.equal(err.name, 'RenditionTooLarge');
+                assert.strictEqual(err.name, 'RenditionTooLarge');
                 threw = true;
             }
             assert.ok(threw);

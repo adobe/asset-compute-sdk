@@ -712,7 +712,7 @@ describe("postprocessing/image.js", () => {
         assert.strictEqual(result.renditionErrors.length, 1);
 
         // make sure it did not do post processing
-        assert.deepEqual(uploadedRenditions, {});
+        assert.deepStrictEqual(uploadedRenditions, {});
         // assert.ok(!RENDITION_JPG.equals(uploadedRenditions["/MyRendition.jpeg"]));
 
         assert.strictEqual(events.length, 1);
