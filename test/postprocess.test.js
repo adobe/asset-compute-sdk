@@ -34,7 +34,7 @@ const RENDITION_JPG = fs.readFileSync(RENDITION_JPG_PATH);
 const RENDITION_PNG = fs.readFileSync(RENDITION_PNG_PATH);
 const RENDITION_TIFF = fs.readFileSync(RENDITION_TIFF_PATH);
 
-describe("postprocessing/image.js", () => {
+describe.only("postprocessing/image.js", () => {
     before(() => {
         const { needsImagePostProcess, prepareImagePostProcess } = require("../lib/postprocessing/image");
         mockRequire("../lib/postprocessing/image", {
@@ -86,7 +86,7 @@ describe("postprocessing/image.js", () => {
         fs.removeSync("worker.sh");
     });
 
-    it('should convert PNG to JPG - end to end test', async () => {
+    it.only('should convert PNG to JPG - end to end test', async () => {
         const receivedMetrics = MetricsTestHelper.mockNewRelic();
         const events = testUtil.mockIOEvents();
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
