@@ -180,9 +180,9 @@ describe("api.js (shell)", () => {
 
                 // validate errors
                 assert.ok(result.renditionErrors);
-                assert.equal(result.renditionErrors.length, 1);
-                assert.equal(result.renditionErrors[0].name, "GenericError");
-                assert.equal(result.renditionErrors[0].location, "test_action_shellScript");
+                assert.strictEqual(result.renditionErrors.length, 1);
+                assert.strictEqual(result.renditionErrors[0].name, "GenericError");
+                assert.strictEqual(result.renditionErrors[0].location, "test_action_shellScript");
 
             } catch (err) {
                 console.log(err);
@@ -243,10 +243,10 @@ describe("api.js (shell)", () => {
 
                 // validate errors
                 assert.ok(result.renditionErrors);
-                assert.equal(result.renditionErrors.length, 1);
-                assert.equal(result.renditionErrors[0].name, "GenericError");
-                assert.equal(result.renditionErrors[0].location, "test_action_shellScript");
-                assert.equal(result.renditionErrors[0].message, "failed");
+                assert.strictEqual(result.renditionErrors.length, 1);
+                assert.strictEqual(result.renditionErrors[0].name, "GenericError");
+                assert.strictEqual(result.renditionErrors[0].location, "test_action_shellScript");
+                assert.strictEqual(result.renditionErrors[0].message, "failed");
 
             } catch (err) {
                 console.log(err);
@@ -448,19 +448,19 @@ describe("api.js (shell)", () => {
             await scriptWorker.processWithScript(mockSource(), mockRendition(rendition));
 
             const env = readEnv("envfile");
-            assert.equal(env.source, `${process.cwd()}/in/source.jpg`);
-            assert.equal(env.file, env.source);
-            assert.equal(env.errorfile, `${process.cwd()}/out/errors/error.json`);
-            assert.equal(env.rendition, `${process.cwd()}/out/rendition0.png`);
-            assert.equal(env.typefile, `${process.cwd()}/out/errors/type.txt`);
-            assert.equal(env.rendition_target, "https://example.com/MyRendition.png");
-            assert.equal(env.rendition_width, rendition.width);
-            assert.equal(env.rendition_fmt, rendition.fmt);
-            assert.equal(env.rendition_foobar, rendition.foobar);
-            assert.equal(env.rendition_crop_x, rendition.crop.x);
-            assert.equal(env.rendition_crop_y, rendition.crop.y);
-            assert.equal(env.rendition_crop_w, rendition.crop.w);
-            assert.equal(env.rendition_crop_h, rendition.crop.h);
+            assert.strictEqual(env.source, `${process.cwd()}/in/source.jpg`);
+            assert.strictEqual(env.file, env.source);
+            assert.strictEqual(env.errorfile, `${process.cwd()}/out/errors/error.json`);
+            assert.strictEqual(env.rendition, `${process.cwd()}/out/rendition0.png`);
+            assert.strictEqual(env.typefile, `${process.cwd()}/out/errors/type.txt`);
+            assert.strictEqual(env.rendition_target, "https://example.com/MyRendition.png");
+            assert.strictEqual(env.rendition_width.toString(), rendition.width.toString());
+            assert.strictEqual(env.rendition_fmt, rendition.fmt);
+            assert.strictEqual(env.rendition_foobar, rendition.foobar);
+            assert.strictEqual(env.rendition_crop_x.toString(), rendition.crop.x.toString());
+            assert.strictEqual(env.rendition_crop_y.toString(), rendition.crop.y.toString());
+            assert.strictEqual(env.rendition_crop_w.toString(), rendition.crop.w.toString());
+            assert.strictEqual(env.rendition_crop_h.toString(), rendition.crop.h.toString());
         });
 
         it("should strip ansi escape codes from instructions passed as environment variables to the script", async () => {
@@ -484,16 +484,16 @@ describe("api.js (shell)", () => {
             await scriptWorker.processWithScript(source, rend);
 
             const env = readEnv("envfile");
-            assert.equal(env.source, `${process.cwd()}/in/source.jpg`);
-            assert.equal(env.file, env.source);
-            assert.equal(env.errorfile, `${process.cwd()}/out/errors/error.json`);
-            assert.equal(env.typefile, `${process.cwd()}/out/errors/type.txt`);
-            assert.equal(env.rendition, `${process.cwd()}/out/rendition0.png`);
-            assert.equal(env.rendition_target, "https://example.com/image.jpg");
-            assert.equal(env.rendition_width, "Unicorn");
-            assert.equal(env.rendition_fmt, "Unicorn");
-            assert.equal(env.rendition_foobar, "Unicorn");
-            assert.equal(env.rendition_crop_x, "Unicorn");
+            assert.strictEqual(env.source, `${process.cwd()}/in/source.jpg`);
+            assert.strictEqual(env.file, env.source);
+            assert.strictEqual(env.errorfile, `${process.cwd()}/out/errors/error.json`);
+            assert.strictEqual(env.typefile, `${process.cwd()}/out/errors/type.txt`);
+            assert.strictEqual(env.rendition, `${process.cwd()}/out/rendition0.png`);
+            assert.strictEqual(env.rendition_target, "https://example.com/image.jpg");
+            assert.strictEqual(env.rendition_width, "Unicorn");
+            assert.strictEqual(env.rendition_fmt, "Unicorn");
+            assert.strictEqual(env.rendition_foobar, "Unicorn");
+            assert.strictEqual(env.rendition_crop_x, "Unicorn");
         });
     });
 });
