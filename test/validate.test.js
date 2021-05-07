@@ -58,7 +58,7 @@ describe('validate.js', () => {
         };
 
         validateRendition(rendition);
-        assert.equal(rendition.target, "https://example.com/image.jpg");
+        assert.strictEqual(rendition.target, "https://example.com/image.jpg");
     });
 
     it('sets renditions target properly when a url is entered', () => {
@@ -67,7 +67,7 @@ describe('validate.js', () => {
         };
 
         validateRendition(rendition);
-        assert.equal(rendition.target, "https://example.com/image.jpg");
+        assert.strictEqual(rendition.target, "https://example.com/image.jpg");
     });
 
     it('sets renditions target properly when a target and a url is entered (target takes precedence)', () => {
@@ -77,7 +77,7 @@ describe('validate.js', () => {
         };
 
         validateRendition(rendition);
-        assert.equal(rendition.target, "https://example.com/image.jpg");
+        assert.strictEqual(rendition.target, "https://example.com/image.jpg");
     });
 
     it('throws if a rendition has no target and no url', () => {
@@ -124,8 +124,8 @@ describe('validate.js', () => {
         };
 
         validateParameters(paramsToValidate);
-        assert.equal(typeof paramsToValidate.source, "object");
-        assert.equal(paramsToValidate.source.url, "https://example.com/image.jpg");
+        assert.strictEqual(typeof paramsToValidate.source, "object");
+        assert.strictEqual(paramsToValidate.source.url, "https://example.com/image.jpg");
     });
 
     it('validates parameters - source is a data uri', () => {
@@ -142,8 +142,8 @@ describe('validate.js', () => {
         };
 
         validateParameters(paramsToValidate);
-        assert.equal(typeof paramsToValidate.source, "object");
-        assert.equal(paramsToValidate.source.url, "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=");
+        assert.strictEqual(typeof paramsToValidate.source, "object");
+        assert.strictEqual(paramsToValidate.source.url, "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=");
     });
 
     it('throws if source is an invalid data uri', () => {
@@ -173,7 +173,7 @@ describe('validate.js', () => {
         validateParameters(paramsToValidate);
 
         // verify array did not change size
-        assert.equal(paramsToValidate.renditions.length, 1);
+        assert.strictEqual(paramsToValidate.renditions.length, 1);
     });
 
     it('verifies renditions is an array (many elements)', () => {
@@ -195,12 +195,12 @@ describe('validate.js', () => {
         validateParameters(paramsToValidate);
 
         // verify array did not change size
-        assert.equal(paramsToValidate.renditions.length, 3);
+        assert.strictEqual(paramsToValidate.renditions.length, 3);
 
         // verify order did not change
-        assert.equal(paramsToValidate.renditions[0].target, "https://example.com/target.jpg");
-        assert.equal(paramsToValidate.renditions[1].target, "https://example.com/target2.jpg");
-        assert.equal(paramsToValidate.renditions[2].target, "https://example.com/target3.jpg");
+        assert.strictEqual(paramsToValidate.renditions[0].target, "https://example.com/target.jpg");
+        assert.strictEqual(paramsToValidate.renditions[1].target, "https://example.com/target2.jpg");
+        assert.strictEqual(paramsToValidate.renditions[2].target, "https://example.com/target3.jpg");
     });
 
     it('verifies if renditions has a multipart target', () => {
@@ -220,7 +220,7 @@ describe('validate.js', () => {
 
         validateParameters(params);
 
-        assert.equal(params.renditions.length, 1);
+        assert.strictEqual(params.renditions.length, 1);
         assert.deepStrictEqual(params.renditions[0].target, {
             minPartSize: 10485760,
             maxPartSize: 104857600,
@@ -460,9 +460,9 @@ describe('validate.js', () => {
         };
 
         validateParameters(params);
-        assert.equal(typeof params.source, "object");
-        assert.equal(params.source.url, "source.jpg");
-        assert.equal(params.renditions.length, 2);
+        assert.strictEqual(typeof params.source, "object");
+        assert.strictEqual(params.source.url, "source.jpg");
+        assert.strictEqual(params.renditions.length, 2);
     });
 
 });

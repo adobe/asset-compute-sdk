@@ -15,13 +15,14 @@
 
 'use strict';
 
+const assert = require('assert');
+const mockFs = require('mock-fs');
+
 const { worker, batchWorker } = require('../lib/api');
 
 const testUtil = require('./testutil');
-const assert = require('assert');
 const fs = require('fs-extra');
 const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@adobe/asset-compute-commons');
-const mockFs = require('mock-fs');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 const sleep = require('util').promisify(setTimeout);
 const sinon = require('sinon');
@@ -54,13 +55,13 @@ describe("api.js", () => {
 
         it("should return a function that returns a promise", async () => {
             const main = worker(function() {});
-            assert.equal(typeof main, "function");
+            assert.strictEqual(typeof main, "function");
 
             MetricsTestHelper.mockNewRelic();
 
             const result = main(testUtil.simpleParams());
             // check if it's a Promise, from https://stackoverflow.com/a/38339199/2709
-            assert.equal(Promise.resolve(result), result);
+            assert.strictEqual(Promise.resolve(result), result);
 
             await result;
         });
@@ -71,16 +72,21 @@ describe("api.js", () => {
             let sourcePath, renditionPath, renditionDir;
 
             function workerFn(source, rendition) {
-                assert.equal(typeof source, "object");
-                assert.equal(typeof source.path, "string");
+                assert.strictEqual(typeof source, "object");
+                assert.strictEqual(typeof source.path, "string");
                 assert.ok(fs.existsSync(source.path));
-                assert.equal(fs.readFileSync(source.path), testUtil.SOURCE_CONTENT);
+
+                /* eslint-disable eqeqeq */
+                // we can only do a weakly typed check here
+                assert.ok(fs.readFileSync(source.path) == testUtil.SOURCE_CONTENT);
+                /* eslint-enable eqeqeq */
+
                 sourcePath = source.path;
 
-                assert.equal(typeof rendition, "object");
-                assert.equal(typeof rendition.path, "string");
-                assert.equal(typeof rendition.name, "string");
-                assert.equal(typeof rendition.directory, "string");
+                assert.strictEqual(typeof rendition, "object");
+                assert.strictEqual(typeof rendition.path, "string");
+                assert.strictEqual(typeof rendition.name, "string");
+                assert.strictEqual(typeof rendition.directory, "string");
                 assert.ok(!fs.existsSync(rendition.path));
                 assert.ok(fs.existsSync(rendition.directory));
                 assert.ok(fs.statSync(rendition.directory).isDirectory());
@@ -196,8 +202,8 @@ describe("api.js", () => {
 
             // validate errors
             assert.ok(result.renditionErrors);
-            assert.equal(result.renditionErrors.length, 1);
-            assert.equal(result.renditionErrors[0], "failed");
+            assert.strictEqual(result.renditionErrors.length, 1);
+            assert.strictEqual(result.renditionErrors[0], "failed");
 
             await MetricsTestHelper.metricsDone();
             testUtil.assertNockDone();
@@ -244,9 +250,9 @@ describe("api.js", () => {
 
             // validate errors
             assert.ok(result.renditionErrors);
-            assert.equal(result.renditionErrors.length, 1);
-            assert.equal(result.renditionErrors[0].name, "GenericError");
-            assert.equal(result.renditionErrors[0].location, "test_action_upload");
+            assert.strictEqual(result.renditionErrors.length, 1);
+            assert.strictEqual(result.renditionErrors[0].name, "GenericError");
+            assert.strictEqual(result.renditionErrors[0].location, "test_action_upload");
             assert.ok(result.renditionErrors[0].message.includes("500")); // failUpload above returns 500 error
 
             await MetricsTestHelper.metricsDone();
@@ -295,9 +301,9 @@ describe("api.js", () => {
 
             // validate errors
             assert.ok(result.renditionErrors);
-            assert.equal(result.renditionErrors.length, 1);
-            assert.equal(result.renditionErrors[0].name, "GenericError");
-            assert.equal(result.renditionErrors[0].location, "test_action_process_norendition");
+            assert.strictEqual(result.renditionErrors.length, 1);
+            assert.strictEqual(result.renditionErrors[0].name, "GenericError");
+            assert.strictEqual(result.renditionErrors[0].location, "test_action_process_norendition");
             // TODO: fix error handling, currently the message is "GenericError: No rendition generated for 0"
             // assert.ok(result.renditionErrors[0].message.includes("500")); // failUpload above returns 500 error
 
@@ -345,9 +351,9 @@ describe("api.js", () => {
 
             // validate errors
             assert.ok(result.renditionErrors);
-            assert.equal(result.renditionErrors.length, 1);
-            assert.equal(result.renditionErrors[0].name, "SourceUnsupportedError");
-            assert.equal(result.renditionErrors[0].reason, "SourceUnsupported");
+            assert.strictEqual(result.renditionErrors.length, 1);
+            assert.strictEqual(result.renditionErrors[0].name, "SourceUnsupportedError");
+            assert.strictEqual(result.renditionErrors[0].reason, "SourceUnsupported");
 
             await MetricsTestHelper.metricsDone();
             testUtil.assertNockDone();
@@ -394,9 +400,9 @@ describe("api.js", () => {
 
             // validate errors
             assert.ok(result.renditionErrors);
-            assert.equal(result.renditionErrors.length, 1);
-            assert.equal(result.renditionErrors[0].name, "SourceCorruptError");
-            assert.equal(result.renditionErrors[0].reason, "SourceCorrupt");
+            assert.strictEqual(result.renditionErrors.length, 1);
+            assert.strictEqual(result.renditionErrors[0].name, "SourceCorruptError");
+            assert.strictEqual(result.renditionErrors[0].reason, "SourceCorrupt");
 
             await MetricsTestHelper.metricsDone();
             testUtil.assertNockDone();
@@ -443,9 +449,9 @@ describe("api.js", () => {
 
             // validate errors
             assert.ok(result.renditionErrors);
-            assert.equal(result.renditionErrors.length, 1);
-            assert.equal(result.renditionErrors[0].name, "SourceFormatUnsupportedError");
-            assert.equal(result.renditionErrors[0].reason, "SourceFormatUnsupported");
+            assert.strictEqual(result.renditionErrors.length, 1);
+            assert.strictEqual(result.renditionErrors[0].name, "SourceFormatUnsupportedError");
+            assert.strictEqual(result.renditionErrors[0].reason, "SourceFormatUnsupported");
 
             await MetricsTestHelper.metricsDone();
             testUtil.assertNockDone();
@@ -523,7 +529,7 @@ describe("api.js", () => {
                 fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
                 return Promise.resolve();
             });
-            assert.equal(typeof main, "function");
+            assert.strictEqual(typeof main, "function");
             process.env.__OW_DEADLINE = Date.now() + 300;
 
             await main(testUtil.simpleParams({noEventsNock:true}));
@@ -562,7 +568,7 @@ describe("api.js", () => {
             const main = worker(async function() {
                 await sleep(200);
             });
-            assert.equal(typeof main, "function");
+            assert.strictEqual(typeof main, "function");
             process.env.__OW_DEADLINE = Date.now() + 100;
 
             await main(testUtil.simpleParams({noEventsNock:true, noPut:true}));
@@ -571,7 +577,7 @@ describe("api.js", () => {
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
                 eventType: 'timeout'
             }]);
-            assert.equal(processSpy.calledOnce, true, "did not call process.exit(101) on timeout");
+            assert.strictEqual(processSpy.calledOnce, true, "did not call process.exit(101) on timeout");
         });
 
         it("should fail by timeout during second rendition processing", async () => {
@@ -593,7 +599,7 @@ describe("api.js", () => {
                 }
                 fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
             });
-            assert.equal(typeof main, "function");
+            assert.strictEqual(typeof main, "function");
             process.env.__OW_DEADLINE = Date.now() + 300;
             await main(testUtil.paramsWithMultipleRenditions({noPut3:true}));
 
@@ -602,23 +608,23 @@ describe("api.js", () => {
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
                 eventType: 'timeout'
             }]);
-            assert.equal(processSpy.calledOnce, true, "did not call process.exit(101) on timeout");
+            assert.strictEqual(processSpy.calledOnce, true, "did not call process.exit(101) on timeout");
         }).timeout(7000);
 
         it('should support the disableSourceDownload flag', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
 
             function workerFn(source, rendition) {
-                assert.equal(typeof source, "object");
-                assert.equal(typeof source.path, "string");
-                assert.equal(typeof source.url, "string");
+                assert.strictEqual(typeof source, "object");
+                assert.strictEqual(typeof source.path, "string");
+                assert.strictEqual(typeof source.url, "string");
                 // must not download
                 assert.ok(!fs.existsSync(source.path));
 
-                assert.equal(typeof rendition, "object");
-                assert.equal(typeof rendition.path, "string");
-                assert.equal(typeof rendition.name, "string");
-                assert.equal(typeof rendition.directory, "string");
+                assert.strictEqual(typeof rendition, "object");
+                assert.strictEqual(typeof rendition.path, "string");
+                assert.strictEqual(typeof rendition.name, "string");
+                assert.strictEqual(typeof rendition.directory, "string");
                 assert.ok(fs.existsSync(rendition.directory));
                 assert.ok(fs.statSync(rendition.directory).isDirectory());
                 assert.ok(!fs.existsSync(rendition.path));
@@ -639,9 +645,9 @@ describe("api.js", () => {
 
             function workerFn(source, rendition, params) {
                 // check params
-                assert.equal(typeof source, "object");
-                assert.equal(typeof params, "object");
-                assert.equal(typeof params.auth, "object");
+                assert.strictEqual(typeof source, "object");
+                assert.strictEqual(typeof params, "object");
+                assert.strictEqual(typeof params.auth, "object");
                 assert.strictEqual(params.auth, testUtil.PARAMS_AUTH);
                 fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
                 return Promise.resolve();
@@ -660,16 +666,19 @@ describe("api.js", () => {
             let sourcePath, renditionDir;
 
             function workerFn(source, rendition) {
-                assert.equal(typeof source, "object");
-                assert.equal(typeof source.path, "string");
+                assert.strictEqual(typeof source, "object");
+                assert.strictEqual(typeof source.path, "string");
                 assert.ok(fs.existsSync(source.path));
-                assert.equal(fs.readFileSync(source.path), testUtil.SOURCE_CONTENT);
+                /* eslint-disable eqeqeq */
+                assert.ok(fs.readFileSync(source.path) == testUtil.SOURCE_CONTENT);
+                /* eslint-enable eqeqeq */
+
                 sourcePath = source.path;
 
-                assert.equal(typeof rendition, "object");
-                assert.equal(typeof rendition.path, "string");
-                assert.equal(typeof rendition.name, "string");
-                assert.equal(typeof rendition.directory, "string");
+                assert.strictEqual(typeof rendition, "object");
+                assert.strictEqual(typeof rendition.path, "string");
+                assert.strictEqual(typeof rendition.name, "string");
+                assert.strictEqual(typeof rendition.directory, "string");
                 assert.ok(!fs.existsSync(rendition.path));
                 assert.ok(fs.existsSync(rendition.directory));
                 assert.ok(fs.statSync(rendition.directory).isDirectory());
@@ -791,13 +800,13 @@ describe("api.js", () => {
 
         it("should return a function that returns a promise", async () => {
             const main = batchWorker(function() {});
-            assert.equal(typeof main, "function");
+            assert.strictEqual(typeof main, "function");
 
             MetricsTestHelper.mockNewRelic();
 
             const result = main(testUtil.simpleParams());
             // check if it's a Promise, from https://stackoverflow.com/a/38339199/2709
-            assert.equal(Promise.resolve(result), result);
+            assert.strictEqual(Promise.resolve(result), result);
 
             await result;
         });
@@ -808,18 +817,20 @@ describe("api.js", () => {
             let sourcePath, renditionPath, renditionDir;
 
             function batchWorkerFn(source, renditions, outDirectory) {
-                assert.equal(typeof source, "object");
-                assert.equal(typeof source.path, "string");
+                assert.strictEqual(typeof source, "object");
+                assert.strictEqual(typeof source.path, "string");
                 assert.ok(fs.existsSync(source.path));
-                assert.equal(fs.readFileSync(source.path), testUtil.SOURCE_CONTENT);
+                /* eslint-disable eqeqeq */
+                assert.ok(fs.readFileSync(source.path) == testUtil.SOURCE_CONTENT);
+                /* eslint-enable eqeqeq */
                 sourcePath = source.path;
 
                 assert.ok(Array.isArray(renditions));
-                assert.equal(renditions.length, 1);
+                assert.strictEqual(renditions.length, 1);
                 const rendition = renditions[0];
-                assert.equal(typeof rendition.path, "string");
-                assert.equal(typeof rendition.name, "string");
-                assert.equal(typeof outDirectory, "string");
+                assert.strictEqual(typeof rendition.path, "string");
+                assert.strictEqual(typeof rendition.name, "string");
+                assert.strictEqual(typeof outDirectory, "string");
                 assert.ok(fs.existsSync(outDirectory));
                 assert.ok(fs.statSync(outDirectory).isDirectory());
                 assert.ok(!fs.existsSync(rendition.path));
@@ -849,17 +860,17 @@ describe("api.js", () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
 
             function batchWorkerFn(source, renditions, outDirectory) {
-                assert.equal(typeof source, "object");
-                assert.equal(typeof source.path, "string");
+                assert.strictEqual(typeof source, "object");
+                assert.strictEqual(typeof source.path, "string");
                 // must not download
                 assert.ok(!fs.existsSync(source.path));
 
                 assert.ok(Array.isArray(renditions));
-                assert.equal(renditions.length, 1);
+                assert.strictEqual(renditions.length, 1);
                 const rendition = renditions[0];
-                assert.equal(typeof rendition.path, "string");
-                assert.equal(typeof rendition.name, "string");
-                assert.equal(typeof outDirectory, "string");
+                assert.strictEqual(typeof rendition.path, "string");
+                assert.strictEqual(typeof rendition.name, "string");
+                assert.strictEqual(typeof outDirectory, "string");
                 assert.ok(fs.existsSync(outDirectory));
                 assert.ok(fs.statSync(outDirectory).isDirectory());
                 assert.ok(!fs.existsSync(rendition.path));
@@ -881,23 +892,25 @@ describe("api.js", () => {
             let sourcePath, renditionPath, renditionDir;
 
             function batchWorkerFn(source, renditions, outDirectory, params) {
-                assert.equal(typeof source, "object");
-                assert.equal(typeof source.path, "string");
+                assert.strictEqual(typeof source, "object");
+                assert.strictEqual(typeof source.path, "string");
                 assert.ok(fs.existsSync(source.path));
-                assert.equal(fs.readFileSync(source.path), testUtil.SOURCE_CONTENT);
+                /* eslint-disable eqeqeq */
+                assert.ok(fs.readFileSync(source.path) == testUtil.SOURCE_CONTENT);
+                /* eslint-disable eqeqeq */
                 sourcePath = source.path;
 
                 // check params
-                assert.equal(typeof params, "object");
-                assert.equal(typeof params.auth, "object");
+                assert.strictEqual(typeof params, "object");
+                assert.strictEqual(typeof params.auth, "object");
                 assert.strictEqual(params.auth, testUtil.PARAMS_AUTH);
 
                 assert.ok(Array.isArray(renditions));
-                assert.equal(renditions.length, 1);
+                assert.strictEqual(renditions.length, 1);
                 const rendition = renditions[0];
-                assert.equal(typeof rendition.path, "string");
-                assert.equal(typeof rendition.name, "string");
-                assert.equal(typeof outDirectory, "string");
+                assert.strictEqual(typeof rendition.path, "string");
+                assert.strictEqual(typeof rendition.name, "string");
+                assert.strictEqual(typeof outDirectory, "string");
                 assert.ok(fs.existsSync(outDirectory));
                 assert.ok(fs.statSync(outDirectory).isDirectory());
                 assert.ok(!fs.existsSync(rendition.path));
@@ -1038,9 +1051,9 @@ describe("api.js", () => {
 
             // validate errors
             assert.ok(result.renditionErrors);
-            assert.equal(result.renditionErrors.length, 1);
-            assert.equal(result.renditionErrors[0].name, "GenericError");
-            assert.equal(result.renditionErrors[0].location, "test_action_batchProcess_norendition");
+            assert.strictEqual(result.renditionErrors.length, 1);
+            assert.strictEqual(result.renditionErrors[0].name, "GenericError");
+            assert.strictEqual(result.renditionErrors[0].location, "test_action_batchProcess_norendition");
             const msg = result.renditionErrors[0].message;
             assert.ok(msg.includes("MyRendition2.txt"));
 
@@ -1109,9 +1122,9 @@ describe("api.js", () => {
 
             // validate errors
             assert.ok(result.renditionErrors);
-            assert.equal(result.renditionErrors.length, 1);
-            assert.equal(result.renditionErrors[0].name, "GenericError");
-            assert.equal(result.renditionErrors[0].location, "test_action_upload");
+            assert.strictEqual(result.renditionErrors.length, 1);
+            assert.strictEqual(result.renditionErrors[0].name, "GenericError");
+            assert.strictEqual(result.renditionErrors[0].location, "test_action_upload");
             const msg = result.renditionErrors[0].message;
             assert.ok(msg.includes("MyRendition2.txt"));
             assert.ok(msg.includes("400")); // put2Status set to fail with 400
@@ -1195,13 +1208,13 @@ describe("api.js", () => {
 
             // validate errors
             assert.ok(result.renditionErrors);
-            assert.equal(result.renditionErrors.length, 3);
-            assert.equal(result.renditionErrors[0].name, "Error");
-            assert.equal(result.renditionErrors[0].message, "unexpected error occurred in worker");
-            assert.equal(result.renditionErrors[1].name, "Error");
-            assert.equal(result.renditionErrors[1].message, "unexpected error occurred in worker");
-            assert.equal(result.renditionErrors[2].name, "Error");
-            assert.equal(result.renditionErrors[2].message, "unexpected error occurred in worker");
+            assert.strictEqual(result.renditionErrors.length, 3);
+            assert.strictEqual(result.renditionErrors[0].name, "Error");
+            assert.strictEqual(result.renditionErrors[0].message, "unexpected error occurred in worker");
+            assert.strictEqual(result.renditionErrors[1].name, "Error");
+            assert.strictEqual(result.renditionErrors[1].message, "unexpected error occurred in worker");
+            assert.strictEqual(result.renditionErrors[2].name, "Error");
+            assert.strictEqual(result.renditionErrors[2].message, "unexpected error occurred in worker");
 
             await MetricsTestHelper.metricsDone();
             MetricsTestHelper.assertArrayContains(receivedMetrics, [{
@@ -1267,12 +1280,12 @@ describe("api.js", () => {
 
             // validate errors
             assert.ok(result.renditionErrors);
-            assert.equal(result.renditionErrors.length, 3);
-            assert.equal(result.renditionErrors[0].name, "GenericError");
+            assert.strictEqual(result.renditionErrors.length, 3);
+            assert.strictEqual(result.renditionErrors[0].name, "GenericError");
             assert.ok(result.renditionErrors[0].message.includes("MyRendition1.png"));
-            assert.equal(result.renditionErrors[1].name, "GenericError");
+            assert.strictEqual(result.renditionErrors[1].name, "GenericError");
             assert.ok(result.renditionErrors[1].message.includes("MyRendition2.txt"));
-            assert.equal(result.renditionErrors[2].name, "GenericError");
+            assert.strictEqual(result.renditionErrors[2].name, "GenericError");
             assert.ok(result.renditionErrors[2].message.includes("MyRendition3.xml"));
 
             await MetricsTestHelper.metricsDone();
@@ -1307,24 +1320,26 @@ describe("api.js", () => {
             let sourcePath, renditionDir;
 
             function batchWorkerFn(source, renditions, outDirectory) {
-                assert.equal(typeof source, "object");
-                assert.equal(typeof source.path, "string");
+                assert.strictEqual(typeof source, "object");
+                assert.strictEqual(typeof source.path, "string");
                 assert.ok(fs.existsSync(source.path));
-                assert.equal(fs.readFileSync(source.path), testUtil.SOURCE_CONTENT);
+                /* eslint-disable eqeqeq */
+                assert.ok(fs.readFileSync(source.path) == testUtil.SOURCE_CONTENT);
+                /* eslint-enable eqeqeq */
                 sourcePath = source.path;
 
                 assert.ok(Array.isArray(renditions));
-                assert.equal(renditions.length, 3);
+                assert.strictEqual(renditions.length, 3);
 
                 for (const rendition of renditions) {
-                    assert.equal(typeof rendition.path, "string");
-                    assert.equal(typeof rendition.name, "string");
-                    assert.equal(typeof outDirectory, "string");
+                    assert.strictEqual(typeof rendition.path, "string");
+                    assert.strictEqual(typeof rendition.name, "string");
+                    assert.strictEqual(typeof outDirectory, "string");
                     assert.ok(fs.existsSync(outDirectory));
                     assert.ok(fs.statSync(outDirectory).isDirectory());
                     assert.ok(!fs.existsSync(rendition.path));
                     if (renditionDir !== undefined) {
-                        assert.equal(rendition.directory, renditionDir);
+                        assert.strictEqual(rendition.directory, renditionDir);
                     }
                     renditionDir = rendition.directory;
 
@@ -1336,7 +1351,7 @@ describe("api.js", () => {
             const main = batchWorker(batchWorkerFn);
             const result = await main(testUtil.paramsWithMultipleRenditions());
 
-            // validate errors
+            // validate errors 
             assert.ok(result.renditionErrors === undefined);
 
             await testUtil.assertParamsWithMultipleRenditions(receivedMetrics);

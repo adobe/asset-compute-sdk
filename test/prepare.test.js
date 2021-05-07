@@ -39,9 +39,9 @@ describe('prepare.js', () => {
 
         const baseDir = path.resolve("work", process.env.__OW_ACTIVATION_ID);
 
-        assert.equal(result.base, baseDir);
-        assert.equal(result.in, path.resolve(baseDir, "in"));
-        assert.equal(result.out, path.resolve(baseDir, "out"));
+        assert.strictEqual(result.base, baseDir);
+        assert.strictEqual(result.in, path.resolve(baseDir, "in"));
+        assert.strictEqual(result.out, path.resolve(baseDir, "out"));
 
         // check directories were created
         let existence = await fse.exists(baseDir);
@@ -73,9 +73,9 @@ describe('prepare.js', () => {
 
         existence = false;
         const result = await createDirectories();
-        assert.equal(result.base, baseDir);
-        assert.equal(result.in, path.resolve(baseDir, "in"));
-        assert.equal(result.out, path.resolve(baseDir, "out"));
+        assert.strictEqual(result.base, baseDir);
+        assert.strictEqual(result.in, path.resolve(baseDir, "in"));
+        assert.strictEqual(result.out, path.resolve(baseDir, "out"));
 
         // check directories were created
         existence = await fse.exists(baseDir);
@@ -113,7 +113,7 @@ describe('prepare.js', () => {
             out: outDir
         };
         const res = await cleanupDirectories(directories);
-        assert.equal(res, true);
+        assert.strictEqual(res, true);
 
         existence = await fse.exists(baseDir);
         assert.ok(!existence, "base directory still exist");
@@ -149,7 +149,7 @@ describe('prepare.js', () => {
             out: outDir
         };
         const res = await cleanupDirectories(directories);
-        assert.equal(res, true);
+        assert.strictEqual(res, true);
 
         existence = await fse.exists(baseDir);
         assert.ok(!existence, "base directory exists");
@@ -171,7 +171,7 @@ describe('prepare.js', () => {
         // make sure directories DO NOT exist
         const directories = {};
         const res = await cleanupDirectories(directories);
-        assert.equal(res, true);
+        assert.strictEqual(res, true);
 
         let existence = await fse.exists(baseDir);
         assert.ok(!existence, "base directory exists");
@@ -193,7 +193,7 @@ describe('prepare.js', () => {
         // make sure directories DO NOT exist
         const directories = null;
         const res = await cleanupDirectories(directories);
-        assert.equal(res, true);
+        assert.strictEqual(res, true);
 
         let existence = await fse.exists(baseDir);
         assert.ok(!existence, "base directory exists");
@@ -254,7 +254,7 @@ describe('prepare.js', () => {
             out: outDir
         };
         const res = await cleanupDirectories(directories);
-        assert.equal(res, true);
+        assert.strictEqual(res, true);
 
         // items under baseDir should be cleaned
         existence = await fse.exists(moreDirToMove);
@@ -293,7 +293,7 @@ describe('prepare.js', () => {
             base: '/dev/null'
         });
 
-        assert.equal(res, false);
+        assert.strictEqual(res, false);
 
         stub.restore();
     });
