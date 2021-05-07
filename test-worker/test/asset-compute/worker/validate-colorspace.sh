@@ -13,7 +13,7 @@
 # exit when any command fails
 set -e
 
-# check for equal interlace
+# check for equal colorspace
 expected=$(identify -format "%[colorspace]" "$1")
 actual=$(identify -format "%[colorspace]" "$2")
 if [[ "$actual" != "$expected" ]]; then
