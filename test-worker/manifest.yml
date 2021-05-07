@@ -5,6 +5,3 @@ packages:
       worker:
         function: worker.js
         docker: 'alexkli/nodejs10-action-centos:2.4.1'
-      limits:
-        memorySize: 4096
-        concurrentActivations: 1
