@@ -16,8 +16,10 @@
 'use strict';
 
 const assert = require('assert');
-const fs = require('fs-extra');
+
 const mockFs = require('mock-fs');
+const fs = require('fs-extra');
+
 const Rendition = require('../lib/rendition.js');
 const { GenericError } = require('@adobe/asset-compute-commons');
 

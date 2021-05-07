@@ -15,13 +15,14 @@
 
 'use strict';
 
+const assert = require('assert');
+const mockFs = require('mock-fs');
+
 const { worker, batchWorker } = require('../lib/api');
 
 const testUtil = require('./testutil');
-const assert = require('assert');
 const fs = require('fs-extra');
 const { SourceUnsupportedError, SourceFormatUnsupportedError, SourceCorruptError } = require('@adobe/asset-compute-commons');
-const mockFs = require('mock-fs');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 const sleep = require('util').promisify(setTimeout);
 const sinon = require('sinon');

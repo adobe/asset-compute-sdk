@@ -15,10 +15,11 @@
 
 'use strict';
 
+const assert = require('assert');
+const mockFs = require('mock-fs');
+
 const nock = require('nock');
 const url = require('url');
-const mockFs = require('mock-fs');
-const assert = require('assert');
 const lodash = require("lodash");
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 

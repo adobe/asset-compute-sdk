@@ -15,11 +15,11 @@
 
 'use strict';
 
+const assert = require('assert');
 const mockFs = require("mock-fs");
 const fs = require('fs-extra');
 const { download } = require('../../lib/storage/datauri');
 const nock = require('nock');
-const assert = require('assert');
 
 describe('datauri.js', () => {
 
