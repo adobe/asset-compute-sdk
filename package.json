@@ -45,7 +45,7 @@
     "license-checker": "^25.0.1",
     "lockfile-lint": "^4.6.2",
     "lodash": "^4.17.21",
-    "mocha": "^8.4.0",
+    "mocha": "^8.3.2",
     "mock-fs": "^4.14.0",
     "mock-require": "^3.0.3",
     "mockery": "^2.1.0",
