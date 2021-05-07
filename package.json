@@ -29,7 +29,7 @@
     "jsonwebtoken": "^8.5.1",
     "mime-types": "^2.1.30",
     "openwhisk": "^3.21.3",
-    "strip-ansi": "^7.0.0",
+    "strip-ansi": "^6.0.0",
     "valid-data-url": "^4.0.0",
     "valid-url": "^1.0.9"
   },
