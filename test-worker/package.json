@@ -7,5 +7,8 @@
   },
   "devDependencies": {
     "@adobe/aio-cli-plugin-asset-compute": "^1.4.9"
+  },
+  "dependencies": {
+    "@adobe/asset-compute-pipeline": "file:../../../nui/asset-compute-pipeline"
   }
 }
