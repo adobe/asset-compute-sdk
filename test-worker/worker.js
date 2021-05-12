@@ -27,8 +27,6 @@ process.env.SDK_POST_PROCESSING_TEST_MODE = true;
 exports.main = worker(async (source, rendition) => {
     console.log("In test-worker rendition callback")
 
-    const sleep = promisify(setTimeout);
-    await sleep(5000);
     const instructions = rendition.instructions;
 
     // simulate a worker that might defer to post-processing
