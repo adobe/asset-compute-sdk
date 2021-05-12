@@ -23,6 +23,7 @@ const SUPPORTED_FMT = ["png", "jpg"];
 
 process.env.OPENWHISK_NEWRELIC_DISABLE_METRICS = true;
 process.env.SDK_POST_PROCESSING_TEST_MODE = true;
+process.env.DEBUG = "*";
 
 exports.main = worker(async (source, rendition) => {
     console.log("In test-worker rendition callback")
