@@ -26,7 +26,7 @@ process.env.SDK_POST_PROCESSING_TEST_MODE = true;
 process.env.DEBUG = "*";
 
 exports.main = worker(async (source, rendition) => {
-    console.log("In test-worker rendition callback")
+    console.log("In test-worker rendition callback", rendition)
 
     const instructions = rendition.instructions;
 
