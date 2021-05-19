@@ -9,6 +9,6 @@
     "@adobe/aio-cli-plugin-asset-compute": "file:../../aio-cli-plugin-asset-compute"
   },
   "dependencies": {
-    "@adobe/asset-compute-pipeline": "file:../../../nui/asset-compute-pipeline"
+    "@adobe/asset-compute-pipeline": "file:../../../nuiall-fromMob/asset-compute-pipeline"
   }
 }
