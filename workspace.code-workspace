@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "."
+		},
+		{
+			"path": "../aio-cli-plugin-asset-compute"
 		}
 	],
 	"settings": {
