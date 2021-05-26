@@ -30,25 +30,25 @@ describe("image-info.js", function (){
     it("returns image information for png file", async function(){
         const filePath = "test/files/file.png";
         const result = ImageInfo.getImageInfoFromFile(filePath);
-        assert.equal(result.width, 512);
-        assert.equal(result.height, 288);
-        assert.equal(result.type, 'png');
+        assert.strictEqual(result.width, 512);
+        assert.strictEqual(result.height, 288);
+        assert.strictEqual(result.type, 'png');
     });
 
     it("returns image information for svg file", async function(){
         const filePath = "test/files/negative/file.svg";
         const result = ImageInfo.getImageInfoFromFile(filePath);
-        assert.equal(result.width, 512);
-        assert.equal(result.height, 288);
-        assert.equal(result.type, 'svg');
+        assert.strictEqual(result.width, 512);
+        assert.strictEqual(result.height, 288);
+        assert.strictEqual(result.type, 'svg');
     });
 
     it("returns image information for tiff file", async function () {
         const filePath = "test/files/file.tif";
         const result = ImageInfo.getImageInfoFromFile(filePath);
-        assert.equal(result.width, 512);
-        assert.equal(result.height, 288);
-        assert.equal(result.type, 'tiff');
+        assert.strictEqual(result.width, 512);
+        assert.strictEqual(result.height, 288);
+        assert.strictEqual(result.type, 'tiff');
     });
 
     it("fails to return image information for nonexistent file", async function () {
@@ -59,7 +59,7 @@ describe("image-info.js", function (){
         } catch (err) { /* eslint-disable-line no-unused-vars */
             errThrown = true;
         }
-        assert.equal(errThrown, true);
+        assert.strictEqual(errThrown, true);
     });
 
     it("fails to return image information for non-image", async function () {
@@ -70,7 +70,7 @@ describe("image-info.js", function (){
         } catch (err) { /* eslint-disable-line no-unused-vars */
             errThrown = true;
         }
-        assert.equal(errThrown, true);
+        assert.strictEqual(errThrown, true);
     });
 
     it("return image information for jpeg image from url", async function () {
@@ -82,10 +82,10 @@ describe("image-info.js", function (){
             .reply(200, data);
         const result = await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
         assert(nock.isDone());
-        assert.equal(result.width, 512);
-        assert.equal(result.height, 288);
-        assert.equal(result.type, 'jpg');
-        assert.equal(result.orientation, 1);
+        assert.strictEqual(result.width, 512);
+        assert.strictEqual(result.height, 288);
+        assert.strictEqual(result.type, 'jpg');
+        assert.strictEqual(result.orientation, 1);
     });
 
     it("return image information for jpeg image from url with orientation", async function () {
@@ -96,10 +96,10 @@ describe("image-info.js", function (){
             .reply(200, data);
         const result = await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
         assert(nock.isDone());
-        assert.equal(result.width, 1200);
-        assert.equal(result.height, 1800);
-        assert.equal(result.type, 'jpg');
-        assert.equal(result.orientation, 5);
+        assert.strictEqual(result.width, 1200);
+        assert.strictEqual(result.height, 1800);
+        assert.strictEqual(result.type, 'jpg');
+        assert.strictEqual(result.orientation, 5);
     });
 
     it("return image information for gif image from url", async function () {
@@ -110,9 +110,9 @@ describe("image-info.js", function (){
             .reply(200, data);
         const result = await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
         assert(nock.isDone());
-        assert.equal(result.width, 512);
-        assert.equal(result.height, 288);
-        assert.equal(result.type, 'gif');
+        assert.strictEqual(result.width, 512);
+        assert.strictEqual(result.height, 288);
+        assert.strictEqual(result.type, 'gif');
     });
 
     it("return image information for bmp image from url", async function () {
@@ -123,9 +123,9 @@ describe("image-info.js", function (){
             .reply(200, data);
         const result = await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
         assert(nock.isDone());
-        assert.equal(result.width, 512);
-        assert.equal(result.height, 288);
-        assert.equal(result.type, 'bmp');
+        assert.strictEqual(result.width, 512);
+        assert.strictEqual(result.height, 288);
+        assert.strictEqual(result.type, 'bmp');
     });
 
     it("return image information for small png image from url", async function () {
@@ -136,9 +136,9 @@ describe("image-info.js", function (){
             .reply(200, data);
         const result = await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
         assert(nock.isDone());
-        assert.equal(result.width, 10);
-        assert.equal(result.height, 6);
-        assert.equal(result.type, 'png');
+        assert.strictEqual(result.width, 10);
+        assert.strictEqual(result.height, 6);
+        assert.strictEqual(result.type, 'png');
     });
 
 
@@ -154,7 +154,7 @@ describe("image-info.js", function (){
         } catch (err) { /* eslint-disable-line no-unused-vars */
             errThrown = true;
         }
-        assert.equal(errThrown, true);
+        assert.strictEqual(errThrown, true);
         assert(nock.isDone());
     });
 
@@ -170,7 +170,7 @@ describe("image-info.js", function (){
             await ImageInfo.getImageInfoFromUrl(url, bytesToRead);
             assert.fail("Should have thrown");
         } catch(err) {
-            assert.equal(err.message, 'failed to retrieve data from url');
+            assert.strictEqual(err.message, 'failed to retrieve data from url');
         }
         assert(nock.isDone());
     });
