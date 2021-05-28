@@ -60,7 +60,8 @@ exports.main = worker(async (source, rendition) => {
         console.log(`[test worker] copying source to rendition: ${source.path} to ${rendition.path}`);
         // simple case where post processing just runs on the source files for basic tests
         // symlink source to rendition to transfer 1:1
-        await fs.symlink(source.path, rendition.path);
+        // await fs.symlink(source.path, rendition.path);
+        await fs.copyFile(source.path, rendition.path);
     }
 
     rendition.postProcess = true;
