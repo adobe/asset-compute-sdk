@@ -16,6 +16,7 @@
 
 const { worker, GenericError } = require('../index');
 const gm = require("../lib/postprocessing/gm-promisify");
+const { Manifest } = require("@adobe/asset-compute-pipeline")
 
 const fs = require('fs').promises;
 
@@ -60,12 +61,23 @@ exports.main = worker(async (source, rendition) => {
         console.log(`[test worker] copying source to rendition: ${source.path} to ${rendition.path}`);
         // simple case where post processing just runs on the source files for basic tests
         // symlink source to rendition to transfer 1:1
-        
+
         await fs.copyFile(source.path, rendition.path);
     }
 
     rendition.postProcess = true;
 }, {
     supportedRenditionFormats: SUPPORTED_FMT,
-    manifest: require("./pipeline-manifest.json")
+    transformerCatalog: [],
+    manifests: [
+        new Manifest({
+            "name": "sdkTestWorker",
+            "inputs": {
+                "type": ["image/jpeg", "image/png"]
+            },
+            "outputs": {
+                "type": ["image/jpeg", "image/png"]
+            }
+        })
+    ]
 });
