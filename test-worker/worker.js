@@ -16,7 +16,8 @@
 
 const { worker, GenericError } = require('../index');
 const gm = require("../lib/postprocessing/gm-promisify");
-const { Manifest } = require("@adobe/asset-compute-pipeline")
+const { Manifest } = require("@adobe/asset-compute-pipeline");
+const { SenseiCatalog } = require("@nui/transformer-sensei/transformer-catalog.js");
 
 const fs = require('fs').promises;
 
@@ -68,7 +69,7 @@ exports.main = worker(async (source, rendition) => {
     rendition.postProcess = true;
 }, {
     supportedRenditionFormats: SUPPORTED_FMT,
-    transformerCatalog: [],
+    transformerCatalog: new SenseiCatalog().catalog,
     manifests: [
         new Manifest({
             "name": "sdkTestWorker",
