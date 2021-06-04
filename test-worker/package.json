@@ -6,10 +6,10 @@
     "test": "adobe-asset-compute test-worker"
   },
   "devDependencies": {
-    "@adobe/aio-cli-plugin-asset-compute": "file:../../aio-cli-plugin-asset-compute"
+    "@adobe/aio-cli-plugin-asset-compute": "^1.5.0"
   },
   "dependencies": {
-    "@adobe/asset-compute-pipeline": "file:../../../nui/asset-compute-pipeline",
+    "@nui/asset-compute-pipeline": "^0.0.4",
     "@nui/transformer-sensei": "^0.2.0"
   }
 }
