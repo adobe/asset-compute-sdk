@@ -70,15 +70,5 @@ exports.main = worker(async (source, rendition) => {
 }, {
     supportedRenditionFormats: SUPPORTED_FMT,
     transformerCatalog: new SenseiCatalog().catalog,
-    manifests: [
-        new Manifest({
-            "name": "sdkTestWorker",
-            "inputs": {
-                "type": ["image/jpeg", "image/png"]
-            },
-            "outputs": {
-                "type": ["image/jpeg", "image/png"]
-            }
-        })
-    ]
+    manifest: require("./pipeline-manifest.json")
 });
