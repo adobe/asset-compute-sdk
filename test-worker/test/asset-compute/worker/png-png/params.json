@@ -1,3 +1,4 @@
 {
-	"pipeline": true
+	"pipeline": true,
+	"type": "image/png"
 }
