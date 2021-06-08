@@ -16,8 +16,7 @@
 
 const { worker, GenericError } = require('../index');
 const gm = require("../lib/postprocessing/gm-promisify");
-const { Manifest } = require("@nui/asset-compute-pipeline");
-const { SenseiCatalog } = require("@nui/transformer-sensei/transformer-catalog.js");
+const { SenseiCatalog } = require("@nui/transformer-sensei");
 
 const fs = require('fs').promises;
 
