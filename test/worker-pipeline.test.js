@@ -17,9 +17,7 @@
 
 const { AssetComputeWorkerPipeline } = require('../lib/worker-pipeline.js');
 
-const process = require('process');
 const assert = require('assert');
-const sinon = require('sinon');
 
 describe("worker-pipeline.js", () => {
     it("should lookup type: source-mime:png rendition-fmt:png", async () => {
@@ -39,6 +37,7 @@ describe("worker-pipeline.js", () => {
         assert.strictEqual(input.type,'image/png');
         assert.strictEqual(output.type,'image/png');
     });
+
     it("should lookup type: source-mime:png rendition-fmt:jpg", async () => {
         const input = {
             url: "https://adobe.com",
@@ -48,8 +47,7 @@ describe("worker-pipeline.js", () => {
         const output = {
             target: "https://example.com/target.jpg",
             name: "cq.dam.319x319.jpg",
-            fmt: "jpg"
-                
+            fmt: "jpg"            
         };
 
         const testPipelineWorker = new AssetComputeWorkerPipeline();
@@ -57,6 +55,7 @@ describe("worker-pipeline.js", () => {
         assert.strictEqual(input.type,'image/png');
         assert.strictEqual(output.type,'image/jpeg');
     });
+
     it("should lookup type: source-mime:jpeg rendition-fmt:jpeg (JPEG-JPG synonym)", async () => {
         const input = {
             url: "https://adobe.com",
@@ -67,7 +66,6 @@ describe("worker-pipeline.js", () => {
             target: "https://example.com/target.jpeg",
             name: "cq.dam.319x319.jpeg",
             fmt: "jpeg"
-                
         };
 
         const testPipelineWorker = new AssetComputeWorkerPipeline();
@@ -86,7 +84,6 @@ describe("worker-pipeline.js", () => {
             target: "https://example.com/target.tif",
             name: "cq.dam.319x319.tif",
             fmt: "tif"
-                
         };
 
         const testPipelineWorker = new AssetComputeWorkerPipeline();
@@ -94,6 +91,7 @@ describe("worker-pipeline.js", () => {
         assert.strictEqual(input.type,'image/tiff');
         assert.strictEqual(output.type,'image/tiff');
     });
+
     it("should lookup type: source-mime:tif rendition-fmt:tif (tiff-tif synonym)", async () => {
         const input = {
             url: "https://adobe.com",
@@ -104,7 +102,6 @@ describe("worker-pipeline.js", () => {
             target: "https://example.com/target.tif",
             name: "cq.dam.319x319.tif",
             fmt: "tif"
-                
         };
 
         const testPipelineWorker = new AssetComputeWorkerPipeline();
@@ -123,7 +120,6 @@ describe("worker-pipeline.js", () => {
             target: "https://example.com/target.tiff",
             name: "cq.dam.319x319.tiff",
             fmt: "tiff"
-                
         };
 
         const testPipelineWorker = new AssetComputeWorkerPipeline();
@@ -142,7 +138,6 @@ describe("worker-pipeline.js", () => {
             target: "https://example.com/target.bmp",
             name: "cq.dam.319x319.gif",
             fmt: "gif"
-                
         };
 
         const testPipelineWorker = new AssetComputeWorkerPipeline();
@@ -161,7 +156,6 @@ describe("worker-pipeline.js", () => {
             target: "https://example.com/target.tif",
             name: "cq.dam.319x319.tif",
             fmt: "tif"
-                
         };
 
         const testPipelineWorker = new AssetComputeWorkerPipeline();
@@ -169,6 +163,7 @@ describe("worker-pipeline.js", () => {
         assert.strictEqual(input.type,'image/gif');
         assert.strictEqual(output.type,'image/tiff');
     });
+
     it("should lookup type: source-mime:psd rendition-fmt:psd", async () => {
         const input = {
             url: "https://adobe.com",
@@ -179,7 +174,6 @@ describe("worker-pipeline.js", () => {
             target: "https://example.com/target.psd",
             name: "cq.dam.319x319.psd",
             fmt: "psd"
-                
         };
 
         const testPipelineWorker = new AssetComputeWorkerPipeline();
@@ -187,6 +181,7 @@ describe("worker-pipeline.js", () => {
         assert.strictEqual(input.type,'image/vnd.adobe.photoshop');
         assert.strictEqual(output.type,'image/vnd.adobe.photoshop');
     });
+
     it("should lookup type: source-mime:psd rendition-fmt:jpeg", async () => {
         const input = {
             url: "https://adobe.com",
@@ -197,7 +192,6 @@ describe("worker-pipeline.js", () => {
             target: "https://example.com/target.jpeg",
             name: "cq.dam.319x319.jpeg",
             fmt: "jpeg"
-
         };
 
         const testPipelineWorker = new AssetComputeWorkerPipeline();
@@ -205,6 +199,7 @@ describe("worker-pipeline.js", () => {
         assert.strictEqual(input.type,'image/vnd.adobe.photoshop');
         assert.strictEqual(output.type,'image/jpeg');
     });
+
     it("should map type: source-mime:psd rendition-fmt:machine-metadata-json", async () => {
         const input = {
             url: "https://adobe.com",
@@ -215,7 +210,6 @@ describe("worker-pipeline.js", () => {
             target: "https://example.com/target.jpeg",
             name: "cq.dam.319x319.jpeg",
             fmt: "machine-metadata-json"
-                
         };
 
         const testPipelineWorker = new AssetComputeWorkerPipeline();
@@ -235,12 +229,12 @@ describe("worker-pipeline.js", () => {
             name: "cq.dam.319x319.invalid",
             fmt: "invalid"
         };
-
         const testPipelineWorker = new AssetComputeWorkerPipeline();
         testPipelineWorker.normalizeInputOuput(input, output);
         assert.strictEqual(input.type,'image/vnd.adobe.photoshop');
         assert.strictEqual(output.type,false);
     });
+    
     it("should map type: worker-test", async () => {
         
         const input = {
