@@ -94,6 +94,24 @@ describe("worker-pipeline.js", () => {
         assert.strictEqual(input.type,'image/tiff');
         assert.strictEqual(output.type,'image/tiff');
     });
+    it("should lookup type: source-mime:tif rendition-fmt:tif (tiff-tif synonym)", async () => {
+        const input = {
+            url: "https://adobe.com",
+            name: "source.tif",
+            mimetype: "image/tif"
+        };
+        const output = {
+            target: "https://example.com/target.tif",
+            name: "cq.dam.319x319.tif",
+            fmt: "tif"
+                
+        };
+
+        const testPipelineWorker = new AssetComputeWorkerPipeline();
+        testPipelineWorker.normalizeInputOuput(input, output);
+        assert.strictEqual(input.type,'image/tiff');
+        assert.strictEqual(output.type,'image/tiff');
+    });
 
     it("should lookup type: source-mime:tiff rendition-fmt:tiff (tiff-tif synonym)", async () => {
         const input = {
