@@ -205,17 +205,30 @@ describe("worker-pipeline.js", () => {
         assert.strictEqual(input.type,'image/vnd.adobe.photoshop');
         assert.strictEqual(output.type,'machine-metadata-json');
     });
+
+    it("should not error for invalid fmt", async () => {
+        const input = {
+            url: "https://adobe.com",
+            name: "source.psd",
+            mimetype: "image/vnd.adobe.photoshop"
+        };
+        const output = {
+            target: "https://example.com/target.invalid",
+            name: "cq.dam.319x319.invalid",
+            fmt: "invalid"
+        };
+
+        const testPipelineWorker = new AssetComputeWorkerPipeline();
+        testPipelineWorker.normalizeInputOuput(input, output);
+        assert.strictEqual(input.type,'image/vnd.adobe.photoshop');
+        assert.strictEqual(output.type,false);
+    });
     it("should map type: worker-test", async () => {
         
         const input = {
             path: 'test-folder-in/file.png'
-            // url: "https://adobe.com",
-            // name: "source.psd",
-            // mimetype: "image/vnd.adobe.photoshop"
         };
         const output = {
-            // target: "https://example.com/target.jpeg",
-            // name: "cq.dam.319x319.jpeg",
             fmt: "png"
                 
         };
