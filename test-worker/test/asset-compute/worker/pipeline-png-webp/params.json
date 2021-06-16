@@ -1,5 +1,5 @@
 {
 	"pipeline": true,
-	"type": "image/webp",
+	"fmt": "webp",
 	"errorReason": "GenericError"
 }
