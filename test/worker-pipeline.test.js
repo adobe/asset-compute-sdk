@@ -252,7 +252,6 @@ describe("worker-pipeline.js", () => {
         assert.strictEqual(output.type,'image/png');
     });
     it("should get type from extension if input.mimetype is not defined", async () => {
-        process.env.WORKER_TEST_MODE = true;
         const input = {
             name: 'file.png'
         };
@@ -266,7 +265,6 @@ describe("worker-pipeline.js", () => {
         assert.strictEqual(output.type,'image/png');
     });
     it("should get type from extension if input.mimetype is not correct", async () => {
-        process.env.WORKER_TEST_MODE = true;
         const input = {
             name: 'file.png',
             mimetype: 'application/octet-stream'
@@ -281,7 +279,6 @@ describe("worker-pipeline.js", () => {
         assert.strictEqual(output.type,'image/png');
     });
     it("should try get type from extension if input.mimetype is the default value", async () => {
-        process.env.WORKER_TEST_MODE = true;
         const input = {
             name: 'file',
             mimetype: 'application/octet-stream'
