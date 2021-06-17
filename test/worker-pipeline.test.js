@@ -20,6 +20,9 @@ const { AssetComputeWorkerPipeline } = require('../lib/worker-pipeline.js');
 const assert = require('assert');
 
 describe("worker-pipeline.js", () => {
+    afterEach(() => {
+        delete process.env.WORKER_TEST_MODE;
+    });
     it("should lookup type: source-mime:png rendition-fmt:png", async () => {
         const input = {
             url: "https://adobe.com",
@@ -236,7 +239,6 @@ describe("worker-pipeline.js", () => {
     });
     
     it("should map type: worker-test", async () => {
-        
         const input = {
             path: 'test-folder-in/file.png'
         };
@@ -244,10 +246,53 @@ describe("worker-pipeline.js", () => {
             fmt: "png"
                 
         };
-
         const testPipelineWorker = new AssetComputeWorkerPipeline();
         testPipelineWorker.normalizeInputOuput(input, output);
         assert.strictEqual(input.type,undefined);
+        assert.strictEqual(output.type,'image/png');
+    });
+    it("should get type from extension if input.mimetype is not defined", async () => {
+        process.env.WORKER_TEST_MODE = true;
+        const input = {
+            name: 'file.png'
+        };
+        const output = {
+            fmt: "png"
+                
+        };
+        const testPipelineWorker = new AssetComputeWorkerPipeline();
+        testPipelineWorker.normalizeInputOuput(input, output);
+        assert.strictEqual(input.type,'image/png');
+        assert.strictEqual(output.type,'image/png');
+    });
+    it("should get type from extension if input.mimetype is not correct", async () => {
+        process.env.WORKER_TEST_MODE = true;
+        const input = {
+            name: 'file.png',
+            mimetype: 'application/octet-stream'
+        };
+        const output = {
+            fmt: "png"
+                
+        };
+        const testPipelineWorker = new AssetComputeWorkerPipeline();
+        testPipelineWorker.normalizeInputOuput(input, output);
+        assert.strictEqual(input.type,'image/png');
+        assert.strictEqual(output.type,'image/png');
+    });
+    it("should try get type from extension if input.mimetype is the default value", async () => {
+        process.env.WORKER_TEST_MODE = true;
+        const input = {
+            name: 'file',
+            mimetype: 'application/octet-stream'
+        };
+        const output = {
+            fmt: "png"
+                
+        };
+        const testPipelineWorker = new AssetComputeWorkerPipeline();
+        testPipelineWorker.normalizeInputOuput(input, output);
+        assert.strictEqual(input.type,'application/octet-stream');
         assert.strictEqual(output.type,'image/png');
     });
 });
