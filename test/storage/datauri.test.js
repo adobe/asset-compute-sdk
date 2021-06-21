@@ -15,11 +15,11 @@
 
 'use strict';
 
+const assert = require('assert');
 const mockFs = require("mock-fs");
 const fs = require('fs-extra');
 const { download } = require('../../lib/storage/datauri');
 const nock = require('nock');
-const assert = require('assert');
 
 describe('datauri.js', () => {
 
@@ -45,7 +45,7 @@ describe('datauri.js', () => {
 
         await download(source, file);
         assert.ok(fs.existsSync(file));
-        assert.equal(fs.readFileSync(file).toString(), 'Hello, World!');
+        assert.strictEqual(fs.readFileSync(file).toString(), 'Hello, World!');
         assert.ok(nock.isDone());
     });
 
@@ -60,8 +60,8 @@ describe('datauri.js', () => {
         try {
             await download(source, file);
         } catch (e) {
-            assert.equal(e.name, 'GenericError');
-            assert.equal(e.location, 'test_action_download');
+            assert.strictEqual(e.name, 'GenericError');
+            assert.strictEqual(e.location, 'test_action_download');
         }
         assert.ok(!fs.existsSync(file));
         assert.ok(nock.isDone());

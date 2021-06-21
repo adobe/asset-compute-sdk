@@ -15,12 +15,13 @@
 
 'use strict';
 
+const assert = require('assert');
+const mockFs = require('mock-fs');
+
 const { worker } = require('../lib/api');
 
 const testUtil = require('./testutil');
-const assert = require('assert');
 const fs = require('fs-extra');
-const mockFs = require('mock-fs');
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
 const mockRequire = require("mock-require");
 

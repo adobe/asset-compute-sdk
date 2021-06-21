@@ -42,7 +42,7 @@ describe("worker.js", () => {
         };
         await testWorker.cleanup();
 
-        assert.equal(processSpy.calledOnce, true, "did not call process.exit(100) on cleanup failure");
+        assert.strictEqual(processSpy.calledOnce, true, "did not call process.exit(100) on cleanup failure");
         process.exit.restore();
     });
 });

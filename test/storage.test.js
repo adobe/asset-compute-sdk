@@ -15,10 +15,11 @@
 
 'use strict';
 
-const {getSource, putRendition, getAsset} = require('../lib/storage');
-const mockFs = require('mock-fs');
-const nock = require('nock');
 const assert = require('assert');
+const mockFs = require('mock-fs');
+
+const {getSource, putRendition, getAsset} = require('../lib/storage');
+const nock = require('nock');
 const fs = require('fs-extra');
 const path = require('path');
 const { GenericError } = require('@adobe/asset-compute-commons');
