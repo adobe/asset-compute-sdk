@@ -15,10 +15,10 @@
 
 'use strict';
 
+const assert = require('assert');
+const mockFs = require('mock-fs');
 const { RenditionTooLarge } = require('@adobe/asset-compute-commons');
 const http =  require('../../lib/storage/http');
-const mockFs = require('mock-fs');
-const assert = require('assert');
 const nock = require('nock');
 const rimraf = require('rimraf');
 const util = require('util');
@@ -249,7 +249,7 @@ describe('http.js (multipart)', function() {
             try {
                 await http.upload(rendition);
             } catch (err) {
-                assert.equal(err.name, 'RenditionTooLarge');
+                assert.strictEqual(err.name, 'RenditionTooLarge');
                 threw = true;
             }
             assert.ok(threw);

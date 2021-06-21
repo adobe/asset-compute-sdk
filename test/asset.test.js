@@ -19,6 +19,28 @@ const assert = require('assert');
 const Asset = require('../lib/asset');
 
 describe("asset.js", () => {
+    it('verifies there is no crash with undefined params', function() {
+        let asset = new Asset(undefined);
+        assert.strictEqual(asset.name, "");
+        assert.strictEqual(asset.path, ".");
+        assert.strictEqual(asset.headers, undefined);
+        assert.strictEqual(asset.extension, "");
+
+        asset = new Asset(undefined);
+        assert.strictEqual(asset.name, "");
+        assert.strictEqual(asset.path, ".");
+        assert.strictEqual(asset.headers, undefined);
+        assert.strictEqual(asset.extension, "");
+    });
+
+    it('verifies there is no crash with null params', function() {
+        const asset = new Asset(null);
+        assert.strictEqual(asset.name, "");
+        assert.strictEqual(asset.path, ".");
+        assert.strictEqual(asset.headers, undefined);
+        assert.strictEqual(asset.extension, "");
+    });
+
     it('verifies path with no name and no directory', function() {
         const asset = new Asset({});
         assert.strictEqual(asset.name, "");
@@ -30,6 +52,7 @@ describe("asset.js", () => {
         assert.strictEqual(asset.name, "");
         assert.strictEqual(asset.path, "/tmp");
     });
+
     it('verifies path with name and no directory and empty source object', function() {
         const assetName = 'test-asset.png';
         const asset = new Asset({}, undefined, assetName);
@@ -37,6 +60,7 @@ describe("asset.js", () => {
         assert.strictEqual(asset.path, 'test-asset.png');
         assert.strictEqual(asset.url, undefined);
         assert.strictEqual(asset.type, undefined);
+        assert.strictEqual(asset.extension, 'png');
     });
 
     it('verifies path with name and source object but no directory', function() {
@@ -50,6 +74,7 @@ describe("asset.js", () => {
         assert.strictEqual(asset.path, 'test-asset.png');
         assert.strictEqual(asset.url, 'https://example.com');
         assert.strictEqual(asset.type, 'type');
+        assert.strictEqual(asset.extension, 'png');
     });
 
 
@@ -64,6 +89,7 @@ describe("asset.js", () => {
         assert.strictEqual(asset.path, '/test-asset.png');
         assert.strictEqual(asset.url, 'https://example.com');
         assert.strictEqual(asset.type, 'type');
+        assert.strictEqual(asset.extension, 'png');
     });
 
     it('verifies path with name and with a directory with no trailing slash', function() {
@@ -77,5 +103,6 @@ describe("asset.js", () => {
         assert.strictEqual(asset.path, '/tmp/test-asset.png');
         assert.strictEqual(asset.url, 'https://example.com');
         assert.strictEqual(asset.type, 'type');
+        assert.strictEqual(asset.extension, 'png');
     });
 });

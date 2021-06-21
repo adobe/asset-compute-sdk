@@ -35,7 +35,7 @@ function im_identify() {
 
 # check for pixel equality with some slight accepted color value difference
 # will exit with 1 if images differ
-FUZZ="5%"
+FUZZ="10%"
 
 function im_compare() {
     # file formats that aren't supported with older imagemagicks need to use a docker image with a newer imagemagick

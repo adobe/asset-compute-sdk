@@ -15,10 +15,12 @@
 
 'use strict';
 
-const mockRequire = require("mock-require");
-const { MetricsTestHelper } = mockRequire.reRequire("@adobe/asset-compute-commons");
 const assert = require('assert');
+
+const mockRequire = require("mock-require");
 const mockFs = require('mock-fs');
+
+const { MetricsTestHelper } = mockRequire.reRequire("@adobe/asset-compute-commons");
 const fs = require('fs-extra');
 const testUtil = require('./testutil');
 
@@ -38,7 +40,7 @@ describe("postprocessing/image.js", () => {
     before(() => {
         const { needsImagePostProcess, prepareImagePostProcess } = require("../lib/postprocessing/image");
         mockRequire("../lib/postprocessing/image", {
-            imagePostProcess: async function(intermediateRendition, rendition) {
+            imagePostProcess: async function (intermediateRendition, rendition) {
                 console.log('mocked image post processing', intermediateRendition.path, rendition.path);
                 const instructions = rendition.instructions;
                 if (instructions.shouldFail) {
@@ -115,23 +117,28 @@ describe("postprocessing/image.js", () => {
         // validate errors
         assert.ok(result.renditionErrors === undefined);
 
-        assert.equal(events.length, 1);
-        assert.equal(events[0].type, "rendition_created");
-        assert.equal(events[0].rendition.fmt, "jpg");
-        assert.equal(events[0].metadata["tiff:imageWidth"], 10);
-        assert.equal(events[0].metadata["tiff:imageHeight"], 6);
-        assert.equal(events[0].metadata["dc:format"], "image/jpeg");
+        assert.strictEqual(events.length, 1);
+        assert.strictEqual(events[0].type, "rendition_created");
+        assert.strictEqual(events[0].rendition.fmt, "jpg");
+        assert.strictEqual(events[0].metadata["tiff:imageWidth"], 10);
+        assert.strictEqual(events[0].metadata["tiff:imageHeight"], 6);
+        assert.strictEqual(events[0].metadata["dc:format"], "image/jpeg");
 
         assert.ok(RENDITION_JPG.equals(uploadedRenditions["/MyRendition.jpeg"]));
 
         // check metrics
+
+
         await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics[0].eventType, "rendition");
-        assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
-        assert.equal(receivedMetrics[1].eventType, "activation");
-        assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[1].postProcessingDuration, receivedMetrics[1].processingDuration);
-        assert.equal(receivedMetrics[0].imagePostProcess, true);
-        assert.equal(receivedMetrics[1].imagePostProcess, true);
+
+        assert.strictEqual(receivedMetrics[0].eventType, "rendition");
+        assert.strictEqual(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.strictEqual(receivedMetrics[1].eventType, "activation");
+        assert.strictEqual(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[1].postProcessingDuration, receivedMetrics[1].processingDuration);
+
+        // queued metrics may "flatten metrics" and turn booleans true/false into 1/0
+        assert.ok(receivedMetrics[0].imagePostProcess === true || receivedMetrics[0].imagePostProcess === 1);
+        assert.ok(receivedMetrics[1].imagePostProcess === true || receivedMetrics[1].imagePostProcess === 1);
     }).timeout(5000);
 
     it('should fail if rendition failed in post processing - single rendition ', async () => {
@@ -165,18 +172,20 @@ describe("postprocessing/image.js", () => {
         assert.ok(result.renditionErrors);
         assert.ok(result.renditionErrors[0].message.includes('mocked failure'));
 
-        assert.equal(events.length, 1);
-        assert.equal(events[0].type, "rendition_failed");
-        assert.equal(events[0].rendition.fmt, "jpg");
+        assert.strictEqual(events.length, 1);
+        assert.strictEqual(events[0].type, "rendition_failed");
+        assert.strictEqual(events[0].rendition.fmt, "jpg");
 
         // check metrics
         await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics[0].eventType, "error");
-        assert.equal(receivedMetrics[1].eventType, "activation");
+        assert.strictEqual(receivedMetrics[0].eventType, "error");
+        assert.strictEqual(receivedMetrics[1].eventType, "activation");
         assert.ok(receivedMetrics[0].callbackProcessingDuration > 0, receivedMetrics[0].postProcessingDuration > 0, receivedMetrics[0].processingDuration > 0);
         assert.ok(receivedMetrics[1].callbackProcessingDuration > 0, receivedMetrics[1].postProcessingDuration > 0, receivedMetrics[1].processingDuration > 0);
-        assert.equal(receivedMetrics[0].imagePostProcess, true);
-        assert.equal(receivedMetrics[1].imagePostProcess, true);
+
+        // queued metrics may "flatten metrics" and turn booleans true/false into 1/0
+        assert.ok(receivedMetrics[0].imagePostProcess === true || receivedMetrics[0].imagePostProcess === 1);
+        assert.ok(receivedMetrics[1].imagePostProcess === true || receivedMetrics[1].imagePostProcess === 1);
     });
 
     it('should download source, invoke worker in batch callback and upload rendition - same rendition', async () => {
@@ -185,16 +194,16 @@ describe("postprocessing/image.js", () => {
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
 
         async function batchWorkerFn(source, renditions, outDirectory) {
-            assert.equal(typeof source, "object");
-            assert.equal(typeof source.path, "string");
+            assert.strictEqual(typeof source, "object");
+            assert.strictEqual(typeof source.path, "string");
             assert.ok(fs.existsSync(source.path));
 
             assert.ok(Array.isArray(renditions));
-            assert.equal(renditions.length, 3);
+            assert.strictEqual(renditions.length, 3);
             const rendition = renditions[0];
-            assert.equal(typeof rendition.path, "string");
-            assert.equal(typeof rendition.name, "string");
-            assert.equal(typeof outDirectory, "string");
+            assert.strictEqual(typeof rendition.path, "string");
+            assert.strictEqual(typeof rendition.name, "string");
+            assert.strictEqual(typeof outDirectory, "string");
             assert.ok(fs.existsSync(outDirectory));
             assert.ok(fs.statSync(outDirectory).isDirectory());
             assert.ok(!fs.existsSync(rendition.path));
@@ -212,10 +221,10 @@ describe("postprocessing/image.js", () => {
             renditions: [{
                 fmt: "jpg",
                 target: "https://example.com/MyRendition1.jpeg"
-            },{
+            }, {
                 fmt: "jpg",
                 target: "https://example.com/MyRendition2.jpeg"
-            },{
+            }, {
                 fmt: "jpg",
                 target: "https://example.com/MyRendition3.jpeg"
             },],
@@ -230,13 +239,13 @@ describe("postprocessing/image.js", () => {
         // validate errors
         assert.ok(result.renditionErrors === undefined);
 
-        assert.equal(events.length, 3);
-        assert.equal(events[0].type, "rendition_created");
-        assert.equal(events[0].rendition.fmt, "jpg");
-        assert.equal(events[1].type, "rendition_created");
-        assert.equal(events[1].rendition.fmt, "jpg");
-        assert.equal(events[2].type, "rendition_created");
-        assert.equal(events[2].rendition.fmt, "jpg");
+        assert.strictEqual(events.length, 3);
+        assert.strictEqual(events[0].type, "rendition_created");
+        assert.strictEqual(events[0].rendition.fmt, "jpg");
+        assert.strictEqual(events[1].type, "rendition_created");
+        assert.strictEqual(events[1].rendition.fmt, "jpg");
+        assert.strictEqual(events[2].type, "rendition_created");
+        assert.strictEqual(events[2].rendition.fmt, "jpg");
 
         assert.ok(RENDITION_JPG.equals(uploadedRenditions["/MyRendition1.jpeg"]));
         assert.ok(RENDITION_JPG.equals(uploadedRenditions["/MyRendition2.jpeg"]));
@@ -244,17 +253,18 @@ describe("postprocessing/image.js", () => {
 
         // check metrics
         await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics[0].eventType, "rendition");
-        assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
-        assert.equal(receivedMetrics[3].eventType, "activation");
-        assert.equal(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration, receivedMetrics[1].callbackProcessingDuration, receivedMetrics[2].callbackProcessingDuration);
-        assert.equal(receivedMetrics[3].callbackProcessingDuration + receivedMetrics[3].postProcessingDuration, receivedMetrics[3].processingDuration);
-        assert.equal(receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration + receivedMetrics[2].postProcessingDuration, receivedMetrics[3].postProcessingDuration);
+        assert.strictEqual(receivedMetrics[0].eventType, "rendition");
+        assert.strictEqual(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.strictEqual(receivedMetrics[3].eventType, "activation");
+        assert.strictEqual(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration, receivedMetrics[1].callbackProcessingDuration, receivedMetrics[2].callbackProcessingDuration);
+        assert.strictEqual(receivedMetrics[3].callbackProcessingDuration + receivedMetrics[3].postProcessingDuration, receivedMetrics[3].processingDuration);
+        assert.strictEqual(receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration + receivedMetrics[2].postProcessingDuration, receivedMetrics[3].postProcessingDuration);
 
-        assert.equal(receivedMetrics[0].imagePostProcess, true);
-        assert.equal(receivedMetrics[1].imagePostProcess, true);
-        assert.equal(receivedMetrics[2].imagePostProcess, true);
-        assert.equal(receivedMetrics[3].imagePostProcess, true);
+        // queued metrics may "flatten metrics" and turn booleans true/false into 1/0
+        assert.ok(receivedMetrics[0].imagePostProcess === true || receivedMetrics[0].imagePostProcess === 1);
+        assert.ok(receivedMetrics[1].imagePostProcess === true || receivedMetrics[1].imagePostProcess === 1);
+        assert.ok(receivedMetrics[2].imagePostProcess === true || receivedMetrics[2].imagePostProcess === 1);
+        assert.ok(receivedMetrics[3].imagePostProcess === true || receivedMetrics[3].imagePostProcess === 1);
     });
 
     it('should download source, invoke worker in batch callback and upload rendition - different rendition', async () => {
@@ -263,9 +273,9 @@ describe("postprocessing/image.js", () => {
         const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
 
         async function batchWorkerFn(source, renditions, outDirectory) {
-            assert.equal(typeof source, "object");
+            assert.strictEqual(typeof source, "object");
             assert.ok(Array.isArray(renditions));
-            assert.equal(typeof outDirectory, "string");
+            assert.strictEqual(typeof outDirectory, "string");
 
             for (const rendition of renditions) {
                 await fs.copyFile(source.path, rendition.path);
@@ -281,10 +291,10 @@ describe("postprocessing/image.js", () => {
                 fmt: "png",
                 dpi: 10, // dummy to ensure post processing runs
                 target: "https://example.com/MyRendition1.png"
-            },{
+            }, {
                 fmt: "jpg",
                 target: "https://example.com/MyRendition2.jpeg"
-            },{
+            }, {
                 fmt: "tiff",
                 target: "https://example.com/MyRendition3.tiff"
             },],
@@ -298,13 +308,13 @@ describe("postprocessing/image.js", () => {
         // validate errors
         assert.ok(result.renditionErrors === undefined);
 
-        assert.equal(events.length, 3);
-        assert.equal(events[0].type, "rendition_created");
-        assert.equal(events[0].rendition.fmt, "png");
-        assert.equal(events[1].type, "rendition_created");
-        assert.equal(events[1].rendition.fmt, "jpg");
-        assert.equal(events[2].type, "rendition_created");
-        assert.equal(events[2].rendition.fmt, "tiff");
+        assert.strictEqual(events.length, 3);
+        assert.strictEqual(events[0].type, "rendition_created");
+        assert.strictEqual(events[0].rendition.fmt, "png");
+        assert.strictEqual(events[1].type, "rendition_created");
+        assert.strictEqual(events[1].rendition.fmt, "jpg");
+        assert.strictEqual(events[2].type, "rendition_created");
+        assert.strictEqual(events[2].rendition.fmt, "tiff");
 
         assert.ok(RENDITION_PNG.equals(uploadedRenditions["/MyRendition1.png"]));
         assert.ok(RENDITION_JPG.equals(uploadedRenditions["/MyRendition2.jpeg"]));
@@ -329,10 +339,10 @@ describe("postprocessing/image.js", () => {
             renditions: [{
                 fmt: "jpg",
                 target: "https://example.com/MyRendition1.jpeg"
-            },{
+            }, {
                 fmt: "jpg",
                 target: "https://example.com/MyRendition2.jpeg"
-            },{
+            }, {
                 fmt: "jpg",
                 target: "https://example.com/MyRendition3.jpeg",
                 shouldFail: true
@@ -349,32 +359,32 @@ describe("postprocessing/image.js", () => {
         assert.ok(result.renditionErrors);
         console.log(result.renditionErrors[0].message);
         assert.ok(result.renditionErrors[0].message.includes('mocked failure'));
-        assert.equal(result.renditionErrors.length, 1);
+        assert.strictEqual(result.renditionErrors.length, 1);
 
-        assert.equal(events.length, 3);
-        assert.equal(events[0].type, "rendition_created");
-        assert.equal(events[0].rendition.fmt, "jpg");
-        assert.equal(events[1].type, "rendition_created");
-        assert.equal(events[1].rendition.fmt, "jpg");
-        assert.equal(events[2].type, "rendition_failed");
-        assert.equal(events[2].rendition.fmt, "jpg");
+        assert.strictEqual(events.length, 3);
+        assert.strictEqual(events[0].type, "rendition_created");
+        assert.strictEqual(events[0].rendition.fmt, "jpg");
+        assert.strictEqual(events[1].type, "rendition_created");
+        assert.strictEqual(events[1].rendition.fmt, "jpg");
+        assert.strictEqual(events[2].type, "rendition_failed");
+        assert.strictEqual(events[2].rendition.fmt, "jpg");
 
         // check metrics
         await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics[0].eventType, "rendition");
-        assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
-        assert.equal(receivedMetrics[1].eventType, "rendition");
-        assert.equal(receivedMetrics[2].eventType, "error");
-        assert.equal(receivedMetrics[2].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
-        assert.equal(receivedMetrics[3].eventType, "activation");
-        assert.equal(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        assert.equal(receivedMetrics[3].postProcessingDuration, receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration
-                                + receivedMetrics[2].postProcessingDuration);
+        assert.strictEqual(receivedMetrics[0].eventType, "rendition");
+        assert.strictEqual(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.strictEqual(receivedMetrics[1].eventType, "rendition");
+        assert.strictEqual(receivedMetrics[2].eventType, "error");
+        assert.strictEqual(receivedMetrics[2].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.strictEqual(receivedMetrics[3].eventType, "activation");
+        assert.strictEqual(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
+        assert.strictEqual(receivedMetrics[3].postProcessingDuration, receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration
+            + receivedMetrics[2].postProcessingDuration);
 
-        assert.equal(receivedMetrics[0].imagePostProcess, true);
-        assert.equal(receivedMetrics[1].imagePostProcess, true);
-        assert.equal(receivedMetrics[2].imagePostProcess, true);
-        assert.equal(receivedMetrics[3].imagePostProcess, true);
+        assert.ok(receivedMetrics[0].imagePostProcess === true || receivedMetrics[0].imagePostProcess === 1);
+        assert.ok(receivedMetrics[1].imagePostProcess === true || receivedMetrics[1].imagePostProcess === 1);
+        assert.ok(receivedMetrics[2].imagePostProcess === true || receivedMetrics[2].imagePostProcess === 1);
+        assert.ok(receivedMetrics[3].imagePostProcess === true || receivedMetrics[3].imagePostProcess === 1);
     });
 
     it('should post process eligible rendition and skip others - multiple rendition', async () => {
@@ -396,10 +406,10 @@ describe("postprocessing/image.js", () => {
             renditions: [{
                 fmt: "jpg",
                 target: "https://example.com/MyRendition1.jpeg"
-            },{
+            }, {
                 fmt: "pdf",
                 target: "https://example.com/PostProcessIneligible.jpeg"
-            },{
+            }, {
                 fmt: "jpg",
                 target: "https://example.com/MyRendition3.jpeg"
             },],
@@ -414,31 +424,31 @@ describe("postprocessing/image.js", () => {
         // validate errors
         assert.ok(result.renditionErrors === undefined);
 
-        assert.equal(events.length, 3);
-        assert.equal(events[0].type, "rendition_created");
-        assert.equal(events[0].rendition.fmt, "jpg");
-        assert.equal(events[1].type, "rendition_created");
-        assert.equal(events[1].rendition.fmt, "pdf");
-        assert.equal(events[2].type, "rendition_created");
-        assert.equal(events[2].rendition.fmt, "jpg");
+        assert.strictEqual(events.length, 3);
+        assert.strictEqual(events[0].type, "rendition_created");
+        assert.strictEqual(events[0].rendition.fmt, "jpg");
+        assert.strictEqual(events[1].type, "rendition_created");
+        assert.strictEqual(events[1].rendition.fmt, "pdf");
+        assert.strictEqual(events[2].type, "rendition_created");
+        assert.strictEqual(events[2].rendition.fmt, "jpg");
 
         // check metrics
         await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics[0].eventType, "rendition");
-        assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
-        assert.equal(receivedMetrics[1].eventType, "rendition");
-        assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[1].postProcessingDuration, receivedMetrics[1].processingDuration);
-        assert.equal(receivedMetrics[2].eventType, "rendition");
-        assert.equal(receivedMetrics[2].callbackProcessingDuration + receivedMetrics[2].postProcessingDuration, receivedMetrics[2].processingDuration);
-        assert.equal(receivedMetrics[3].eventType, "activation");
-        assert.equal(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        assert.equal(receivedMetrics[3].postProcessingDuration, receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration
-                            + receivedMetrics[2].postProcessingDuration);
+        assert.strictEqual(receivedMetrics[0].eventType, "rendition");
+        assert.strictEqual(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.strictEqual(receivedMetrics[1].eventType, "rendition");
+        assert.strictEqual(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[1].postProcessingDuration, receivedMetrics[1].processingDuration);
+        assert.strictEqual(receivedMetrics[2].eventType, "rendition");
+        assert.strictEqual(receivedMetrics[2].callbackProcessingDuration + receivedMetrics[2].postProcessingDuration, receivedMetrics[2].processingDuration);
+        assert.strictEqual(receivedMetrics[3].eventType, "activation");
+        assert.strictEqual(receivedMetrics[3].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
+        assert.strictEqual(receivedMetrics[3].postProcessingDuration, receivedMetrics[0].postProcessingDuration + receivedMetrics[1].postProcessingDuration
+            + receivedMetrics[2].postProcessingDuration);
 
-        assert.equal(receivedMetrics[0].imagePostProcess, true);
-        assert.ok(!receivedMetrics[1].imagePostProcess);
-        assert.equal(receivedMetrics[2].imagePostProcess, true);
-        assert.equal(receivedMetrics[3].imagePostProcess, true);
+        assert.ok(receivedMetrics[0].imagePostProcess === true || receivedMetrics[0].imagePostProcess === 1);
+        assert.ok(receivedMetrics[1].imagePostProcess === false || receivedMetrics[1].imagePostProcess === 0);
+        assert.ok(receivedMetrics[2].imagePostProcess === true || receivedMetrics[2].imagePostProcess === 1);
+        assert.ok(receivedMetrics[3].imagePostProcess === true || receivedMetrics[3].imagePostProcess === 1);
     });
 
     it('should generate rendition if only one post processing ineligible rendition', async () => {
@@ -471,20 +481,20 @@ describe("postprocessing/image.js", () => {
         // validate errors
         assert.ok(result.renditionErrors === undefined);
 
-        assert.equal(events.length, 1);
-        assert.equal(events[0].type, "rendition_created");
-        assert.equal(events[0].rendition.fmt, "pdf");
+        assert.strictEqual(events.length, 1);
+        assert.strictEqual(events[0].type, "rendition_created");
+        assert.strictEqual(events[0].rendition.fmt, "pdf");
 
         // check metrics
         await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics[0].eventType, "rendition");
-        assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
-        assert.equal(receivedMetrics[1].eventType, "activation");
-        assert.equal(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
-        assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
-        assert.ok(!receivedMetrics[0].imagePostProcess);
-        assert.ok(!receivedMetrics[1].imagePostProcess);
+        assert.strictEqual(receivedMetrics[0].eventType, "rendition");
+        assert.strictEqual(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.strictEqual(receivedMetrics[1].eventType, "activation");
+        assert.strictEqual(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
+        assert.strictEqual(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
+        assert.strictEqual(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
+        assert.ok(receivedMetrics[0].imagePostProcess === false || receivedMetrics[0].imagePostProcess === 0);
+        assert.ok(receivedMetrics[1].imagePostProcess === false || receivedMetrics[1].imagePostProcess === 0);
     });
 
     it('should generate rendition if only one post processing eligible rendition', async () => {
@@ -517,20 +527,20 @@ describe("postprocessing/image.js", () => {
         // validate errors
         assert.ok(result.renditionErrors === undefined);
 
-        assert.equal(events.length, 1);
-        assert.equal(events[0].type, "rendition_created");
-        assert.equal(events[0].rendition.fmt, "jpg");
+        assert.strictEqual(events.length, 1);
+        assert.strictEqual(events[0].type, "rendition_created");
+        assert.strictEqual(events[0].rendition.fmt, "jpg");
 
         // check metrics
         await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics[0].eventType, "rendition");
-        assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
-        assert.equal(receivedMetrics[1].eventType, "activation");
-        assert.equal(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        assert.equal(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
-        assert.equal(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
-        assert.equal(receivedMetrics[0].imagePostProcess, true);
-        assert.equal(receivedMetrics[1].imagePostProcess, true);
+        assert.strictEqual(receivedMetrics[0].eventType, "rendition");
+        assert.strictEqual(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.strictEqual(receivedMetrics[1].eventType, "activation");
+        assert.strictEqual(receivedMetrics[1].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
+        assert.strictEqual(receivedMetrics[1].postProcessingDuration, receivedMetrics[0].postProcessingDuration);
+        assert.strictEqual(receivedMetrics[1].processingDuration, receivedMetrics[0].processingDuration);
+        assert.ok(receivedMetrics[0].imagePostProcess === true || receivedMetrics[0].imagePostProcess === 1);
+        assert.ok(receivedMetrics[1].imagePostProcess === true || receivedMetrics[1].imagePostProcess === 1);
     });
 
     it('should generate rendition when all rendition are post processing ineligible', async () => {
@@ -551,7 +561,7 @@ describe("postprocessing/image.js", () => {
             renditions: [{
                 fmt: "pdf",
                 target: "https://example.com/PostProcessIneligible.jpeg"
-            },{
+            }, {
                 fmt: "pdf",
                 target: "https://example.com/PostProcessIneligible.jpeg"
             }],
@@ -566,24 +576,24 @@ describe("postprocessing/image.js", () => {
         // validate errors
         assert.ok(result.renditionErrors === undefined);
 
-        assert.equal(events.length, 2);
-        assert.equal(events[0].type, "rendition_created");
-        assert.equal(events[0].rendition.fmt, "pdf");
-        assert.equal(events[1].type, "rendition_created");
-        assert.equal(events[1].rendition.fmt, "pdf");
+        assert.strictEqual(events.length, 2);
+        assert.strictEqual(events[0].type, "rendition_created");
+        assert.strictEqual(events[0].rendition.fmt, "pdf");
+        assert.strictEqual(events[1].type, "rendition_created");
+        assert.strictEqual(events[1].rendition.fmt, "pdf");
 
         // check metrics
         await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics.length, 3);
-        assert.equal(receivedMetrics[0].eventType, "rendition");
-        assert.equal(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
-        assert.equal(receivedMetrics[1].eventType, "rendition");
-        assert.equal(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
-        assert.equal(receivedMetrics[2].eventType, "activation");
-        assert.equal(receivedMetrics[2].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
-        assert.ok(!receivedMetrics[0].imagePostProcess);
-        assert.ok(!receivedMetrics[1].imagePostProcess);
-        assert.ok(!receivedMetrics[2].imagePostProcess);
+        assert.strictEqual(receivedMetrics.length, 3);
+        assert.strictEqual(receivedMetrics[0].eventType, "rendition");
+        assert.strictEqual(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.strictEqual(receivedMetrics[1].eventType, "rendition");
+        assert.strictEqual(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.strictEqual(receivedMetrics[2].eventType, "activation");
+        assert.strictEqual(receivedMetrics[2].callbackProcessingDuration, receivedMetrics[0].callbackProcessingDuration);
+        assert.ok(receivedMetrics[0].imagePostProcess === false || receivedMetrics[0].imagePostProcess === 0);
+        assert.ok(receivedMetrics[1].imagePostProcess === false || receivedMetrics[1].imagePostProcess === 0);
+        assert.ok(receivedMetrics[2].imagePostProcess === false || receivedMetrics[2].imagePostProcess === 0);
     });
 
     it("should post process after shellScriptWorker(), json postProcess is boolean", async () => {
@@ -619,14 +629,14 @@ describe("postprocessing/image.js", () => {
 
         assert.ok(RENDITION_JPG.equals(uploadedRenditions["/MyRendition.jpeg"]));
 
-        assert.equal(events.length, 1);
-        assert.equal(events[0].type, "rendition_created");
-        assert.equal(events[0].rendition.fmt, "jpg");
+        assert.strictEqual(events.length, 1);
+        assert.strictEqual(events[0].type, "rendition_created");
+        assert.strictEqual(events[0].rendition.fmt, "jpg");
 
         await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics.length, 2);
-        assert.equal(receivedMetrics[0].imagePostProcess, true);
-        assert.equal(receivedMetrics[1].imagePostProcess, true);
+        assert.strictEqual(receivedMetrics.length, 2);
+        assert.ok(receivedMetrics[0].imagePostProcess === true || receivedMetrics[0].imagePostProcess === 1);
+        assert.ok(receivedMetrics[1].imagePostProcess === true || receivedMetrics[1].imagePostProcess === 1);
     });
 
     it("should post process after shellScriptWorker(), json postProcess is string", async () => {
@@ -662,14 +672,14 @@ describe("postprocessing/image.js", () => {
 
         assert.ok(RENDITION_JPG.equals(uploadedRenditions["/MyRendition.jpeg"]));
 
-        assert.equal(events.length, 1);
-        assert.equal(events[0].type, "rendition_created");
-        assert.equal(events[0].rendition.fmt, "jpg");
+        assert.strictEqual(events.length, 1);
+        assert.strictEqual(events[0].type, "rendition_created");
+        assert.strictEqual(events[0].rendition.fmt, "jpg");
 
         await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics.length, 2);
-        assert.equal(receivedMetrics[0].imagePostProcess, true);
-        assert.equal(receivedMetrics[1].imagePostProcess, true);
+        assert.strictEqual(receivedMetrics.length, 2);
+        assert.ok(receivedMetrics[0].imagePostProcess === true || receivedMetrics[0].imagePostProcess === 1);
+        assert.ok(receivedMetrics[1].imagePostProcess === true || receivedMetrics[1].imagePostProcess === 1);
     });
 
     it("should fail if options.json from shellScriptWorker() is not formatted correctly", async () => {
@@ -698,22 +708,22 @@ describe("postprocessing/image.js", () => {
             newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
         };
 
-        const result = await main(params, {supportedRenditionFormats: ["jpg"]});
+        const result = await main(params, { supportedRenditionFormats: ["jpg"] });
 
         // validate no errors
         assert.strictEqual(result.renditionErrors.length, 1);
 
         // make sure it did not do post processing
-        assert.deepEqual(uploadedRenditions, {});
+        assert.deepStrictEqual(uploadedRenditions, {});
         // assert.ok(!RENDITION_JPG.equals(uploadedRenditions["/MyRendition.jpeg"]));
 
-        assert.equal(events.length, 1);
-        assert.equal(events[0].type, "rendition_failed");
-        assert.equal(events[0].rendition.fmt, "jpg");
+        assert.strictEqual(events.length, 1);
+        assert.strictEqual(events[0].type, "rendition_failed");
+        assert.strictEqual(events[0].rendition.fmt, "jpg");
 
         await MetricsTestHelper.metricsDone();
-        assert.equal(receivedMetrics.length, 2);
+        assert.strictEqual(receivedMetrics.length, 2);
         assert.ok(!receivedMetrics[0].imagePostProcess);
-        assert.ok(!receivedMetrics[1].imagePostProcess);
+        assert.ok(!receivedMetrics[0].imagePostProcess);
     });
 });

@@ -16,8 +16,10 @@
 'use strict';
 
 const assert = require('assert');
-const fs = require('fs-extra');
+
 const mockFs = require('mock-fs');
+const fs = require('fs-extra');
+
 const Rendition = require('../lib/rendition.js');
 const { GenericError } = require('@adobe/asset-compute-commons');
 
@@ -332,7 +334,7 @@ describe("rendition.js", () => {
 
         await fs.writeFile("/rendition11.txt", DATA_URI_CONTENTS);
         const dataUri = await rendition.asDataUri();
-        assert.equal(dataUri, DATA_URI);
+        assert.strictEqual(dataUri, DATA_URI);
     });
 
     it('should not create a data uri because the rendition is too large', async function () {
