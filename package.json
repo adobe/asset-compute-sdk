@@ -67,7 +67,7 @@
   "scripts": {
     "test": "nyc -r=text -r=lcov mocha test --file test/logfile.setup.js --recursive --exit && npm run post-processing-test",
     "post-processing-test": "cd test-worker && rm -rf build dist && npm install && npm test && ! grep -i 'conversion using image processing lib (imagemagick) failed' build/test-results/test-worker/test.log",
-    "mob-test": " cd test-worker && rm -rf build dist && npm install && npm test pipeline-png-png && ! grep -i 'conversion using image processing lib (imagemagick) failed' build/test-results/test-worker/test.log",
+    "mob-test": " cd test-worker && rm -rf build dist && npm install && npm test pipeline-png-webp && ! grep -i 'conversion using image processing lib (imagemagick) failed' build/test-results/test-worker/test.log",
     "posttest": "eslint ./ && license-checker --summary && ./node_modules/lockfile-lint/bin/lockfile-lint.js --path package-lock.json —type npm --allowed-hosts npm artifactory.corp.adobe.com --allowed-schemes \"https:\" \"file:\" --empty-hostname true",
     "beautify": "eslint ./ --fix",
     "unit-test": "nyc --reporter=html --reporter=text mocha test --recursive --exit -- -v",
