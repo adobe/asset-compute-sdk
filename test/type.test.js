@@ -45,7 +45,6 @@ describe("type.js", () => {
             encoding: "binary"
         });
 
-        // TODO: same test case as 1pixel-masquerade.png file above?
         assert.deepStrictEqual(await detectContentType('./test/files/negative/file-webp-masquerading-as-png.png'), {
             mime: 'image/webp',
             encoding: "binary"
