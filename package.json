@@ -1,8 +1,8 @@
 {
-  "name": "@adobe/asset-compute-sdk",
+  "name": "@nui/asset-compute-sdk",
   "description": "Adobe Asset Compute Worker SDK",
   "license": "Apache-2.0",
-  "version": "2.10.6",
+  "version": "0.0.1-pipeline-alpha",
   "author": {
     "name": "Adobe Inc."
   },
