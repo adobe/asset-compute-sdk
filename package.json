@@ -29,7 +29,7 @@
     "image-size": "^1.0.0",
     "jsonwebtoken": "^8.5.1",
     "mime-types": "^2.1.31",
-    "openwhisk": "^3.21.3",
+    "openwhisk": "^3.21.4",
     "strip-ansi": "^6.0.0",
     "valid-data-url": "^4.0.0",
     "valid-url": "^1.0.9"
