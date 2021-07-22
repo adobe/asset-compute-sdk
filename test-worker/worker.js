@@ -16,7 +16,6 @@
 
 const { worker, GenericError } = require('../index');
 const gm = require("../lib/postprocessing/gm-promisify");
-const { SenseiCatalog } = require("@nui/transformer-sensei");
 
 const fs = require('fs').promises;
 
@@ -68,6 +67,5 @@ exports.main = worker(async (source, rendition) => {
     rendition.postProcess = true;
 }, {
     supportedRenditionFormats: SUPPORTED_FMT,
-    transformerCatalog: new SenseiCatalog().catalog,
     manifest: require("./pipeline-manifest.json")
 });

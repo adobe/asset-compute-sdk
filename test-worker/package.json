@@ -7,8 +7,5 @@
   },
   "devDependencies": {
     "@adobe/aio-cli-plugin-asset-compute": "^1.5.0"
-  },
-  "dependencies": {
-    "@nui/transformer-sensei": "^0.7.2"
   }
 }
