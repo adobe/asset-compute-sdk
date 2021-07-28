@@ -23,8 +23,10 @@ const SUPPORTED_FMT = ["png", "jpg"];
 
 process.env.OPENWHISK_NEWRELIC_DISABLE_METRICS = true;
 process.env.SDK_POST_PROCESSING_TEST_MODE = true;
+process.env.DEBUG = "*";
 
 exports.main = worker(async (source, rendition) => {
+
     const instructions = rendition.instructions;
 
     // simulate a worker that might defer to post-processing
@@ -57,10 +59,12 @@ exports.main = worker(async (source, rendition) => {
         console.log(`[test worker] copying source to rendition: ${source.path} to ${rendition.path}`);
         // simple case where post processing just runs on the source files for basic tests
         // symlink source to rendition to transfer 1:1
-        await fs.symlink(source.path, rendition.path);
+
+        await fs.copyFile(source.path, rendition.path);
     }
 
     rendition.postProcess = true;
 }, {
-    supportedRenditionFormats: SUPPORTED_FMT
+    supportedRenditionFormats: SUPPORTED_FMT,
+    manifest: require("./pipeline-manifest.json")
 });

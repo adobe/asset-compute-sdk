@@ -787,7 +787,6 @@ describe("api.js", () => {
             testUtil.assertNockDone();
             await testUtil.assertSimpleParamsMetrics(receivedMetrics);
         });
-
     });
 
     describe("batchWorker()", () => {

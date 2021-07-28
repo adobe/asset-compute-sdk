@@ -1,0 +1,5 @@
+{
+	"pipeline": true,
+	"fmt": "webp",
+	"errorReason": "RenditionFormatUnsupported"
+}

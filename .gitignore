@@ -59,6 +59,7 @@ typings/
 # Visual Studio Code configuration
 .vscode
 !.vscode/launch.json
+workspace.code-workspace
 
 # serverless
 .serverless/action.zip
