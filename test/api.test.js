@@ -787,16 +787,6 @@ describe("api.js", () => {
             testUtil.assertNockDone();
             await testUtil.assertSimpleParamsMetrics(receivedMetrics);
         });
-
-        it.skip('pipeline: should not return transformers if no manifest file found', async () => {
-            const rewire = require('rewire');
-            const rewiredApi  = rewire('../lib/api');
-            const buildTransformers = rewiredApi.__get__('buildTransformers');
-
-            const transformers = await buildTransformers({});
-            assert.strictEqual(transformers,[]);
-        });
-
     });
 
     describe("batchWorker()", () => {
