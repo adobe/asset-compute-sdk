@@ -27,8 +27,3 @@ echo "..........................................................................
 echo "Exiftool Version:"
 exiftool -ver
 echo "....................................................................................................."
-
-met=$(exiftool README.md -json | grep "FileSize")
-if [[ -z "$met" ]]; then
-    echo "WARNING: Exiftool not installed."
-fi
