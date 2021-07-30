@@ -30,7 +30,7 @@ jobs:
       - name: Run directory
         run: pwd
       - name: Install aio
-        run: npm install -g @adobe/aio-cli
+        run: npm install -g @adobe/aio-cli@7.1.0
       - name: Log aio details
         run: aio info
       - name: Install dependencies (all)
