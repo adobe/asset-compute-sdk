@@ -20,8 +20,10 @@ const mockFs = require('mock-fs');
 
 const {getSource, putRendition, getAsset} = require('../lib/storage');
 const nock = require('nock');
+const mockRequire = require("mock-require");
 const fs = require('fs-extra');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { GenericError } = require('@adobe/asset-compute-commons');
 
 
@@ -36,8 +38,10 @@ describe('storage.js', () => {
         afterEach( () => {
             nock.cleanAll();
             mockFs.restore();
+            mockRequire.stopAll();
             delete process.env.WORKER_TEST_MODE;
             delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
+            process.env.__OW_NAMESPACE = "namespace";
         });
 
         it('should download simple png and return a new source object', async () => {
@@ -129,6 +133,80 @@ describe('storage.js', () => {
             assert.strictEqual(fs.readFileSync(source.path).toString(), 'Hello, World!');
             assert.ok(nock.isDone());
         });
+
+        it('should upload data uri to storage and return presigned url when disabledownload is true', async () => {
+            const assetReference = {
+                url: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D'
+            };
+            process.env.__OW_NAMESPACE = process.env.OW_NAMESPACE;
+            mockFs.restore();
+            const directory = './build/in/fakeSource/filePath';
+            const name = 'source';
+            const disableSourceDownload = true;
+
+            fs.mkdirSync(directory, { recursive: true });
+            const source = await getAsset(assetReference, directory, name, disableSourceDownload);
+
+            assert.strictEqual(source.name, 'source');
+           // assert.strictEqual(source.path, 'in/fakeSource/filePath/source');
+            assert.ok(source.params.url, "Existence of url");
+        }).timeout(10000);
+
+        it('should upload data uri to storage and return presigned url mock when disabled download is true', async () => {
+            const assetReference = {
+                url: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D'
+            };
+            
+            mockFs.restore();
+            mockRequire('../lib/storage/datauri', {
+                getPreSignedUrl : (source) => {
+                    console.log('Mocked source : ' + source);
+                    return 'https://example.com/preSignedUrl';
+                },
+                download : () => {
+                    console.log('Fake file downloaded');
+                }
+            });
+            
+            const directory = './in/fakeSource/filePath';
+            const name = 'source';
+            const disableSourceDownload = true;
+
+            const {getAsset} = mockRequire.reRequire("../lib/storage");
+            const source = await getAsset(assetReference, directory, name, disableSourceDownload);
+            console.log(source);
+            assert.strictEqual(source.name, 'source');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source');
+            assert.strictEqual(source.params.url, 'https://example.com/preSignedUrl');
+        })
+
+        it('should not generate presignurl when source url is http mock when disabled download is true', async () => {
+            const assetReference = {
+                url: 'http://nondatauriurl.com/example.png'
+            };
+            
+            mockFs.restore();
+            mockRequire('../lib/storage/datauri', {
+                getPreSignedUrl : (source) => {
+                    console.log('Mocked source : ' + source);
+                    return 'https://example.com/preSignedUrl';
+                },
+                download : () => {
+                    console.log('Fake file downloaded');
+                }
+            });
+            
+            const directory = './in/fakeSource/filePath';
+            const name = 'source';
+            const disableSourceDownload = true;
+
+            const {getAsset} = mockRequire.reRequire("../lib/storage");
+            const source = await getAsset(assetReference, directory, name, disableSourceDownload);
+            console.log(source);
+            assert.strictEqual(source.name, 'source');
+            assert.strictEqual(source.path, 'in/fakeSource/filePath/source');
+            assert.strictEqual(source.params.url, 'http://nondatauriurl.com/example.png');
+        })
 
         it('should fail to download, no asset reference', async () => {
             try {
