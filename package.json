@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@adobe/asset-compute-commons": "^1.1.2",
-    "@adobe/asset-compute-pipeline": "git+https://github.com:adobe/asset-compute-pipeline.git#NUI-1460-mob",
+    "@adobe/asset-compute-pipeline": "git+https://github.com:adobe/asset-compute-pipeline.git#NUI-1460-1",
     "@adobe/cgroup-metrics": "^3.0.3",
     "@adobe/httptransfer": "^2.7.0",
     "@adobe/metrics-sampler": "^1.0.2",
