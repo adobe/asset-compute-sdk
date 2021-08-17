@@ -133,25 +133,7 @@ describe('storage.js', () => {
             assert.strictEqual(fs.readFileSync(source.path).toString(), 'Hello, World!');
             assert.ok(nock.isDone());
         });
-
-        it('should upload data uri to storage and return presigned url when disabledownload is true', async () => {
-            const assetReference = {
-                url: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D'
-            };
-            process.env.__OW_NAMESPACE = process.env.OW_NAMESPACE;
-            mockFs.restore();
-            const directory = './build/in/fakeSource/filePath';
-            const name = 'source';
-            const disableSourceDownload = true;
-
-            fs.mkdirSync(directory, { recursive: true });
-            const source = await getAsset(assetReference, directory, name, disableSourceDownload);
-
-            assert.strictEqual(source.name, 'source');
-           // assert.strictEqual(source.path, 'in/fakeSource/filePath/source');
-            assert.ok(source.params.url, "Existence of url");
-        }).timeout(10000);
-
+      
         it('should upload data uri to storage and return presigned url mock when disabled download is true', async () => {
             const assetReference = {
                 url: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D'
