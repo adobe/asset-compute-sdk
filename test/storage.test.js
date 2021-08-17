@@ -23,7 +23,6 @@ const nock = require('nock');
 const mockRequire = require("mock-require");
 const fs = require('fs-extra');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { GenericError } = require('@adobe/asset-compute-commons');
 
 
