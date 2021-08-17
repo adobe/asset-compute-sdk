@@ -32,6 +32,17 @@ describe('fileutils.js', () => {
         delete process.env.__OW_ACTION_NAME;
     });
 
+    it("fileExistsAndIsNotEmpty should return false for null value of path", async() => {
+        assert.ok(!fileExistsAndIsNotEmpty(null));
+        assert.ok(nock.isDone());
+    });
+
+    it("fileExistsAndIsNotEmpty should return false for undefined value of path", async() => {
+        let file;
+        assert.ok(!fileExistsAndIsNotEmpty(file));
+        assert.ok(nock.isDone());
+    });
+
     it("fileExistsAndIsNotEmpty should return false for non existent file", async() => {
         const file = "./storeFiles/txt/inlineData.txt";
         assert.ok(!fileExistsAndIsNotEmpty(file));

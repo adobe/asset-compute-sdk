@@ -133,11 +133,14 @@ describe('storage.js', () => {
             assert.ok(nock.isDone());
         });
       
-        it('should upload data uri to storage and return presigned url mock when disabled download is true', async () => {
+        it('should upload data uri to storage and return presigned url when disabled download is true', async () => {
             const assetReference = {
                 url: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D'
             };
-            
+            const directory = './in/fakeSource/filePath';
+            const name = 'source';
+            const disableSourceDownload = true;
+
             mockFs.restore();
             mockRequire('../lib/storage/datauri', {
                 getPreSignedUrl : (source) => {
@@ -148,12 +151,11 @@ describe('storage.js', () => {
                     console.log('Fake file downloaded');
                 }
             });
-            
-            const directory = './in/fakeSource/filePath';
-            const name = 'source';
-            const disableSourceDownload = true;
-
             const {getAsset} = mockRequire.reRequire("../lib/storage");
+            mockFs({'./in/fakeSource/filePath': {}});
+            // This is mocked to pass the fileExistsCheck
+            fs.writeFileSync('./in/fakeSource/filePath/source','something');
+            assert.ok(fs.existsSync(directory));
             const source = await getAsset(assetReference, directory, name, disableSourceDownload);
             console.log(source);
             assert.strictEqual(source.name, 'source');
@@ -161,7 +163,7 @@ describe('storage.js', () => {
             assert.strictEqual(source.params.url, 'https://example.com/preSignedUrl');
         });
 
-        it('should not generate presignurl when source url is http mock when disabled download is true', async () => {
+        it('should not generate presignurl when source url is http  when disabled download is true', async () => {
             const assetReference = {
                 url: 'http://nondatauriurl.com/example.png'
             };
@@ -183,10 +185,53 @@ describe('storage.js', () => {
 
             const {getAsset} = mockRequire.reRequire("../lib/storage");
             const source = await getAsset(assetReference, directory, name, disableSourceDownload);
-            console.log(source);
             assert.strictEqual(source.name, 'source');
             assert.strictEqual(source.path, 'in/fakeSource/filePath/source');
             assert.strictEqual(source.params.url, 'http://nondatauriurl.com/example.png');
+        });
+
+        it("should fail to generate preSignUrl for  empty data uri", async() =>{
+            const assetReference = {
+                url: "data:,"
+            };
+            const directory = './in/fakeSource/filePath';
+            const name = 'source';
+            const disableSourceDownload = true;
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(directory));
+            try {
+                await getAsset(assetReference, directory, name, disableSourceDownload);
+            } catch (e) {
+                assert.strictEqual(e.name, 'SourceUnsupportedError');
+                assert.strictEqual(e.message, 'Invalid or missing local file in/fakeSource/filePath/source');
+            }
+        });
+
+        it("should fail to generate preSignUrl for non existent file", async() =>{
+            const assetReference = {
+                url: "data:,"
+            };
+            const directory = './in/fakeSource/filePath';
+            const name = 'source';
+            const disableSourceDownload = true;
+            mockFs.restore();
+            mockRequire('../lib/storage/datauri', {
+                getPreSignedUrl : (source) => {
+                    console.log('Mocked source : ' + source);
+                    return 'https://example.com/preSignedUrl';
+                },
+                download : () => {
+                    console.log('Fake file downloaded');
+                }
+            });
+            mockFs({ './in/fakeSource/filePath': {} });
+            assert.ok(fs.existsSync(directory));
+            try {
+                await getAsset(assetReference, directory, name, disableSourceDownload);
+            } catch (e) {
+                assert.strictEqual(e.name, 'SourceUnsupportedError');
+                assert.strictEqual(e.message, 'Invalid or missing local file in/fakeSource/filePath/source');
+            }
         });
 
         it('should fail to download, no asset reference', async () => {

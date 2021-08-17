@@ -18,7 +18,7 @@
 const assert = require('assert');
 const mockFs = require("mock-fs");
 const fs = require('fs-extra');
-const { download, getPreSignedUrl } = require('../../lib/storage/datauri');
+const { download } = require('../../lib/storage/datauri');
 const nock = require('nock');
 
 describe('datauri.js', () => {
@@ -40,7 +40,6 @@ describe('datauri.js', () => {
         };
 
         mockFs({ './storeFiles/txt': {} });
-
         const file = "./storeFiles/txt/inlineData.txt";
 
         await download(source, file);
@@ -66,28 +65,5 @@ describe('datauri.js', () => {
         assert.ok(!fs.existsSync(file));
         assert.ok(nock.isDone());
     });
-    it("should fail to generate preSignUrl for  empty data uri", async() =>{
-        const source = {
-            url: "data:,",
-            name: "inlineData.txt"
-        };
-        mockFs({ './storeFiles/txt': {} });
-        const file = "./storeFiles/txt/inlineData.txt";
-        await download(source, file);
-        assert.ok(fs.existsSync(file));
-        try {
-            await getPreSignedUrl(file);
-        } catch (e) {
-            assert.strictEqual(e.name, 'SourceUnsupportedError');
-        }
-    });
-    it("should fail to generate preSignUrl for  non existent file", async() =>{
-        const file = "./storeFiles/txt/inlineData.txt";
-        assert.ok(!fs.existsSync(file));
-        try {
-            await getPreSignedUrl(file);
-        } catch (e) {
-            assert.strictEqual(e.name, 'SourceUnsupportedError');
-        }
-    });
+    
 });
