@@ -34,18 +34,27 @@ class TemporaryCloudStorage {
     /**
      * Create a presigned url (read, write, delete and combinations are supported)
      * @param {String} localFilePath local filesystem path to the file for which a presigned URL must be generated
+     * @param {Number} attempt the retry attempt 
      * @param {String} permissions permissions (`r` for read, `w` for write, `d` for delete and their combinations)
      * @param {Number} expiryInSeconds how long the generated presigned url will be valid
      * @returns {String} a presigned url
      */
-    async generatePresignURL(cloudPath, permissions = "rwd", expiryInSeconds=3600){
+    async generatePresignURL(cloudPath, attempt, permissions = "rwd", expiryInSeconds=3600){
         if(!this.aioLibFiles){
             await this._init();
         }
-        this.preSignUrl += this.localFilePath;
-        console.log(`Mock presignedUrl created ${this.localFilePath}, ${this.preSignUrl}, ${this.cloudUniquePath}` );
-        console.log(`Mock presignedUrl created ${cloudPath}, ${permissions}, ${expiryInSeconds}` );
-        return this.preSignUrl;
+        console.log(`Mock presignedUrl create  attempt ${attempt}, 
+        locationFilePath ${this.localFilePath}, permissions ${permissions}, expiry ${expiryInSeconds}` );
+        if(this.localFilePath==='fakeSuccessFilePath'){
+            this.preSignUrl += this.localFilePath;
+            return this.preSignUrl;
+        }
+        if(attempt === 3 && this.localFilePath==='fakeRetrySuccessFilePath'){
+            this.preSignUrl += this.localFilePath;
+            return this.preSignUrl;
+        }
+        
+        throw Error(`Mock PresignUrl generation error ${this.localFilePath}`);
     }
 
     /**
