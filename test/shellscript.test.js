@@ -26,6 +26,7 @@ const fs = require('fs');
 const path = require("path");
 const envfile = require("envfile");
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
+const { CMD_SIZE_LIMIT} = require('../lib/utils/utils');
 
 const TEST_DIR = "build/tests/shellscript";
 
@@ -503,12 +504,17 @@ describe("api.js (shell)", () => {
                 echo ${testUtil.RENDITION_CONTENT} > $rendition
             `);
 
-            // Build a string that has 8000 characters of random data in it.
+            // Build a random string that will exceed the command size limit.
             let longStringValue = "";
-            // We want 8000 characters and the random expression generates 5 each time.
-            for (let i = 0; i < 8000; i += 5) {
+            // The random expression generates 5 each time.
+            for (let i = 0; i < CMD_SIZE_LIMIT; i += 5) {
                 longStringValue += (Math.random() + 1).toString(36).substring(2,7);
             }
+
+            // This variable is below the size limit but only by a little bit.  It should not be written to a file
+            // the other variable/values add up to over 750 characters already, so we need to chop off more than that to keep the argument from
+            // exceeding the command size limit.  To accomodate for path variances, we round up to 800.
+            const shorterStringValue = longStringValue.substring(0, CMD_SIZE_LIMIT - 800);
 
             const rendition = {
                 target: "https://example.com/MyRendition.png",
@@ -521,7 +527,8 @@ describe("api.js (shell)", () => {
                     w: 100,
                     h: 200
                 },
-                longParameter: longStringValue
+                longParameter: longStringValue,
+                shorterParameter: shorterStringValue
             };
             const scriptWorker = new ShellScriptWorker(testUtil.simpleParams({ rendition }));
             await scriptWorker.processWithScript(mockSource(), mockRendition(rendition));
@@ -540,6 +547,7 @@ describe("api.js (shell)", () => {
             assert.equal(env.rendition_crop_y, rendition.crop.y);
             assert.equal(env.rendition_crop_w, rendition.crop.w);
             assert.equal(env.rendition_crop_h, rendition.crop.h);
+            assert.equal(env.rendition_shorterParameter, shorterStringValue);
             assert.notEqual(env.rendition_longParameter, longStringValue);
             assert.notEqual(env.rendition_longParameter.length, undefined);
 
