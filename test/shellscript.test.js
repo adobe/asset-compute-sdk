@@ -498,7 +498,7 @@ describe("api.js (shell)", () => {
             assert.strictEqual(env.rendition_crop_x, "Unicorn");
         });
 
-        it("should pass variables larger than 8000 characters as a file", async () => {
+        it("should pass variables larger than size limit as a file", async () => {
             createScript("worker.sh", `
                 env > envfile
                 echo ${testUtil.RENDITION_CONTENT} > $rendition
@@ -513,8 +513,8 @@ describe("api.js (shell)", () => {
 
             // This variable is below the size limit but only by a little bit.  It should not be written to a file
             // the other variable/values add up to over 750 characters already, so we need to chop off more than that to keep the argument from
-            // exceeding the command size limit.  To accomodate for path variances, we round up to 800.
-            const shorterStringValue = longStringValue.substring(0, CMD_SIZE_LIMIT - 800);
+            // exceeding the command size limit.  To accomodate for path variances, we round up to 850.
+            const shorterStringValue = longStringValue.substring(0, CMD_SIZE_LIMIT - 850);
 
             const rendition = {
                 target: "https://example.com/MyRendition.png",
