@@ -234,7 +234,7 @@ describe('storage.js', () => {
             }
         });
 
-        it('should retry data uri if presigned url generation fails, the retry attempts are 3 when disabled download is true', async () => {
+        it('should retry data uri if presigned url generation fails, the retry attempts are 5 when disabled download is true', async () => {
             const assetReference = {
                 url: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D'
             };
@@ -245,7 +245,7 @@ describe('storage.js', () => {
             mockFs.restore();
             mockRequire('../lib/storage/datauri', {
                 getPreSignedUrl : (source, attempt) => {
-                    if(attempt===3){
+                    if(attempt===5){
                         return 'https://example.com/preSignedUrl';
                     }
                     throw Error(`Mock PresignUrl generation error`);
