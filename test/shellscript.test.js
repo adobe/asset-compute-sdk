@@ -496,5 +496,59 @@ describe("api.js (shell)", () => {
             assert.strictEqual(env.rendition_foobar, "Unicorn");
             assert.strictEqual(env.rendition_crop_x, "Unicorn");
         });
+
+        it("should pass variables larger than 8000 characters as a file", async () => {
+            createScript("worker.sh", `
+                env > envfile
+                echo ${testUtil.RENDITION_CONTENT} > $rendition
+            `);
+
+            // Build a string that has 8000 characters of random data in it.
+            let longStringValue = "";
+            // We want 8000 characters and the random expression generates 5 each time.
+            for (let i = 0; i < 8000; i += 5) {
+                longStringValue += (Math.random() + 1).toString(36).substring(2,7);
+            }
+
+            const rendition = {
+                target: "https://example.com/MyRendition.png",
+                width: 100,
+                fmt: "png",
+                foobar: "correct",
+                crop: {
+                    x: 0,
+                    y: 0,
+                    w: 100,
+                    h: 200
+                },
+                longParameter: longStringValue
+            };
+            const scriptWorker = new ShellScriptWorker(testUtil.simpleParams({ rendition }));
+            await scriptWorker.processWithScript(mockSource(), mockRendition(rendition));
+
+            const env = readEnv("envfile");
+            assert.equal(env.source, `${process.cwd()}/in/source.jpg`);
+            assert.equal(env.file, env.source);
+            assert.equal(env.errorfile, `${process.cwd()}/out/errors/error.json`);
+            assert.equal(env.rendition, `${process.cwd()}/out/rendition0.png`);
+            assert.equal(env.typefile, `${process.cwd()}/out/errors/type.txt`);
+            assert.equal(env.rendition_target, "https://example.com/MyRendition.png");
+            assert.equal(env.rendition_width, rendition.width);
+            assert.equal(env.rendition_fmt, rendition.fmt);
+            assert.equal(env.rendition_foobar, rendition.foobar);
+            assert.equal(env.rendition_crop_x, rendition.crop.x);
+            assert.equal(env.rendition_crop_y, rendition.crop.y);
+            assert.equal(env.rendition_crop_w, rendition.crop.w);
+            assert.equal(env.rendition_crop_h, rendition.crop.h);
+            assert.notEqual(env.rendition_longParameter, longStringValue);
+            assert.notEqual(env.rendition_longParameter.length, undefined);
+
+            // Shell script should know that parameter was stored in file via FILE_PARAMS
+            assert.equal(env.FILE_PARAMS, "rendition_longParameter");
+
+            // Temp file should contain the exact content of the long value
+            const compareValue = fs.readFileSync(env.rendition_longParameter);
+            assert.equal(compareValue, longStringValue);
+        });
     });
 });
