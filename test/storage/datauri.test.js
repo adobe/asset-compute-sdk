@@ -19,6 +19,8 @@ const assert = require('assert');
 const mockFs = require("mock-fs");
 const fs = require('fs-extra');
 const { download } = require('../../lib/storage/datauri');
+const { TemporaryCloudStorage } = require('../storage/mock-test-cloud-storage');
+const mockRequire = require("mock-require");
 const nock = require('nock');
 
 describe('datauri.js', () => {
@@ -65,5 +67,17 @@ describe('datauri.js', () => {
         assert.ok(!fs.existsSync(file));
         assert.ok(nock.isDone());
     });
-    
+
+    it("should generate preSignUrl", async() => {
+        const source = {
+            url: "data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D",
+            name: "inlineData.txt",
+            path: "./storeFiles/txt/inlineData.txt"
+        };
+        mockFs.restore();
+        mockRequire('../../lib/storage/temporary-cloud-storage', {TemporaryCloudStorage});
+        const datauri = mockRequire.reRequire('../../lib/storage/datauri');
+        const preSignedUrl = await datauri.getPreSignedUrl(source.path, 0);
+        assert.strictEqual(preSignedUrl,`http://storage.com/preSignUrl/${source.path}`);
+    });
 });
