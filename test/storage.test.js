@@ -40,7 +40,6 @@ describe('storage.js', () => {
             mockRequire.stopAll();
             delete process.env.WORKER_TEST_MODE;
             delete process.env.ASSET_COMPUTE_DISABLE_RETRIES;
-            process.env.__OW_NAMESPACE = "namespace";
         });
 
         it('should download simple png and return a new source object', async () => {
@@ -245,7 +244,7 @@ describe('storage.js', () => {
             mockFs.restore();
             mockRequire('../lib/storage/datauri', {
                 getPreSignedUrl : (source, attempt) => {
-                    if(attempt===5){
+                    if(attempt===3){
                         return 'https://example.com/preSignedUrl';
                     }
                     throw Error(`Mock PresignUrl generation error`);
