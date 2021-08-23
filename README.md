@@ -55,7 +55,7 @@ These are the high-level steps done by the Adobe Asset Compute Worker SDK:
 
 ### Simple javascript worker
 
-Calls rendition function (renditionCallback) for each rendition
+Calls rendition function (renditionCallback) for each rendition.
 
 ```js
 const { worker } = require('@adobe/asset-compute-sdk');
@@ -69,7 +69,7 @@ await main(params);
 
 ### Batch processing javascript worker
 
-Calls rendition function once with all the renditions
+Calls rendition function once with all the renditions.
 
 ```js
 const { batchWorker } = require('@adobe/asset-compute-sdk');
@@ -83,7 +83,7 @@ await main(params);
 
 ### ShellScript worker
 
-Processes renditions using from a worker written in shellscript
+Processes renditions using from a worker written in shellscript.
 
 ```js
 const { shellScriptWorker } = require('../lib/api');
