@@ -506,9 +506,10 @@ describe("api.js (shell)", () => {
 
             // Build a random string that will exceed the command size limit.
             let longStringValue = "";
-            // The random expression generates 5 each time.
-            for (let i = 0; i < CMD_SIZE_LIMIT; i += 5) {
-                longStringValue += (Math.random() + 1).toString(36).substring(2,7);
+            // The random expression generates 4 characters each time from the set [0-9A-Za-z].  We start at 2 because the first two characters are always '1.'
+            // 4 characters each time is more predictable since the string might not be long enough to get 8 each time.
+            for (let i = 0; i < CMD_SIZE_LIMIT; i += 4) {
+                longStringValue += (Math.random() + 1).toString(36).substring(2,6);
             }
 
             // This variable is below the size limit but only by a little bit.  It should not be written to a file
