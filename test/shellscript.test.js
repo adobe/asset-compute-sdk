@@ -26,6 +26,7 @@ const fs = require('fs');
 const path = require("path");
 const envfile = require("envfile");
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
+const { CMD_SIZE_LIMIT} = require('../lib/utils/utils');
 
 const TEST_DIR = "build/tests/shellscript";
 
@@ -495,6 +496,68 @@ describe("api.js (shell)", () => {
             assert.strictEqual(env.rendition_fmt, "Unicorn");
             assert.strictEqual(env.rendition_foobar, "Unicorn");
             assert.strictEqual(env.rendition_crop_x, "Unicorn");
+        });
+
+        it("should pass variables larger than size limit as a file", async () => {
+            createScript("worker.sh", `
+                env > envfile
+                echo ${testUtil.RENDITION_CONTENT} > $rendition
+            `);
+
+            // Build a random string that will exceed the command size limit.
+            let longStringValue = "";
+            // The random expression generates 4 characters each time from the set [0-9A-Za-z].  We start at 2 because the first two characters are always '1.'
+            // 4 characters each time is more predictable since the string might not be long enough to get 8 each time.
+            for (let i = 0; i < CMD_SIZE_LIMIT; i += 4) {
+                longStringValue += (Math.random() + 1).toString(36).substring(2,6);
+            }
+
+            // This variable is below the size limit but only by a little bit.  It should not be written to a file
+            // the other variable/values add up to over 750 characters already, so we need to chop off more than that to keep the argument from
+            // exceeding the command size limit.  To accomodate for path variances, we round up to 850.
+            const shorterStringValue = longStringValue.substring(0, CMD_SIZE_LIMIT - 850);
+
+            const rendition = {
+                target: "https://example.com/MyRendition.png",
+                width: 100,
+                fmt: "png",
+                foobar: "correct",
+                crop: {
+                    x: 0,
+                    y: 0,
+                    w: 100,
+                    h: 200
+                },
+                longParameter: longStringValue,
+                shorterParameter: shorterStringValue
+            };
+            const scriptWorker = new ShellScriptWorker(testUtil.simpleParams({ rendition }));
+            await scriptWorker.processWithScript(mockSource(), mockRendition(rendition));
+
+            const env = readEnv("envfile");
+            assert.equal(env.source, `${process.cwd()}/in/source.jpg`);
+            assert.equal(env.file, env.source);
+            assert.equal(env.errorfile, `${process.cwd()}/out/errors/error.json`);
+            assert.equal(env.rendition, `${process.cwd()}/out/rendition0.png`);
+            assert.equal(env.typefile, `${process.cwd()}/out/errors/type.txt`);
+            assert.equal(env.rendition_target, "https://example.com/MyRendition.png");
+            assert.equal(env.rendition_width, rendition.width);
+            assert.equal(env.rendition_fmt, rendition.fmt);
+            assert.equal(env.rendition_foobar, rendition.foobar);
+            assert.equal(env.rendition_crop_x, rendition.crop.x);
+            assert.equal(env.rendition_crop_y, rendition.crop.y);
+            assert.equal(env.rendition_crop_w, rendition.crop.w);
+            assert.equal(env.rendition_crop_h, rendition.crop.h);
+            assert.equal(env.rendition_shorterParameter, shorterStringValue);
+            assert.notEqual(env.rendition_longParameter, longStringValue);
+            assert.notEqual(env.rendition_longParameter.length, undefined);
+
+            // Shell script should know that parameter was stored in file via FILE_PARAMS
+            assert.equal(env.FILE_PARAMS, "rendition_longParameter");
+
+            // Temp file should contain the exact content of the long value
+            const compareValue = fs.readFileSync(env.rendition_longParameter);
+            assert.equal(compareValue, longStringValue);
         });
     });
 });

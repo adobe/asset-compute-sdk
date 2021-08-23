@@ -101,6 +101,20 @@ const main = shellScriptWorker('custom-worker-name.sh'); // assumes script is in
 await main(params);
 ```
 
+### Note on large variables
+If a variable is over 128kb in size (which can happen for some XMP metadata), it cannot be passed as an environment variable to the shell script.  Instead, the variable is written to a file under `./vars` and the path to that file is stored in the environment variable.  An additional environment variable FILE_PARAMS contains the list of all variables that required this substitution (if any).  One easy way to check if a variable has been stored in a file is to check using a pattern match, for example:
+
+```bash
+# Example of passing the variable as STDIN to a command regardless of if it a file or environment variable
+if [[ "$rendition_myvariable" == "./vars/"* ]]
+then
+    # Value was stored in a file, do something with the file contents
+    cat "$rendition_myvariable" >> somecommand
+else
+    # The value is in the environment variable $rendition_myvariable
+    echo "$rendition_myvariable" >> somecommand
+```
+
 ## API details
 
 The `worker` and `batchWorker` take two parameters: `renditionCallback` and `options` as described below.
