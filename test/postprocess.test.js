@@ -28,6 +28,7 @@ const testUtil = require('./testutil');
 let worker, batchWorker, shellScriptWorker;
 
 const PNG_FILE = "test/files/fileSmall.png";
+const PNG_FILE_WITH_ORIENTATION = "test/files/file-landscape6.png";
 
 const RENDITION_JPG_PATH = "test/files/generatedFileSmall.jpg";
 const RENDITION_PNG_PATH = "test/files/generatedFileSmall.png";
@@ -125,6 +126,58 @@ describe("postprocessing/image.js", () => {
         assert.strictEqual(events[0].metadata["dc:format"], "image/jpeg");
 
         assert.ok(RENDITION_JPG.equals(uploadedRenditions["/MyRendition.jpeg"]));
+
+        // check metrics
+
+
+        await MetricsTestHelper.metricsDone();
+
+        assert.strictEqual(receivedMetrics[0].eventType, "rendition");
+        assert.strictEqual(receivedMetrics[0].callbackProcessingDuration + receivedMetrics[0].postProcessingDuration, receivedMetrics[0].processingDuration);
+        assert.strictEqual(receivedMetrics[1].eventType, "activation");
+        assert.strictEqual(receivedMetrics[1].callbackProcessingDuration + receivedMetrics[1].postProcessingDuration, receivedMetrics[1].processingDuration);
+
+        // queued metrics may "flatten metrics" and turn booleans true/false into 1/0
+        assert.ok(receivedMetrics[0].imagePostProcess === true || receivedMetrics[0].imagePostProcess === 1);
+        assert.ok(receivedMetrics[1].imagePostProcess === true || receivedMetrics[1].imagePostProcess === 1);
+    }).timeout(5000);
+    it('should post process to apply orientation PNG to PNG - end to end test', async () => {
+        const receivedMetrics = MetricsTestHelper.mockNewRelic();
+        const events = testUtil.mockIOEvents();
+        const uploadedRenditions = testUtil.mockPutFiles('https://example.com');
+
+        // will use default image processing engine
+        async function workerFn(source, rendition) {
+            await fs.copyFile(source.path, rendition.path);
+            rendition.postProcess = true;
+        }
+
+        const base64PngFile = Buffer.from(fs.readFileSync(PNG_FILE_WITH_ORIENTATION)).toString('base64');
+        const main = worker(workerFn, { supportedRenditionFormats: ["jpg", "png"] });
+        const params = {
+            source: `data:image/png;base64,${base64PngFile}`,
+            renditions: [{
+                fmt: "png",
+                target: "https://example.com/MyRendition.png"
+            }],
+            requestId: "test-request-id",
+            auth: testUtil.PARAMS_AUTH,
+            newRelicEventsURL: MetricsTestHelper.MOCK_URL,
+            newRelicApiKey: MetricsTestHelper.MOCK_API_KEY
+        };
+        const result = await main(params);
+
+        // validate errors
+        assert.ok(result.renditionErrors === undefined);
+
+        assert.strictEqual(events.length, 1);
+        assert.strictEqual(events[0].type, "rendition_created");
+        assert.strictEqual(events[0].rendition.fmt, "png");
+        assert.strictEqual(events[0].metadata["tiff:imageWidth"], 10);
+        assert.strictEqual(events[0].metadata["tiff:imageHeight"], 6);
+        assert.strictEqual(events[0].metadata["dc:format"], "image/png");
+
+        assert.ok(RENDITION_PNG.equals(uploadedRenditions["/MyRendition.png"]));
 
         // check metrics
 
