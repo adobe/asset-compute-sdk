@@ -221,7 +221,7 @@ describe("api.js", () => {
             assert.ok(!fs.existsSync(renditionDir));
         });
 
-        it('rendition_failed event with generic error should be sent due to upload failure', async () => {
+        it.only('rendition_failed event with generic error should be sent due to upload failure', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
 
             let sourcePath, renditionPath, renditionDir;
