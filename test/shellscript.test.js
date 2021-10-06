@@ -26,7 +26,7 @@ const fs = require('fs');
 const path = require("path");
 const envfile = require("envfile");
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
-const { CMD_SIZE_LIMIT} = require('../lib/utils/utils');
+const { CMD_SIZE_LIMIT} = require('@adobe/asset-compute-pipeline').Sdk.Utils;
 
 const TEST_DIR = "build/tests/shellscript";
 
