@@ -19,6 +19,7 @@
     "@adobe/node-fetch-retry": "^1.1.1",
     "ajv": "8.6.3",
     "clone": "^2.1.2",
+    "cockatiel": "^2.0.2",
     "content-type": "^1.0.4",
     "css-unit-converter": "^1.1.2",
     "data-uri-to-buffer": "^3.0.1",
