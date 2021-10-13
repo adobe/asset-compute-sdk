@@ -144,6 +144,38 @@ describe("api.js", () => {
             await testUtil.assertSimpleParamsMetrics(receivedMetrics, {noEventsNock: true});
         });
 
+        it('rendition_created event should be sent (multiple times, circuit breaker is closed)', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
+            function workerFn(source, rendition) {
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                return Promise.resolve();
+            }
+
+            for(let i = 0; i < 10; i++){
+                const main = worker(workerFn);
+                const params = testUtil.simpleParams({noEventsNock: true});
+                testUtil.nockIOEvent({
+                    type: "rendition_created",
+                    rendition: {
+                        fmt: "png"
+                    },
+                    source: "https://example.com/MySourceFile.jpg",
+                    metadata: {
+                        "repo:size": testUtil.RENDITION_CONTENT.length
+                    }
+                });
+
+                const result = await main(params);
+
+                // validate errors
+                assert.ok(result.renditionErrors === undefined);
+            
+                testUtil.assertNockDone();
+                await testUtil.assertSimpleParamsMetrics(receivedMetrics, {noEventsNock: true});
+            }
+        }).timeout(30000);
+
         it('should send rendition_created event with source as a content fragment (data uri)', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
 
