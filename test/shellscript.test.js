@@ -26,7 +26,7 @@ const fs = require('fs');
 const path = require("path");
 const envfile = require("envfile");
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
-const { CMD_SIZE_LIMIT} = require('@adobe/asset-compute-pipeline').Utils;
+const { Utils } = require('@adobe/asset-compute-pipeline');
 
 const TEST_DIR = "build/tests/shellscript";
 
@@ -508,14 +508,14 @@ describe("api.js (shell)", () => {
             let longStringValue = "";
             // The random expression generates 4 characters each time from the set [0-9A-Za-z].  We start at 2 because the first two characters are always '1.'
             // 4 characters each time is more predictable since the string might not be long enough to get 8 each time.
-            for (let i = 0; i < CMD_SIZE_LIMIT; i += 4) {
+            for (let i = 0; i < Utils.getCommandSizeLimit(); i += 4) {
                 longStringValue += (Math.random() + 1).toString(36).substring(2,6);
             }
 
             // This variable is below the size limit but only by a little bit.  It should not be written to a file
             // the other variable/values add up to over 750 characters already, so we need to chop off more than that to keep the argument from
             // exceeding the command size limit.  To accomodate for path variances, we round up to 850.
-            const shorterStringValue = longStringValue.substring(0, CMD_SIZE_LIMIT - 850);
+            const shorterStringValue = longStringValue.substring(0, Utils.getCommandSizeLimit() - 850);
 
             const rendition = {
                 target: "https://example.com/MyRendition.png",
