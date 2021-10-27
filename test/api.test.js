@@ -45,6 +45,7 @@ describe("api.js", () => {
         process.exit.restore();
         testUtil.afterEach();
     });
+    
     describe("worker()", () => {
 
         it("should throw if worker callback is invalid", async () => {
