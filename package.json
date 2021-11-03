@@ -11,8 +11,8 @@
     "url": "adobe/asset-compute-sdk"
   },
   "dependencies": {
-    "@adobe/asset-compute-commons": "^1.1.4",
-    "@adobe/asset-compute-pipeline": "^3.1.0",
+    "@adobe/asset-compute-commons": "^1.1.5",
+    "@adobe/asset-compute-pipeline": "^5.0.1",
     "@adobe/cgroup-metrics": "^3.0.5",
     "@adobe/httptransfer": "^2.8.0",
     "@adobe/metrics-sampler": "^1.0.3",
