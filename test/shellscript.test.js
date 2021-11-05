@@ -26,9 +26,10 @@ const fs = require('fs');
 const path = require("path");
 const envfile = require("envfile");
 const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
-const { CMD_SIZE_LIMIT} = require('../lib/utils/utils');
+const { Utils } = require('@adobe/asset-compute-pipeline');
 
 const TEST_DIR = "build/tests/shellscript";
+const CMD_SIZE_LIMIT = Utils.getCommandSizeLimit();
 
 function createScript(file, data) {
     fs.writeFileSync(file, data);
