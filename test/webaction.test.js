@@ -17,13 +17,14 @@
 
 const assert = require('assert');
 const mockFs = require('mock-fs');
+const path = require('path');
 
 const { worker } = require('../lib/api');
 
 const testUtil = require('./testutil');
 const fs = require('fs-extra');
-const { MetricsTestHelper } = require("@adobe/asset-compute-commons");
-const mockRequire = require("mock-require");
+const { MetricsTestHelper } = require('@adobe/asset-compute-commons');
+const mockRequire = require('mock-require');
 
 describe("web action for custom workers", function() {
     beforeEach(function() {
@@ -48,8 +49,8 @@ describe("web action for custom workers", function() {
         }));
 
         mockFs.restore();
-        mockRequire.reRequire('../lib/webaction');
-        const { worker } = mockRequire.reRequire('../lib/api');
+        mockRequire.reRequire(path.resolve('./lib/webaction'));
+        const { worker } = mockRequire.reRequire(path.resolve('./lib/api'));
         return worker;
     }
 
