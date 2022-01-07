@@ -17,6 +17,7 @@
 
 const assert = require('assert');
 const mockFs = require('mock-fs');
+const path = require('path');
 
 const { worker } = require('../lib/api');
 
@@ -48,8 +49,9 @@ describe("web action for custom workers", function() {
         }));
 
         mockFs.restore();
-        mockRequire.reRequire('../lib/webaction');
-        const { worker } = mockRequire.reRequire('../lib/api');
+
+        mockRequire.reRequire(path.resolve("./lib/webaction"));
+        const { worker } = mockRequire.reRequire(path.resolve("./lib/api"));
         return worker;
     }
 
