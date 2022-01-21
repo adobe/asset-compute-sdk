@@ -68,6 +68,10 @@ function nockGetFile(httpUrl) {
     const uri = url.parse(httpUrl);
     return nock(`${uri.protocol}//${uri.host}`).get(uri.path);
 }
+function nockHeadRequest(httpUrl) {
+    const uri = url.parse(httpUrl);
+    return nock(`${uri.protocol}//${uri.host}`).head(uri.path);
+}
 
 function nockPutFile(httpUrl, content, status=200) {
     const uri = url.parse(httpUrl);
@@ -149,16 +153,27 @@ const PARAMS_AUTH = {
 };
 
 function simpleParams(options={}) {
+    // TODO: refactor to mock `node-httptransfer` using proxyquire instead of mocking the http requests directly
     let SOURCE = 'https://example.com/MySourceFile.jpg';
     if (options.sourceIsDataUri) {
-        SOURCE = "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=";
+        const base64SourceContent = Buffer.from(SOURCE_CONTENT).toString('base64');
+        // SOURCE = "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=";
+        SOURCE = `data:text/html;base64,${base64SourceContent}`;
+    }
+    if (!options.noHeadRequest) {
+        nockHeadRequest(SOURCE).reply(200, "OK", {
+            'content-length': 14,
+            'content-type': 'image/jpeg'
+        });
     }
 
     if (options.failDownload) {
         nockGetFile(SOURCE).reply(500);
     }
     if (!options.noSourceDownload) {
-        nockGetFile(SOURCE).reply(200, SOURCE_CONTENT);
+        nockGetFile(SOURCE).reply(200, SOURCE_CONTENT, {
+            'content-length': 14
+        });
     }
     if (options.failUpload) {
         nockPutFile('https://example.com/MyRendition.png', RENDITION_CONTENT, 500);
@@ -217,7 +232,15 @@ async function assertSimpleParamsMetrics(receivedMetrics, options={}) {
 function paramsWithMultipleRenditions(options={}) {
     if (!options.noGet) {
         const status = (options && options.getStatus) || 200;
-        nockGetFile('https://example.com/MySourceFile.jpg').reply(status, SOURCE_CONTENT);
+        // TODO: refactor to mock `node-httptransfer` using proxyquire instead of mocking the http requests directly
+        nockHeadRequest('https://example.com/MySourceFile.jpg').reply(200, "OK", {
+            'content-length': 14,
+            'content-type': 'image/jpeg'
+        });
+        nockGetFile('https://example.com/MySourceFile.jpg').reply(status, SOURCE_CONTENT, {
+            'content-length': 14,
+            'content-type': 'image/jpeg'
+        });
     }
     if (!options.noPut1) {
         const status = (options && options.put1Status) || 200;

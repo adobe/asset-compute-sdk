@@ -152,14 +152,14 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({noEventsNock: true, sourceIsDataUri: true, noSourceDownload:true});
+            const params = testUtil.simpleParams({noEventsNock: true, sourceIsDataUri: true, noSourceDownload: true, noHeadRequest: true});
 
             testUtil.nockIOEvent({
                 type: "rendition_created",
                 rendition: {
                     fmt: "png"
                 },
-                source: "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=",
+                source: "data:text/html;base64,c291cmNlIGNvbnRlbnQ=",
                 metadata: {
                     "repo:size": testUtil.RENDITION_CONTENT.length
                 }
@@ -636,7 +636,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn, { disableSourceDownload: true});
-            await main(testUtil.simpleParams({noSourceDownload: true}));
+            await main(testUtil.simpleParams({noSourceDownload: true, noHeadRequest: true}));
 
             await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             testUtil.assertNockDone();
@@ -881,7 +881,7 @@ describe("api.js", () => {
             }
 
             const main = batchWorker(batchWorkerFn, { disableSourceDownload: true});
-            await main(testUtil.simpleParams({noSourceDownload: true}));
+            await main(testUtil.simpleParams({noSourceDownload: true, noHeadRequest: true}));
 
             await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             testUtil.assertNockDone();
