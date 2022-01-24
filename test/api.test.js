@@ -111,7 +111,7 @@ describe("api.js", () => {
             assert.ok(!fs.existsSync(renditionPath));
             assert.ok(!fs.existsSync(renditionDir));
         });
-        it.skip('should download source (no head request source.mimetype), invoke worker callback and upload rendition', async () => {
+        it('should download source (no head request source.mimetype), invoke worker callback and upload rendition', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
 
             let sourcePath, renditionPath, renditionDir;
