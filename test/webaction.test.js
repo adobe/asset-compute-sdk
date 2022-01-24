@@ -17,14 +17,13 @@
 
 const assert = require('assert');
 const mockFs = require('mock-fs');
-const path = require('path');
 
 const { worker } = require('../lib/api');
 
 const testUtil = require('./testutil');
 const fs = require('fs-extra');
 const { MetricsTestHelper } = require('@adobe/asset-compute-commons');
-const mockRequire = require('mock-require');
+const proxyquire = require('proxyquire');
 
 describe("web action for custom workers", function() {
     beforeEach(function() {
@@ -37,20 +36,18 @@ describe("web action for custom workers", function() {
         testUtil.afterEach();
     });
 
-    after(function() {
-        mockRequire.stopAll();
-    });
-
     function workerWithMockedOpenWhiskInvoke(invokeFn) {
-        mockRequire("openwhisk", () => ({
-            actions: {
-                invoke: invokeFn
-            }
-        }));
-
         mockFs.restore();
-        mockRequire.reRequire(path.resolve('./lib/webaction'));
-        const { worker } = mockRequire.reRequire(path.resolve('./lib/api'));
+        const webActionMock = proxyquire('../lib/webaction', {
+            'openwhisk': () => ({
+                actions: {
+                    invoke: invokeFn
+                }
+            })
+        });
+        const { worker } = proxyquire('../lib/api', {
+            './webaction': webActionMock
+        });
         return worker;
     }
 
