@@ -230,13 +230,15 @@ async function assertSimpleParamsMetrics(receivedMetrics, options={}) {
 }
 
 function paramsWithMultipleRenditions(options={}) {
-    if (!options.noGet) {
-        const status = (options && options.getStatus) || 200;
-        // TODO: refactor to mock `node-httptransfer` using proxyquire instead of mocking the http requests directly
+    if (options.doHeadRequest) {
         nockHeadRequest('https://example.com/MySourceFile.jpg').reply(200, "OK", {
             'content-length': 14,
             'content-type': 'image/jpeg'
         });
+    }
+    if (!options.noGet) {
+        const status = (options && options.getStatus) || 200;
+        // TODO: refactor to mock `node-httptransfer` using proxyquire instead of mocking the http requests directly
         nockGetFile('https://example.com/MySourceFile.jpg').reply(status, SOURCE_CONTENT, {
             'content-length': 14,
             'content-type': 'image/jpeg'
@@ -271,7 +273,7 @@ function paramsWithMultipleRenditions(options={}) {
             url: 'https://example.com/MySourceFile.jpg',
             name: "MySourceFile.jpg",
             mimetype: "image/jpeg",
-            size: 200
+            size: 14
         },
         renditions: [{
             fmt: "png",
@@ -305,7 +307,7 @@ async function assertParamsWithMultipleRenditions(receivedMetrics) {
         size: RENDITION_CONTENT.length,
         sourceName: "MySourceFile.jpg",
         sourceMimetype: "image/jpeg",
-        sourceSize: 200,
+        sourceSize: 14,
         requestId: "test-request-id"
     },{
         eventType: "rendition",
@@ -316,7 +318,7 @@ async function assertParamsWithMultipleRenditions(receivedMetrics) {
         size: RENDITION_CONTENT.length,
         sourceName: "MySourceFile.jpg",
         sourceMimetype: "image/jpeg",
-        sourceSize: 200,
+        sourceSize: 14,
         requestId: "test-request-id"
     },{
         eventType: "rendition",
@@ -327,7 +329,7 @@ async function assertParamsWithMultipleRenditions(receivedMetrics) {
         size: RENDITION_CONTENT.length,
         sourceName: "MySourceFile.jpg",
         sourceMimetype: "image/jpeg",
-        sourceSize: 200,
+        sourceSize: 14,
         requestId: "test-request-id"
     },{
         eventType: "activation"
