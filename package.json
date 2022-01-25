@@ -11,12 +11,11 @@
     "url": "adobe/asset-compute-sdk"
   },
   "dependencies": {
-    "@adobe/asset-compute-commons": "^1.1.4",
+    "@adobe/asset-compute-commons": "^1.1.5",
     "@adobe/asset-compute-pipeline": "^7.0.1",
-    "@adobe/cgroup-metrics": "^3.0.5",
-    "@adobe/httptransfer": "^2.8.0",
-    "@adobe/metrics-sampler": "^1.0.3",
-    "@adobe/node-fetch-retry": "^2.0.0",
+    "@adobe/cgroup-metrics": "^3.0.6",
+    "@adobe/metrics-sampler": "^1.0.4",
+    "@adobe/node-fetch-retry": "^2.1.0",
     "ajv": "8.6.3",
     "clone": "^2.1.2",
     "content-type": "^1.0.4",
