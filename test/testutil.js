@@ -224,6 +224,8 @@ async function assertSimpleParamsMetrics(receivedMetrics, options={}) {
     }]);
     MetricsTestHelper.assertArrayContains(receivedMetrics, [{
         eventType: "activation",
+        totalRenditionsSize: RENDITION_CONTENT.length,
+        renditionCount: 1
     }]);
 
     assertDurationMetrics(receivedMetrics);
@@ -332,7 +334,9 @@ async function assertParamsWithMultipleRenditions(receivedMetrics) {
         sourceSize: 14,
         requestId: "test-request-id"
     },{
-        eventType: "activation"
+        eventType: "activation",
+        renditionCount: 3,
+        totalRenditionsSize: RENDITION_CONTENT.length * 3
     }]);
 
     assertDurationMetrics(receivedMetrics);
