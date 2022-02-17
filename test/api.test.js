@@ -111,6 +111,159 @@ describe("api.js", () => {
             assert.ok(!fs.existsSync(renditionPath));
             assert.ok(!fs.existsSync(renditionDir));
         });
+        it('should download source (no head request source.mimetype), invoke worker callback and upload rendition', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
+            let sourcePath, renditionPath, renditionDir;
+
+            function workerFn(source, rendition) {
+                assert.strictEqual(typeof source, "object");
+                assert.strictEqual(typeof source.path, "string");
+                assert.ok(fs.existsSync(source.path));
+
+                /* eslint-disable eqeqeq */
+                // we can only do a weakly typed check here
+                assert.ok(fs.readFileSync(source.path) == testUtil.SOURCE_CONTENT);
+                /* eslint-enable eqeqeq */
+
+                sourcePath = source.path;
+
+                assert.strictEqual(typeof rendition, "object");
+                assert.strictEqual(typeof rendition.path, "string");
+                assert.strictEqual(typeof rendition.name, "string");
+                assert.strictEqual(typeof rendition.directory, "string");
+                assert.ok(!fs.existsSync(rendition.path));
+                assert.ok(fs.existsSync(rendition.directory));
+                assert.ok(fs.statSync(rendition.directory).isDirectory());
+                renditionPath = rendition.path;
+                renditionDir = rendition.directory;
+
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                return Promise.resolve();
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams({noHeadRequest: true});
+            params.source = {
+                url: params.source,
+                mimetype: 'image/jpeg',
+                size: 14
+            };
+            const result = await main(params);
+
+            // validate errors
+            assert.ok(result.renditionErrors === undefined);
+
+            testUtil.assertNockDone();
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionPath));
+            assert.ok(!fs.existsSync(renditionDir));
+        });
+        it('should download source (no head request source.type), invoke worker callback and upload rendition', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
+            let sourcePath, renditionPath, renditionDir;
+
+            function workerFn(source, rendition) {
+                assert.strictEqual(typeof source, "object");
+                assert.strictEqual(typeof source.path, "string");
+                assert.ok(fs.existsSync(source.path));
+
+                /* eslint-disable eqeqeq */
+                // we can only do a weakly typed check here
+                assert.ok(fs.readFileSync(source.path) == testUtil.SOURCE_CONTENT);
+                /* eslint-enable eqeqeq */
+
+                sourcePath = source.path;
+
+                assert.strictEqual(typeof rendition, "object");
+                assert.strictEqual(typeof rendition.path, "string");
+                assert.strictEqual(typeof rendition.name, "string");
+                assert.strictEqual(typeof rendition.directory, "string");
+                assert.ok(!fs.existsSync(rendition.path));
+                assert.ok(fs.existsSync(rendition.directory));
+                assert.ok(fs.statSync(rendition.directory).isDirectory());
+                renditionPath = rendition.path;
+                renditionDir = rendition.directory;
+
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                return Promise.resolve();
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams({noHeadRequest: true});
+            params.source = {
+                url: params.source,
+                type: 'image/jpeg',
+                size: 14
+            };
+            const result = await main(params);
+
+            // validate errors
+            assert.ok(result.renditionErrors === undefined);
+
+            testUtil.assertNockDone();
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionPath));
+            assert.ok(!fs.existsSync(renditionDir));
+        });
+        it('should download source (no head request source.mimeType), invoke worker callback and upload rendition', async () => {
+            const receivedMetrics = MetricsTestHelper.mockNewRelic();
+
+            let sourcePath, renditionPath, renditionDir;
+
+            function workerFn(source, rendition) {
+                assert.strictEqual(typeof source, "object");
+                assert.strictEqual(typeof source.path, "string");
+                assert.ok(fs.existsSync(source.path));
+
+                /* eslint-disable eqeqeq */
+                // we can only do a weakly typed check here
+                assert.ok(fs.readFileSync(source.path) == testUtil.SOURCE_CONTENT);
+                /* eslint-enable eqeqeq */
+
+                sourcePath = source.path;
+
+                assert.strictEqual(typeof rendition, "object");
+                assert.strictEqual(typeof rendition.path, "string");
+                assert.strictEqual(typeof rendition.name, "string");
+                assert.strictEqual(typeof rendition.directory, "string");
+                assert.ok(!fs.existsSync(rendition.path));
+                assert.ok(fs.existsSync(rendition.directory));
+                assert.ok(fs.statSync(rendition.directory).isDirectory());
+                renditionPath = rendition.path;
+                renditionDir = rendition.directory;
+
+                fs.writeFileSync(rendition.path, testUtil.RENDITION_CONTENT);
+                return Promise.resolve();
+            }
+
+            const main = worker(workerFn);
+            const params = testUtil.simpleParams({noHeadRequest: true});
+            params.source = {
+                url: params.source,
+                mimeType: 'image/jpeg',
+                size: 14
+            };
+            const result = await main(params);
+
+            // validate errors
+            assert.ok(result.renditionErrors === undefined);
+
+            testUtil.assertNockDone();
+            await testUtil.assertSimpleParamsMetrics(receivedMetrics);
+
+            // ensure cleanup
+            assert.ok(!fs.existsSync(sourcePath));
+            assert.ok(!fs.existsSync(renditionPath));
+            assert.ok(!fs.existsSync(renditionDir));
+        });
 
         it('rendition_created event should be sent', async () => {
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
@@ -152,14 +305,14 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn);
-            const params = testUtil.simpleParams({noEventsNock: true, sourceIsDataUri: true, noSourceDownload:true});
+            const params = testUtil.simpleParams({noEventsNock: true, sourceIsDataUri: true, noSourceDownload: true, noHeadRequest: true});
 
             testUtil.nockIOEvent({
                 type: "rendition_created",
                 rendition: {
                     fmt: "png"
                 },
-                source: "data:text/html;base64,PHA+VGhpcyBpcyBteSBjb250ZW50IGZyYWdtZW50LiBXaGF0J3MgZ29pbmcgb24/PC9wPgo=",
+                source: "data:text/html;base64,c291cmNlIGNvbnRlbnQ=",
                 metadata: {
                     "repo:size": testUtil.RENDITION_CONTENT.length
                 }
@@ -603,7 +756,8 @@ describe("api.js", () => {
             });
             assert.strictEqual(typeof main, "function");
             process.env.__OW_DEADLINE = Date.now() + 300;
-            await main(testUtil.paramsWithMultipleRenditions({noPut3:true}));
+            const params = testUtil.paramsWithMultipleRenditions({noPut3:true});
+            await main(params);
 
             testUtil.assertNockDone();
             await MetricsTestHelper.metricsDone();
@@ -636,7 +790,7 @@ describe("api.js", () => {
             }
 
             const main = worker(workerFn, { disableSourceDownload: true});
-            await main(testUtil.simpleParams({noSourceDownload: true}));
+            await main(testUtil.simpleParams({noSourceDownload: true, noHeadRequest: true}));
 
             await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             testUtil.assertNockDone();
@@ -881,7 +1035,7 @@ describe("api.js", () => {
             }
 
             const main = batchWorker(batchWorkerFn, { disableSourceDownload: true});
-            await main(testUtil.simpleParams({noSourceDownload: true}));
+            await main(testUtil.simpleParams({noSourceDownload: true, noHeadRequest: true}));
 
             await testUtil.assertSimpleParamsMetrics(receivedMetrics);
             testUtil.assertNockDone();
@@ -1048,7 +1202,7 @@ describe("api.js", () => {
             });
 
             const main = batchWorker(batchWorkerFn);
-            const result = await main(testUtil.paramsWithMultipleRenditions({ noPut2: true, noEventsNock: true }));
+            const result = await main(testUtil.paramsWithMultipleRenditions({ noPut2: true, noEventsNock: true}));
 
             // validate errors
             assert.ok(result.renditionErrors);
@@ -1119,7 +1273,7 @@ describe("api.js", () => {
             });
 
             const main = batchWorker(batchWorkerFn);
-            const result = await main(testUtil.paramsWithMultipleRenditions({ put2Status: 400, noEventsNock: true}));
+            const result = await main(testUtil.paramsWithMultipleRenditions({ put2Status: 400, noEventsNock: true, noHeadRequest: true}));
 
             // validate errors
             assert.ok(result.renditionErrors);
