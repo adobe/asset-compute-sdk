@@ -196,7 +196,7 @@ function simpleParams(options={}) {
         auth: PARAMS_AUTH,
         newRelicEventsURL: MetricsTestHelper.MOCK_URL,
         newRelicApiKey: MetricsTestHelper.MOCK_API_KEY,
-        predictedRunDuration: 10
+        estimatedRunDuration: 10
     };
 }
 
@@ -227,7 +227,7 @@ async function assertSimpleParamsMetrics(receivedMetrics, options={}) {
         eventType: "activation",
         totalRenditionsSize: RENDITION_CONTENT.length,
         renditionCount: 1,
-        predictedRunDuration: 10
+        estimatedRunDuration: 10
     }]);
 
     assertDurationMetrics(receivedMetrics);
