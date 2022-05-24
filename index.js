@@ -21,7 +21,8 @@ const {
     SourceFormatUnsupportedError,
     SourceUnsupportedError,
     SourceCorruptError,
-    RenditionTooLarge
+    RenditionTooLarge,
+    ServiceOverLoadError
 } = require('@adobe/asset-compute-commons');
 
 // -----------------------< exports >-----------------------------------
@@ -38,5 +39,6 @@ module.exports = {
     SourceFormatUnsupportedError,
     SourceUnsupportedError,
     SourceCorruptError,
-    RenditionTooLarge
+    RenditionTooLarge,
+    ServiceOverLoadError
 };
