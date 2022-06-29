@@ -5,6 +5,7 @@
 
 # Adobe Asset Compute Worker SDK
 
+
 This library is required for all custom workers for the Adobe Asset Compute Service. It provides an easy to use framework and takes care of common things like asset & rendition access, validation and type checks, event notification, error handling and more.
 
   - [Adobe Asset Compute Worker SDK](#adobe-asset-compute-worker-sdk)
