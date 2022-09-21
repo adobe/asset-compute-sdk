@@ -2,7 +2,7 @@
   "name": "@adobe/asset-compute-sdk",
   "description": "Adobe Asset Compute Worker SDK",
   "license": "Apache-2.0",
-  "version": "4.1.4",
+  "version": "4.1.7",
   "author": {
     "name": "Adobe Inc."
   },
@@ -11,8 +11,8 @@
     "url": "adobe/asset-compute-sdk"
   },
   "dependencies": {
-    "@adobe/asset-compute-commons": "^1.1.7",
-    "@adobe/asset-compute-pipeline": "^7.2.1",
+    "@adobe/asset-compute-commons": "^1.1.9",
+    "@adobe/asset-compute-pipeline": "^7.2.3",
     "@adobe/cgroup-metrics": "^3.0.6",
     "@adobe/metrics-sampler": "^1.0.4",
     "@adobe/node-fetch-retry": "^2.2.0",

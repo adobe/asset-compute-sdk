@@ -48,6 +48,11 @@ describe("math.js", function () {
         dimensions = new Dimensions(1.0, 2.0);
         assert.strictEqual(dimensions.width, 1.0);
         assert.strictEqual(dimensions.height, 2.0);
+        
+        // floats are allowed
+        dimensions = new Dimensions(1.1, 0.201);
+        assert.strictEqual(dimensions.width, 1.1);
+        assert.strictEqual(dimensions.height, 0.201);
 
         dimensions = new Dimensions(100);
         assert.strictEqual(dimensions.width, 100);
@@ -139,6 +144,25 @@ describe("math.js", function () {
 
     });
 
+    it("scales properly when one of more of the dimensions are a float", () => {
+        // floats are allowed
+        const dimensions = new Dimensions(1.1, 0.201);
+        assert.strictEqual(dimensions.width, 1.1);
+        assert.strictEqual(dimensions.height, 0.201);
+
+        let scaledDimensions = dimensions.scale(1.0);
+        assert.strictEqual(scaledDimensions.width, 1.1);
+        assert.strictEqual(scaledDimensions.height, 0.201);
+
+        scaledDimensions = dimensions.scale(0.0);
+        assert.strictEqual(scaledDimensions.width, 0);
+        assert.strictEqual(scaledDimensions.height, 0);
+
+        scaledDimensions = dimensions.scale(0.5);
+        assert.strictEqual(scaledDimensions.width, 0.55);
+        assert.strictEqual(scaledDimensions.height, 0.1005);
+    });
+
     it("properly fits dimensions in bounding box", () => {
         // bounding box is smaller than original dimensions
 
@@ -223,6 +247,18 @@ describe("math.js", function () {
         assert.strictEqual(fitDimensions.height, 200);
         // check aspect ratio did not change
         assert.strictEqual(dimensions.width / dimensions.height, fitDimensions.width / fitDimensions.height);
+    });
+
+    it("properly fits dimensions in bounding box when size is less than 1", () => {
+        const imageSize = new Dimensions(10, 2500);
+        const targetBoundingBox = new Dimensions(48, 48);
+        const targetSize = imageSize.fitBoundingBox(targetBoundingBox, true);
+
+        const watermarkSize = new Dimensions(1860, 255);
+        const watermarkTargetSize = watermarkSize.fitBoundingBox(targetSize).scale(1.0);
+        assert.ok(watermarkTargetSize.width < 1, watermarkSize.height < 1);
+        // check aspect ratio did not change
+        assert.strictEqual(imageSize.width / imageSize.height, targetSize.width / targetSize.height);
     });
 
     it("bounding box is missing one or more dimensions", () => {
