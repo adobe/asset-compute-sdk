@@ -4,4 +4,4 @@ packages:
     actions:
       worker:
         function: worker.js
-        docker: 'docker-hub-remote.dr.corp.adobe.com/alexkli/nodejs10-action-centos:2.4.1'
+        docker: 'alexkli/nodejs10-action-centos:2.4.1'
