@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@adobe/asset-compute-commons": "^1.3.1",
-    "@adobe/asset-compute-pipeline": "^7.4.1",
+    "@adobe/asset-compute-pipeline": "git+https://github.com/adobe/asset-compute-pipeline.git#shellscript-pipelined",
     "@adobe/cgroup-metrics": "^3.0.6",
     "@adobe/metrics-sampler": "^1.0.4",
     "@adobe/node-fetch-retry": "^2.2.0",
