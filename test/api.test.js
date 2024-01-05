@@ -695,7 +695,7 @@ describe("api.js", () => {
                 eventType: 'timeout'
             },{
                 eventType: "error",
-                message: "Error sending IO event: 500 Internal Server Error",
+                message: "Error sending event: 500 Internal Server Error",
                 location:"IOEvents"
             },{
                 eventType: "rendition",
