@@ -30,7 +30,7 @@ jobs:
       - name: Run directory
         run: pwd
       - name: Install aio
-        run: npm install -g @adobe/aio-cli@8.2.0
+        run: npm install -g @adobe/aio-cli@8.3.0
       - name: Log aio details
         run: aio info
       - name: Docker login
