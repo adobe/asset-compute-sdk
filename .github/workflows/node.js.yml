@@ -30,7 +30,7 @@ jobs:
       - name: Run directory
         run: pwd
       - name: Install aio
-        run: npm install -g @adobe/aio-cli@9.4.1
+        run: npm config set strict-ssl false && npm install -g @adobe/aio-cli@9.4.1
       - name: Log aio details
         run: aio info
       - name: Docker login
@@ -39,7 +39,7 @@ jobs:
           REGISTRY_ID: ${{ secrets.AZURE_CONTAINER_REGISTRY_ID }}
           REGISTRY_SECRET: ${{ secrets.AZURE_CONTAINER_REGISTRY_SECRET }}
       - name: Install dependencies (all)
-        run: npm install
+        run: npm config set strict-ssl false && npm install
       - name: Run unit tests
         run: npm test
       - name: Report coverage
@@ -63,7 +63,7 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: "14.17"
-      - run: npm install
+      - run: npm config set strict-ssl false && npm install
       - run: npm run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.ADOBE_BOT_GITHUB_TOKEN }}
