@@ -18,7 +18,7 @@ jobs:
         node-version: [18.14.2]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup unit test environment
         run: sudo apt-get install librsvg2-bin imagemagick exiftool
       - name: Use Node.js ${{ matrix.node-version }}
@@ -49,14 +49,14 @@ jobs:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - run: npx @adobe/sizewatcher
   semantic-release:
     runs-on: ubuntu-latest
     needs: [build]
     if: ${{  !contains(github.event.head_commit.message, '[ci skip]') && github.ref == 'refs/heads/master' }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Use Node.js 12.19 for semantic release
