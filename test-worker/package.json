@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "adobe-asset-compute test-worker"
+    "test": "aio asset-compute test-worker"
   },
   "devDependencies": {
-    "@adobe/aio-cli-plugin-asset-compute": "^2.0.1"
+    "@adobe/aio-cli-plugin-asset-compute": "^4.0.4"
   }
 }
