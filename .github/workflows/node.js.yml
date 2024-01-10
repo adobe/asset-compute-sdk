@@ -15,7 +15,7 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     strategy:
       matrix:
-        node-version: [16.15.0]
+        node-version: [18.14.2]
 
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +30,7 @@ jobs:
       - name: Run directory
         run: pwd
       - name: Install aio CLI
-        run:  npm install -g @adobe/aio-cli@8.2.0
+        run:  npm install -g @adobe/aio-cli@9.4.1
       - name: Log aio details
         run: aio info
       - name: Docker login
