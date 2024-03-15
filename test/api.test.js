@@ -1092,6 +1092,7 @@ describe("api.js", () => {
         });
 
         it.skip('should send metrics - rendition and activation with cgroup metrics', async () => {
+            // can hang in CI/CD
             const receivedMetrics = MetricsTestHelper.mockNewRelic();
             mockFs({
                 '/sys/fs/cgroup': {
