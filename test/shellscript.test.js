@@ -372,6 +372,20 @@ describe("api.js (shell)", () => {
             );
         });
 
+        it("should handle error.json - ServiceOverLoad instanceof ClientError", async () => {
+            createScript("worker.sh", `
+                echo '{ "reason": "ServiceOverLoad", "message": "too many requests" }' > $errorfile
+                exit 1
+            `);
+            const scriptWorker = new ShellScriptWorker(testUtil.simpleParams());
+
+            await assert.rejects(
+                scriptWorker.processWithScript(mockSource(), mockRendition()),
+                // check that instanceof works
+                err => err instanceof ClientError
+            );
+        });
+
         it("should handle error.json - malformed json", async () => {
             createScript("worker.sh", `
                 echo '{ "message": MALFORMED' > $errorfile
