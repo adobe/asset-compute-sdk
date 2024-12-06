@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/gh/adobe/asset-compute-sdk/branch/master/graph/badge.svg)](https://codecov.io/gh/adobe/asset-compute-sdk)
 [![Travis](https://travis-ci.com/adobe/asset-compute-sdk.svg?branch=master)](https://travis-ci.com/adobe/asset-compute-sdk)
 
-# Adobe Asset Compute Worker SDK
+# Adobe Asset Compute Worker SDK 
 
 This library is required for all custom workers for the Adobe Asset Compute Service. It provides an easy to use framework and takes care of common things like asset & rendition access, validation and type checks, event notification, error handling and more.
 
