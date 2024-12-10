@@ -38,12 +38,12 @@ jobs:
         env:
           REGISTRY_ID: ${{ secrets.AZURE_CONTAINER_REGISTRY_ID }}
           REGISTRY_SECRET: ${{ secrets.AZURE_CONTAINER_REGISTRY_SECRET }} 
-     # - name: Install dependencies (all)
-     #   run: npm install
-     # - name: Run unit tests
-     #   run: npm test
-     # - name: Report coverage
-     #   run: npm run report-coverage
+      - name: Install dependencies (all)
+        run: npm install
+      - name: Run unit tests
+        run: npm test
+      - name: Report coverage
+        run: npm run report-coverage
 
   sizewatcher:
     runs-on: ubuntu-latest
