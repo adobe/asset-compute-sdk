@@ -47,7 +47,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: post-processing-renditions
-          path: test-worker/build/test-results/test-worker/
+          path: |
+            test-worker/build/test-worker/
+            test-worker/build/test-results/test-worker/
           retention-days: 7
       - name: Report coverage
         run: npm run report-coverage
