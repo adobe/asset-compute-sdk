@@ -42,16 +42,8 @@ jobs:
         run: npm install
       - name: Run unit tests
         run: npm test
-      - name: Upload test-worker renditions on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: post-processing-renditions
-          path: |
-            test-worker/build/test-worker/
-            test-worker/build/test-results/test-worker/
-          retention-days: 7
       - name: Report coverage
+        continue-on-error: true
         run: npm run report-coverage
 
   sizewatcher:
