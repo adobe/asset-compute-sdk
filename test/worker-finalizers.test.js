@@ -39,6 +39,8 @@ class FakeRendition {
         this.path = `${dir}/${this.name}`;
     }
     exists() { return true; }
+    static redactInstructions(i) { return i; }
+    static forEach(arr) { return arr; }
 }
 const fakePipelineModule = {
     Utils: {
@@ -208,5 +210,76 @@ describe("worker.postProcess() — onAfterRendition finalizers", () => {
         // Should not throw; treats non-array as "no finalizers"
         const result = await worker.postProcess(rendition);
         assert.strictEqual(result, rendition);
+    });
+
+    it("does NOT run finalizers when imagePostProcess() throws (no final rendition to embed into)", async () => {
+        // G-11: if SDK post-processing itself fails, there is no final rendition
+        // on disk for the finalizer to operate on. The catch branch must take
+        // over and finalizers must be skipped — otherwise a c2pa embed (or any
+        // other finalizer) would run against an absent/garbage file.
+        const worker = buildTestWorker();
+        sinon.stub(worker, 'shouldPostProcess').resolves(true);
+        imagePostProcessStub.rejects(new Error("simulated imagemagick failure"));
+        worker.renditionFailure = sinon.stub().resolves();
+
+        const calls = [];
+        const finalizer = async (r) => { calls.push(r); };
+        const rendition = makeRendition({ withFinalizers: [finalizer], postProcessFlag: true });
+        worker.renditions[rendition.index] = rendition;
+
+        const result = await worker.postProcess(rendition);
+
+        assert.strictEqual(result, undefined, "postProcess returns undefined to signal failure");
+        assert.strictEqual(calls.length, 0, "finalizer MUST NOT run when imagePostProcess threw");
+        assert.ok(worker.renditionFailure.calledOnce, "renditionFailure should be invoked on post-process failure");
+    });
+});
+
+describe("worker.batchProcessRenditions() — onAfterRendition finalizers", () => {
+
+    afterEach(() => {
+        sinon.resetHistory();
+        delete process.env.WORKER_TEST_MODE;
+    });
+
+    // G-10: lock in that finalizers also run on the batchWorker/computeAllAtOnce
+    // code path. batchProcessRenditions iterates this.renditions and calls
+    // this.postProcess(rendition) on each — same primitive used by the
+    // single-rendition path. A future refactor that bypassed postProcess in
+    // the batch path would silently drop finalizers (e.g. c2pa propagation)
+    // for every computeAllAtOnce worker.
+    it("invokes finalizers for every rendition on the batchProcessRenditions path", async () => {
+        const worker = buildTestWorker();
+        sinon.stub(worker, 'shouldPostProcess').resolves(false);
+        worker.preparePostProcess = sinon.stub().resolves();
+        worker.upload = sinon.stub().resolves();
+        worker.renditionSuccess = sinon.stub().resolves();
+        worker.renditionFailure = sinon.stub().resolves();
+        worker.params = {};
+        worker.directories = { postprocessing: '/tmp/post', out: '/tmp/out' };
+        worker.options = { disableRenditionUpload: false };
+        const timerStub = { start: () => {}, stop: () => {}, currentDuration: () => 0, totalDuration: () => 0, toString: () => '0' };
+        worker.timers.processingCallback = timerStub;
+
+        const calls = [];
+        const finalizer = async (r) => { calls.push(r); };
+
+        const r0 = makeRendition({ withFinalizers: [finalizer] });
+        const r1 = new FakeRendition({ fmt: "png" }, '/tmp/out', 1);
+        r1.postProcess = false;
+        r1._postProcessFinalizers = [finalizer];
+        worker.renditions = [r0, r1];
+
+        // user batch callback — produces nothing here; we only care about
+        // postProcess being invoked after the callback resolves
+        const renditionsCallback = sinon.stub().resolves();
+
+        await worker.batchProcessRenditions(renditionsCallback);
+
+        assert.ok(renditionsCallback.calledOnce, "user batch callback ran");
+        assert.strictEqual(calls.length, 2, "finalizer should fire once per rendition in the batch");
+        assert.strictEqual(calls[0], r0);
+        assert.strictEqual(calls[1], r1);
+        assert.strictEqual(worker.upload.callCount, 2, "both renditions uploaded after their finalizers ran");
     });
 });
