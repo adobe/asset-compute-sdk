@@ -4,4 +4,4 @@ packages:
     actions:
       worker:
         function: worker.js
-        docker: 'adobeassetcompute.azurecr.io/alexkli/nodejs10-action-centos:2.4.1'
+        docker: 'adobeassetcompute.azurecr.io/nui/nodejs24-action-ubuntu:3.0.0'
