@@ -146,7 +146,7 @@ describe("worker.postProcess() — onAfterRendition finalizers", () => {
         await worker.postProcess(rendition);
 
         assert.deepStrictEqual(seen.map(x => x[0]), ['f1', 'f2', 'f3']);
-        assert.ok(seen.every(([_, r]) => r === rendition));
+        assert.ok(seen.every(([, r]) => r === rendition));
     });
 
     it("a finalizer that throws does NOT break upload and does NOT prevent subsequent finalizers", async () => {
