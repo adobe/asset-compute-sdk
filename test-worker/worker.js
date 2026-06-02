@@ -28,7 +28,6 @@ process.env.DEBUG = "*";
 exports.main = worker(async (source, rendition) => {
 
     const instructions = rendition.instructions;
-
     // simulate a worker that might defer to post-processing
     if (instructions.skipProcess) {
         await fs.symlink(source.path, rendition.path);
