@@ -30,7 +30,6 @@ const sinon = require('sinon');
 const TIMEOUT_EXIT_CODE = 101;
 let processSpy;
 
-
 describe("api.js", () => {
     beforeEach(function() {
         process.env.__OW_DEADLINE = Date.now() + this.timeout();
