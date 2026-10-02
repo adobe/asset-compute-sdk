@@ -242,6 +242,24 @@ const main = worker(renditionCallback, options);
 await main(params);
 ```
 
+Delegate failure events example (an external orchestrator owns retries):
+
+_Note: this feature is not available for custom workers of the Adobe Asset Compute service; the option is ignored for them_.
+
+```js
+const { worker } = require('@adobe/asset-compute-sdk');
+const options = {
+	// no `rendition_failed` events are sent; the result contains `renditionOutcomes` instead
+	delegateFailureEvents: true,
+	// optional, awaited (max 10 seconds) before the process exits on an action timeout
+	// `err.renditionOutcomes` lists the status of every rendition, e.g. [{ index: 0, status: "success" },
+	// { index: 1, status: "failed", errorType: "GenericError", message: "..." }]
+	onBeforeTimeout: async (err) => { /* e.g. report err.renditionOutcomes to the orchestrator */ }
+};
+const main = worker(renditionCallback, options);
+await main(params);
+```
+
 ## Post processing
 
 _Note: this feature is not available for custom workers of the Adobe Asset Compute service_.
