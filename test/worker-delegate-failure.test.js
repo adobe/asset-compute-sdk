@@ -25,7 +25,6 @@ function build(options) {
     worker.params = { requestId: "req" };
     worker.renditionErrors = [];
     worker.renditionOutcomes = [];
-    worker.pendingSuccessEvents = new Set();
     worker.metrics = { add: sinon.stub(), sendMetrics: sinon.stub().resolves() };
     worker.events = { sendEvent: sinon.stub().resolves() };
     const t = { start() {}, stop() {}, currentDuration: () => 0, totalDuration: () => 0, toString: () => '0' };
@@ -56,14 +55,11 @@ const TimeoutWorker = proxyquire('../lib/worker', {
 });
 
 // runs the action timeout handler with fake timers, returns the order of hook/exit calls
-async function runTimeout(worker, advanceMs = 0, beforeTimeout) {
+async function runTimeout(worker, advanceMs = 0) {
     const order = [];
     const clock = sinon.useFakeTimers();
     const exitStub = sinon.stub(process, 'exit').callsFake(() => order.push("exit"));
     try {
-        if (beforeTimeout) {
-            beforeTimeout();
-        }
         TimeoutWorker.prototype.sendEventsBeforeActionTimeout.call(worker);
         await clock.tickAsync(advanceMs);
     } finally {
@@ -135,6 +131,20 @@ describe("delegateFailureEvents", () => {
         assert.strictEqual(w.getResult().invocationFailed, false);
     });
 
+    it("preserves the original preparation error and outcomes when error telemetry rejects", async () => {
+        const w = build({ delegateFailureEvents: true });
+        const original = new Error("download failed");
+        w.params.renditions = [{ fmt: "png" }, { fmt: "jpg" }];
+        w.prepare = sinon.stub().rejects(original);
+        w.cleanup = sinon.stub().resolves();
+        w.metrics.handleError = sinon.stub().rejects(new Error("telemetry failed"));
+        const err = await w.run(async () => {}).then(() => assert.fail("should throw"), e => e);
+        assert.strictEqual(err, original);
+        assert.strictEqual(err.requestId, "req");
+        assert.strictEqual(err.invocationFailed, true);
+        assert.deepStrictEqual(err.renditionOutcomes.map(o => o.message), ["download failed", "download failed"]);
+    });
+
     it("cleanup does not replace a source-download failure with Unknown error", async () => {
         const w = build({ delegateFailureEvents: true });
         w.params.renditions = [{ fmt: "png" }, { fmt: "jpg" }];
@@ -148,6 +158,62 @@ describe("delegateFailureEvents", () => {
     });
 
     describe("on action timeout", () => {
+
+        for (const timeoutDuringCleanup of [false, true]) {
+            it(`normal completion waits for timeout reporting (${timeoutDuringCleanup ? "during cleanup" : "during processing"})`, async () => {
+                let finishWork;
+                let finishHook;
+                let hookResult;
+                let result;
+                const w = build({
+                    delegateFailureEvents: true,
+                    onBeforeTimeout: err => {
+                        hookResult = err;
+                        return new Promise(resolve => { finishHook = resolve; });
+                    }
+                });
+                w.params.renditions = [{ fmt: "png" }];
+                w.renditions = [mkRendition(0)];
+                w.prepare = sinon.stub().resolves();
+                const work = () => new Promise(resolve => { finishWork = resolve; });
+                w.cleanup = timeoutDuringCleanup ? work : sinon.stub().resolves();
+                const clock = sinon.useFakeTimers();
+                try {
+                    const run = w.run(timeoutDuringCleanup ? async () => {} : work)
+                        .then(r => { result = r; }, e => { result = e; });
+                    await clock.tickAsync(0);
+                    const finalization = w.finalizeOnTimeout();
+                    await clock.tickAsync(0);
+                    finishWork();
+                    await clock.tickAsync(0);
+                    assert.strictEqual(result, undefined, "normal return must not overtake the hook");
+                    finishHook();
+                    await finalization;
+                    await run;
+                    assert.strictEqual(result, hookResult);
+                    assert.strictEqual(result.invocationFailed, true);
+                    assert.deepStrictEqual(result.renditionOutcomes.map(o => o.status), ["failed"]);
+                } finally {
+                    clock.restore();
+                }
+            });
+        }
+
+        it("shares one terminal snapshot and hook call even when finalization is requested twice", async () => {
+            let snapshot;
+            const hook = sinon.spy(err => { snapshot = err; });
+            const w = build({ delegateFailureEvents: true, onBeforeTimeout: hook });
+            w.renditions = [mkRendition(0)];
+            const first = w.finalizeOnTimeout();
+            assert.strictEqual(w.finalizeOnTimeout(), first);
+            await first;
+            assert.strictEqual(hook.callCount, 1);
+            assert.strictEqual(snapshot, w.timeoutResult);
+            // Late success remains an accepted delivery trade-off, but cannot
+            // change the saved terminal result returned by run().
+            w.recordOutcome(0, "success");
+            assert.deepStrictEqual(snapshot.renditionOutcomes.map(o => o.status), ["failed"]);
+        });
         it("sends rendition_failed events and exits when not delegating", async () => {
             const w = build({});
             w.renditions = [mkRendition(0), mkRendition(1)];
@@ -217,36 +283,16 @@ describe("delegateFailureEvents", () => {
             assert.strictEqual(hook.callCount, 1);
         });
 
-        it("waits for an in-flight rendition_created event and reports it as success", async () => {
-            let outcomes;
-            const w = build({
-                delegateFailureEvents: true,
-                onBeforeTimeout: async (err) => { outcomes = err.renditionOutcomes; }
-            });
-            w.renditions = [mkRendition(0), mkRendition(1)];
-            w.events.sendEvent = () => new Promise(r => setTimeout(r, 500));
-            const order = await runTimeout(w, 1000, () => w.renditionSuccess(w.renditions[0]));
-            assert.deepStrictEqual(order, ["exit"]);
-            assert.deepStrictEqual(outcomes.map(o => [o.index, o.status]), [[0, "success"], [1, "failed"]]);
-        });
-
-        it("hands onBeforeTimeout a snapshot that late results cannot change", async () => {
+        it("hands onBeforeTimeout a snapshot that later results cannot change", async () => {
             let outcomes;
             const w = build({
                 delegateFailureEvents: true,
                 onBeforeTimeout: async (err) => { outcomes = err.renditionOutcomes; }
             });
             w.renditions = [mkRendition(0)];
-            // publication never completes within the wait, so the rendition times out
-            let finishPublication;
-            w.events.sendEvent = () => new Promise(r => { finishPublication = r; });
-            const success = w.renditionSuccess(w.renditions[0]);
-            await runTimeout(w, 5000);
+            await runTimeout(w);
+            w.recordOutcome(0, "success");
             assert.deepStrictEqual(outcomes.map(o => [o.index, o.status]), [[0, "failed"]]);
-            finishPublication();
-            await success;
-            assert.deepStrictEqual(outcomes.map(o => [o.index, o.status]), [[0, "failed"]]);
-            assert.deepStrictEqual(w.renditionOutcomes.map(o => [o.index, o.status]), [[0, "failed"]]);
         });
 
         it("caps a hanging onBeforeTimeout so the process still exits", async () => {
@@ -266,62 +312,6 @@ describe("delegateFailureEvents", () => {
                 assert.deepStrictEqual(order, ["exit"]);
             } finally {
                 exitStub.restore();
-                clock.restore();
-            }
-        });
-
-        it("does not publish a late success when metadata finishes during timeout reporting", async () => {
-            const clock = sinon.useFakeTimers();
-            let finishMetadata;
-            let finishHook;
-            let timeoutResult;
-            const w = build({
-                delegateFailureEvents: true,
-                onBeforeTimeout: err => {
-                    timeoutResult = err;
-                    return new Promise(resolve => { finishHook = resolve; });
-                }
-            });
-            const original = mkRendition(0);
-            original.metadata = () => new Promise(resolve => { finishMetadata = resolve; });
-            // Simulate a post-processing replacement: timeout sees another object
-            // with the same index, not the object held by renditionSuccess().
-            w.renditions = [mkRendition(0)];
-            try {
-                const success = w.renditionSuccess(original);
-                const timeout = w.finalizeOnTimeout();
-                await clock.tickAsync(3100);
-                assert.deepStrictEqual(timeoutResult.renditionOutcomes.map(o => o.status), ["failed"]);
-                finishMetadata({});
-                await success;
-                assert.strictEqual(w.events.sendEvent.callCount, 0);
-                assert.deepStrictEqual(timeoutResult.renditionOutcomes.map(o => o.status), ["failed"]);
-                finishHook();
-                await timeout;
-            } finally {
-                clock.restore();
-            }
-        });
-
-        it("does not publish a late success when embedded data finishes during timeout reporting", async () => {
-            const clock = sinon.useFakeTimers();
-            let finishData;
-            const w = build({ delegateFailureEvents: true, onBeforeTimeout: sinon.stub().resolves() });
-            const rendition = mkRendition(0);
-            rendition.shouldEmbedInIOEvent = () => true;
-            rendition.asDataUri = () => new Promise(resolve => { finishData = resolve; });
-            w.renditions = [rendition];
-            try {
-                const success = w.renditionSuccess(rendition);
-                await clock.tickAsync(0);
-                const timeout = w.finalizeOnTimeout();
-                await clock.tickAsync(3100);
-                finishData("data:image/png;base64,AA==");
-                await success;
-                await timeout;
-                assert.strictEqual(w.events.sendEvent.callCount, 0);
-                assert.deepStrictEqual(w.getResult().renditionOutcomes.map(o => o.status), ["failed"]);
-            } finally {
                 clock.restore();
             }
         });
