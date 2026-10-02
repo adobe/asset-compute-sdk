@@ -242,6 +242,34 @@ const main = worker(renditionCallback, options);
 await main(params);
 ```
 
+Delegate failure events example (an external orchestrator owns retries):
+
+_Note: this feature is not available for custom workers of the Adobe Asset Compute service; the option is ignored for them_.
+
+```js
+const { worker } = require('@adobe/asset-compute-sdk');
+const options = {
+	// no `rendition_failed` events are sent; the result contains `renditionOutcomes` instead
+	delegateFailureEvents: true,
+	// optional, awaited (max 10 seconds) before the process exits on an action timeout
+	// `err.renditionOutcomes` lists the status of every rendition, e.g. [{ index: 0, status: "success" },
+	// { index: 1, status: "failed", errorType: "GenericError", message: "..." }]
+	onBeforeTimeout: async (err) => { /* e.g. report err.renditionOutcomes to the orchestrator */ }
+};
+const main = worker(renditionCallback, options);
+await main(params);
+```
+
+With `delegateFailureEvents`:
+
+- The result (or the thrown error) contains `renditionOutcomes` and `invocationFailed`. `invocationFailed` is `true` when the whole invocation failed. Every requested rendition then has an outcome, even when the failure happened before rendition processing started (e.g. during download/preparation).
+- On an action timeout, renditions without a confirmed success event are reported as failed without waiting for pending success publication. A late success event may still arrive; this delivery ambiguity and a possible retry are accepted. The retry count is controlled by the orchestrator, not this package.
+- Timeout metrics are sent in parallel with `onBeforeTimeout` and are capped at 10 seconds. A failing or hanging metrics call cannot prevent the hook from running or the process from exiting.
+- Pipeline renditions are not supported with effective failure delegation: `worker()`, `batchWorker()` and `shellScriptWorker()` reject this combination before starting the pipeline. Pipeline calls without delegation are unchanged; custom workers still ignore the delegation option.
+- Timeout handling uses one shared finalization promise and terminal result. Normal completion waits for timeout reporting, including when timeout starts during cleanup. The timeout handler then terminates the activation. `onBeforeTimeout` receives a snapshot that late results cannot change.
+- In delegated mode, rejecting error telemetry cannot replace the original processing failure or remove its rendition outcomes.
+- The caller supplies `onBeforeTimeout`; this package does not notify Temporal itself. When `@nui/node-temporal-sdk` wires the hook, it must coordinate reporting ownership with its normal completion path to avoid a second notification.
+
 ## Post processing
 
 _Note: this feature is not available for custom workers of the Adobe Asset Compute service_.
