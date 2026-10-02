@@ -265,6 +265,8 @@ With `delegateFailureEvents`:
 - The result (or the thrown error) contains `renditionOutcomes` and `invocationFailed`. `invocationFailed` is `true` when the whole invocation failed. Every requested rendition then has an outcome, even when the failure happened before rendition processing started (e.g. during download/preparation).
 - On an action timeout, any `rendition_created` events still being published are awaited (max 3 seconds). Renditions without a sent event are then marked as failed and the outcome list is frozen. `onBeforeTimeout` receives this final snapshot, and late results cannot change it.
 - Timeout metrics are sent in parallel with `onBeforeTimeout` and are capped at 10 seconds. A failing or hanging metrics call cannot prevent the hook from running or the process from exiting.
+- Pipeline renditions are not supported with effective failure delegation: `worker()`, `batchWorker()` and `shellScriptWorker()` reject this combination before starting the pipeline. Pipeline calls without delegation are unchanged; custom workers still ignore the delegation option.
+- Once timeout finalization starts, no new `rendition_created` event is dispatched.
 
 ## Post processing
 

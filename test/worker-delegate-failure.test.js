@@ -135,6 +135,18 @@ describe("delegateFailureEvents", () => {
         assert.strictEqual(w.getResult().invocationFailed, false);
     });
 
+    it("cleanup does not replace a source-download failure with Unknown error", async () => {
+        const w = build({ delegateFailureEvents: true });
+        w.params.renditions = [{ fmt: "png" }, { fmt: "jpg" }];
+        w.renditions = [mkRendition(0), mkRendition(1)];
+        w.prepare = sinon.stub().rejects(new Error("download failed"));
+        w.metrics.handleError = sinon.stub().resolves();
+        const err = await w.run(async () => {}).then(() => assert.fail("should throw"), e => e);
+        assert.strictEqual(err.message, "download failed");
+        assert.deepStrictEqual(err.renditionOutcomes.map(o => o.message), ["download failed", "download failed"]);
+        assert.strictEqual(w.events.sendEvent.callCount, 0);
+    });
+
     describe("on action timeout", () => {
         it("sends rendition_failed events and exits when not delegating", async () => {
             const w = build({});
@@ -254,6 +266,62 @@ describe("delegateFailureEvents", () => {
                 assert.deepStrictEqual(order, ["exit"]);
             } finally {
                 exitStub.restore();
+                clock.restore();
+            }
+        });
+
+        it("does not publish a late success when metadata finishes during timeout reporting", async () => {
+            const clock = sinon.useFakeTimers();
+            let finishMetadata;
+            let finishHook;
+            let timeoutResult;
+            const w = build({
+                delegateFailureEvents: true,
+                onBeforeTimeout: err => {
+                    timeoutResult = err;
+                    return new Promise(resolve => { finishHook = resolve; });
+                }
+            });
+            const original = mkRendition(0);
+            original.metadata = () => new Promise(resolve => { finishMetadata = resolve; });
+            // Simulate a post-processing replacement: timeout sees another object
+            // with the same index, not the object held by renditionSuccess().
+            w.renditions = [mkRendition(0)];
+            try {
+                const success = w.renditionSuccess(original);
+                const timeout = w.finalizeOnTimeout();
+                await clock.tickAsync(3100);
+                assert.deepStrictEqual(timeoutResult.renditionOutcomes.map(o => o.status), ["failed"]);
+                finishMetadata({});
+                await success;
+                assert.strictEqual(w.events.sendEvent.callCount, 0);
+                assert.deepStrictEqual(timeoutResult.renditionOutcomes.map(o => o.status), ["failed"]);
+                finishHook();
+                await timeout;
+            } finally {
+                clock.restore();
+            }
+        });
+
+        it("does not publish a late success when embedded data finishes during timeout reporting", async () => {
+            const clock = sinon.useFakeTimers();
+            let finishData;
+            const w = build({ delegateFailureEvents: true, onBeforeTimeout: sinon.stub().resolves() });
+            const rendition = mkRendition(0);
+            rendition.shouldEmbedInIOEvent = () => true;
+            rendition.asDataUri = () => new Promise(resolve => { finishData = resolve; });
+            w.renditions = [rendition];
+            try {
+                const success = w.renditionSuccess(rendition);
+                await clock.tickAsync(0);
+                const timeout = w.finalizeOnTimeout();
+                await clock.tickAsync(3100);
+                finishData("data:image/png;base64,AA==");
+                await success;
+                await timeout;
+                assert.strictEqual(w.events.sendEvent.callCount, 0);
+                assert.deepStrictEqual(w.getResult().renditionOutcomes.map(o => o.status), ["failed"]);
+            } finally {
                 clock.restore();
             }
         });
