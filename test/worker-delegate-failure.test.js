@@ -25,6 +25,7 @@ function build(options) {
     worker.params = { requestId: "req" };
     worker.renditionErrors = [];
     worker.renditionOutcomes = [];
+    worker.pendingSuccessEvents = new Set();
     worker.metrics = { add: sinon.stub(), sendMetrics: sinon.stub().resolves() };
     worker.events = { sendEvent: sinon.stub().resolves() };
     const t = { start() {}, stop() {}, currentDuration: () => 0, totalDuration: () => 0, toString: () => '0' };
@@ -35,7 +36,13 @@ function build(options) {
     return worker;
 }
 
-const mkRendition = index => ({ index, instructionsForEvent: () => ({ index }), size: () => 1 });
+const mkRendition = index => ({
+    index,
+    instructionsForEvent: () => ({ index }),
+    size: () => 1,
+    metadata: async () => ({}),
+    shouldEmbedInIOEvent: () => false
+});
 
 const proxyquire = require('proxyquire');
 const pipeline = require('@adobe/asset-compute-pipeline');
@@ -49,11 +56,14 @@ const TimeoutWorker = proxyquire('../lib/worker', {
 });
 
 // runs the action timeout handler with fake timers, returns the order of hook/exit calls
-async function runTimeout(worker, advanceMs = 0) {
+async function runTimeout(worker, advanceMs = 0, beforeTimeout) {
     const order = [];
     const clock = sinon.useFakeTimers();
     const exitStub = sinon.stub(process, 'exit').callsFake(() => order.push("exit"));
     try {
+        if (beforeTimeout) {
+            beforeTimeout();
+        }
         TimeoutWorker.prototype.sendEventsBeforeActionTimeout.call(worker);
         await clock.tickAsync(advanceMs);
     } finally {
@@ -107,6 +117,24 @@ describe("delegateFailureEvents", () => {
         assert.deepStrictEqual(w.renditionOutcomes.map(o => o.status), ["failed", "failed"]);
     });
 
+    it("reports every requested rendition as failed when the invocation fails before renditions exist", async () => {
+        const w = build({ delegateFailureEvents: true });
+        w.params.renditions = [{ fmt: "png" }, { fmt: "jpg" }];
+        w.prepare = sinon.stub().rejects(new Error("mkdir failed"));
+        w.cleanup = sinon.stub().resolves();
+        w.metrics.handleError = sinon.stub().resolves();
+        const err = await w.run(async () => {}).then(() => assert.fail("should throw"), e => e);
+        assert.strictEqual(err.message, "mkdir failed");
+        assert.strictEqual(err.invocationFailed, true);
+        assert.deepStrictEqual(err.renditionOutcomes.map(o => [o.index, o.status, o.message]),
+            [[0, "failed", "mkdir failed"], [1, "failed", "mkdir failed"]]);
+    });
+
+    it("marks successful invocations as not failed", async () => {
+        const w = build({ delegateFailureEvents: true });
+        assert.strictEqual(w.getResult().invocationFailed, false);
+    });
+
     describe("on action timeout", () => {
         it("sends rendition_failed events and exits when not delegating", async () => {
             const w = build({});
@@ -157,6 +185,56 @@ describe("delegateFailureEvents", () => {
             });
             w.renditions = [mkRendition(0)];
             assert.deepStrictEqual(await runTimeout(w), ["exit"]);
+        });
+
+        it("still calls onBeforeTimeout and exits if timeout metrics hang", async () => {
+            const hook = sinon.stub().resolves();
+            const w = build({ delegateFailureEvents: true, onBeforeTimeout: hook });
+            w.metrics.sendMetrics = sinon.stub().returns(new Promise(() => {}));
+            w.renditions = [mkRendition(0)];
+            assert.deepStrictEqual(await runTimeout(w, 10500), ["exit"]);
+            assert.strictEqual(hook.callCount, 1);
+        });
+
+        it("still calls onBeforeTimeout and exits if timeout metrics fail", async () => {
+            const hook = sinon.stub().resolves();
+            const w = build({ delegateFailureEvents: true, onBeforeTimeout: hook });
+            w.metrics.sendMetrics = sinon.stub().rejects(new Error("metrics down"));
+            w.renditions = [mkRendition(0)];
+            assert.deepStrictEqual(await runTimeout(w), ["exit"]);
+            assert.strictEqual(hook.callCount, 1);
+        });
+
+        it("waits for an in-flight rendition_created event and reports it as success", async () => {
+            let outcomes;
+            const w = build({
+                delegateFailureEvents: true,
+                onBeforeTimeout: async (err) => { outcomes = err.renditionOutcomes; }
+            });
+            w.renditions = [mkRendition(0), mkRendition(1)];
+            w.events.sendEvent = () => new Promise(r => setTimeout(r, 500));
+            const order = await runTimeout(w, 1000, () => w.renditionSuccess(w.renditions[0]));
+            assert.deepStrictEqual(order, ["exit"]);
+            assert.deepStrictEqual(outcomes.map(o => [o.index, o.status]), [[0, "success"], [1, "failed"]]);
+        });
+
+        it("hands onBeforeTimeout a snapshot that late results cannot change", async () => {
+            let outcomes;
+            const w = build({
+                delegateFailureEvents: true,
+                onBeforeTimeout: async (err) => { outcomes = err.renditionOutcomes; }
+            });
+            w.renditions = [mkRendition(0)];
+            // publication never completes within the wait, so the rendition times out
+            let finishPublication;
+            w.events.sendEvent = () => new Promise(r => { finishPublication = r; });
+            const success = w.renditionSuccess(w.renditions[0]);
+            await runTimeout(w, 5000);
+            assert.deepStrictEqual(outcomes.map(o => [o.index, o.status]), [[0, "failed"]]);
+            finishPublication();
+            await success;
+            assert.deepStrictEqual(outcomes.map(o => [o.index, o.status]), [[0, "failed"]]);
+            assert.deepStrictEqual(w.renditionOutcomes.map(o => [o.index, o.status]), [[0, "failed"]]);
         });
 
         it("caps a hanging onBeforeTimeout so the process still exits", async () => {

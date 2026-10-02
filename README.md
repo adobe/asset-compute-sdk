@@ -260,6 +260,12 @@ const main = worker(renditionCallback, options);
 await main(params);
 ```
 
+With `delegateFailureEvents`:
+
+- The result (or the thrown error) contains `renditionOutcomes` and `invocationFailed`. `invocationFailed` is `true` when the whole invocation failed. Every requested rendition then has an outcome, even when the failure happened before rendition processing started (e.g. during download/preparation).
+- On an action timeout, any `rendition_created` events still being published are awaited (max 3 seconds). Renditions without a sent event are then marked as failed and the outcome list is frozen. `onBeforeTimeout` receives this final snapshot, and late results cannot change it.
+- Timeout metrics are sent in parallel with `onBeforeTimeout` and are capped at 10 seconds. A failing or hanging metrics call cannot prevent the hook from running or the process from exiting.
+
 ## Post processing
 
 _Note: this feature is not available for custom workers of the Adobe Asset Compute service_.
