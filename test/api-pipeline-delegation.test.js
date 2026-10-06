@@ -40,10 +40,26 @@ describe("pipeline failure delegation guard", () => {
         it(`${factory}: rejects delegation before constructing or running a pipeline`, async () => {
             const { main, Pipeline, compute } = createApi(factory, { delegateFailureEvents: true });
             // A pipeline rendition anywhere in the list selects the pipeline route.
-            const params = { renditions: [{ fmt: "png" }, { fmt: "jpg", pipeline: true }] };
+            const params = {
+                requestId: "pipeline-rejection",
+                renditions: [
+                    { fmt: "png", target: "https://example.invalid/signed-target", userData: { private: "customer-data" } },
+                    { fmt: "jpg", pipeline: true }
+                ]
+            };
             await assert.rejects(async () => main(params), err => {
                 assert.match(err.message, /delegateFailureEvents is not supported for pipeline renditions/);
                 assert.strictEqual(err.noRetry, true);
+                assert.strictEqual(err.requestId, params.requestId);
+                assert.strictEqual(err.invocationFailed, true);
+                assert.deepStrictEqual(err.renditionOutcomes, [0, 1].map(index => ({
+                    index,
+                    status: "failed",
+                    errorType: "GenericError",
+                    message: err.message
+                })));
+                assert.ok(!JSON.stringify(err).includes("signed-target"));
+                assert.ok(!JSON.stringify(err).includes("customer-data"));
                 return true;
             });
             assert.strictEqual(Pipeline.callCount, 0);
